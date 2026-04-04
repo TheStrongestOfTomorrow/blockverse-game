@@ -1,10 +1,6 @@
 // ============================================
 // BLOCKVERSE - Main App Module (Entry Point)
 // ============================================
-// Third-person camera mode. No pointer lock.
-// WASD movement, right-click to orbit camera,
-// I/O to zoom, left-click for tool actions.
-// ============================================
 
 const App = (() => {
     'use strict';
@@ -51,22 +47,18 @@ const App = (() => {
             const dt = Math.min((now - _lastTime) / 1000, 0.1);
             _lastTime = now;
 
-            // Update game systems
             if (typeof World !== 'undefined') World.update(dt);
             if (typeof Player !== 'undefined') Player.update(dt, World.blockMap);
             if (typeof Tools !== 'undefined' && Player.camera) {
-                // Cast ray from camera center for block highlight
                 const raycaster = new THREE.Raycaster();
                 raycaster.setFromCamera(new THREE.Vector2(0, 0), Player.camera);
                 Tools.updateHighlight(raycaster.ray.origin, raycaster.ray.direction);
             }
 
-            // Update remote players
             if (typeof RemotePlayers !== 'undefined') {
                 RemotePlayers.updateAll(dt);
             }
 
-            // Broadcast position (throttled inside Multiplayer)
             if (typeof Multiplayer !== 'undefined' && Player.position) {
                 Multiplayer.broadcastPosition(
                     Player.position,
@@ -91,8 +83,11 @@ const App = (() => {
     }
 
     function enterGame() {
+        // World MUST be initialized first (creates scene, camera, renderer)
         if (!_worldInitialised && typeof World !== 'undefined') {
-            World.init();
+            if (!World.scene) {
+                World.init();
+            }
             _worldInitialised = true;
 
             if (typeof RemotePlayers !== 'undefined') {
@@ -100,11 +95,13 @@ const App = (() => {
             }
         }
 
+        // Player depends on World.camera
         if (!_playerInitialised && typeof Player !== 'undefined') {
             Player.init();
             _playerInitialised = true;
         }
 
+        // Tools depend on Player
         if (!_toolsInitialised && typeof Tools !== 'undefined') {
             Tools.init();
             _toolsInitialised = true;
@@ -115,17 +112,18 @@ const App = (() => {
             _chatInitialised = true;
         }
 
-        // In third-person, just mark as active (no pointer lock)
         if (typeof Player !== 'undefined') {
             Player.setActive(true);
         }
 
         startGameLoop();
 
+        // Update HUD
         if (typeof Chat !== 'undefined') {
             Chat.addSystemMessage('Welcome to BlockVerse!');
             Chat.addSystemMessage('WASD to move | Right-click drag to orbit camera');
-            Chat.addSystemMessage('I/O to zoom | Left-click to use tools | ESC for menu');
+            Chat.addSystemMessage('I/O or scroll to zoom | Left-click to use tools');
+            Chat.addSystemMessage('B/X/P/G to switch tools | ESC for menu');
         }
     }
 
@@ -134,6 +132,7 @@ const App = (() => {
 
         if (typeof Player !== 'undefined') {
             Player.setActive(false);
+            Player.destroy();
         }
 
         if (typeof Multiplayer !== 'undefined') {
@@ -210,7 +209,7 @@ const App = (() => {
             console.log('[App] User logged out');
             stopGameLoop();
 
-            if (Friends.identityPeer && !Friends.identityPeer.destroyed) {
+            if (typeof Friends !== 'undefined' && Friends.identityPeer && !Friends.identityPeer.destroyed) {
                 Friends.identityPeer.destroy();
                 Friends.identityPeer = null;
             }
@@ -283,7 +282,6 @@ const App = (() => {
                     e.preventDefault();
                     toggleGameMenu();
                     break;
-
                 case '1': case '2': case '3':
                 case '4': case '5': case '6':
                 case '7': case '8': case '9':
@@ -291,7 +289,6 @@ const App = (() => {
                         Tools.selectSlot(parseInt(e.key) - 1);
                     }
                     break;
-
                 case 'F1':
                     e.preventDefault();
                     _togglePlayerList();
@@ -305,7 +302,7 @@ const App = (() => {
             if (typeof Multiplayer !== 'undefined') {
                 Multiplayer.leaveGame();
             }
-            if (Friends.identityPeer && !Friends.identityPeer.destroyed) {
+            if (typeof Friends !== 'undefined' && Friends.identityPeer && !Friends.identityPeer.destroyed) {
                 Friends.identityPeer.destroy();
             }
         });
@@ -339,11 +336,9 @@ const App = (() => {
                     const isHost = peerId === Multiplayer.hostPeerId;
                     const hostTag = isHost ? ' ⭐' : '';
                     const youTag = (info.username === Auth.getCurrentUser()) ? ' (You)' : '';
-                    html += `<div class="player-list-entry">
-                        <span>${info.username}${youTag}${hostTag}</span>
-                    </div>`;
+                    html += `<div class="player-entry"><span>${info.username}${youTag}${hostTag}</span></div>`;
                 });
-                list.innerHTML = html || '<p class="text-secondary">No players</p>';
+                list.innerHTML = html || '<p style="color:#a0a0b0">No players</p>';
             }
         }
     }

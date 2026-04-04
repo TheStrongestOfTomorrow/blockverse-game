@@ -1,18 +1,14 @@
 // ============================================
 // BLOCKVERSE - Lobby Module
 // ============================================
-// Lobby page logic: game browsing, creating/hosting games,
-// joining by code, random play, server list, search, settings.
-// ============================================
 
 const Lobby = (() => {
     'use strict';
 
-    // ---- Built-in / featured sample games (always visible) ----
     const FEATURED_GAMES = [
         {
             name: 'Block World',
-            description: 'Build anything you can imagine!',
+            description: 'Build anything you can imagine with blocks!',
             category: 'sandbox',
             icon: '🏗️',
             code: 'SAMPLE-BLDW',
@@ -72,13 +68,8 @@ const Lobby = (() => {
         },
     ];
 
-    // Currently active category filter
     let _activeCategory = 'all';
-
-    // Debounced search handler
     let _searchDebounce = null;
-
-    // Track selected create-game options
     let _selectedThumbnailColor = null;
     let _selectedTemplate = 'flat';
 
@@ -86,13 +77,6 @@ const Lobby = (() => {
     //  Public API
     // ========================================
 
-    /**
-     * Initialize the lobby module.
-     * - Render featured games.
-     * - Render category filters.
-     * - Render "My Games".
-     * - Wire up create-game form, random play, join-by-code, etc.
-     */
     function init() {
         renderFeaturedGames();
         if (typeof UI !== 'undefined') UI.renderCategoryFilters();
@@ -107,23 +91,15 @@ const Lobby = (() => {
         _populateCreateGameOptions();
     }
 
-    /**
-     * Show a lobby section and hide the others.
-     * Also updates sidebar button active state.
-     * @param {string} sectionId
-     */
     function showSection(sectionId) {
-        // Hide all lobby sections
         document.querySelectorAll('.lobby-section').forEach((el) => {
             el.classList.remove('active');
         });
 
-        // Show target - prepend 'section-' if needed
         const targetId = sectionId.startsWith('section-') ? sectionId : `section-${sectionId}`;
         const target = document.getElementById(targetId);
         if (target) target.classList.add('active');
 
-        // Update sidebar buttons
         document.querySelectorAll('.sidebar-btn').forEach((btn) => {
             btn.classList.remove('active');
             if (btn.dataset.section === sectionId) {
@@ -131,26 +107,18 @@ const Lobby = (() => {
             }
         });
 
-        // Refresh data when switching sections
-        if (sectionId === 'my-games') {
-            renderMyGames();
-        } else if (sectionId === 'discover') {
-            renderFeaturedGames();
-        } else if (sectionId === 'settings') {
-            _loadSettings();
-        } else if (sectionId === 'friends') {
+        if (sectionId === 'my-games') renderMyGames();
+        else if (sectionId === 'discover') renderFeaturedGames();
+        else if (sectionId === 'settings') _loadSettings();
+        else if (sectionId === 'friends') {
             if (typeof Friends !== 'undefined') Friends.renderUI();
         }
     }
 
-    /**
-     * Render featured + user-created game cards into #games-grid.
-     */
     function renderFeaturedGames() {
         const grid = document.getElementById('games-grid');
         if (!grid) return;
 
-        // Combine featured games with user-created games
         const allGames = [...FEATURED_GAMES, ..._getUserGames()];
         const filtered = _activeCategory === 'all'
             ? allGames
@@ -158,9 +126,22 @@ const Lobby = (() => {
 
         grid.innerHTML = filtered.map((g) => UI.renderGameCard(g)).join('');
 
+        // Wire up game card click -> show play
+        grid.querySelectorAll('.game-card').forEach((card) => {
+            card.addEventListener('click', (e) => {
+                // Don't trigger if clicking the play button directly
+                if (e.target.closest('.game-card-play-btn')) return;
+                const code = card.dataset.code;
+                if (code) {
+                    document.dispatchEvent(new CustomEvent('game:play', { detail: { code } }));
+                }
+            });
+        });
+
         // Wire up play buttons
         grid.querySelectorAll('.game-card-play-btn').forEach((btn) => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 const code = btn.dataset.code;
                 if (code) {
                     document.dispatchEvent(new CustomEvent('game:play', { detail: { code } }));
@@ -169,9 +150,6 @@ const Lobby = (() => {
         });
     }
 
-    /**
-     * Render the user's created games in #my-games-grid.
-     */
     function renderMyGames() {
         const grid = document.getElementById('my-games-grid');
         const noGamesMsg = document.getElementById('no-games-msg');
@@ -201,7 +179,6 @@ const Lobby = (() => {
             </div>
         `).join('');
 
-        // Wire buttons
         grid.querySelectorAll('.host-game-btn').forEach((btn) => {
             btn.addEventListener('click', () => hostGame(btn.dataset.code));
         });
@@ -210,10 +187,6 @@ const Lobby = (() => {
         });
     }
 
-    /**
-     * Create a new game from form data.
-     * @param {object} formData
-     */
     function createGame(formData) {
         const code = Utils.generateCode('BV', 4);
 
@@ -233,89 +206,149 @@ const Lobby = (() => {
             createdBy: Auth.getCurrentUser(),
         };
 
-        // Persist
+        // Persist game config
         const games = _getUserGames();
         games.push(gameConfig);
         localStorage.setItem(BV.STORAGE_KEYS.CREATED_GAMES, JSON.stringify(games));
 
-        // Dispatch event
         document.dispatchEvent(new CustomEvent('game:create', { detail: { code, config: gameConfig } }));
 
-        // Show loading & start hosting
+        // Show loading
         if (typeof UI !== 'undefined') UI.showLoading('Creating game...');
-        if (typeof UI !== 'undefined') UI.updateLoadingBar(20, 'Starting server...');
 
-        hostGame(code).then(() => {
-            if (typeof UI !== 'undefined') UI.updateLoadingBar(60, 'Generating world...');
-            // Generate terrain with the selected template
-            if (typeof World !== 'undefined') {
-                World.generateTerrain(gameConfig.template);
-                if (typeof UI !== 'undefined') UI.updateLoadingBar(90, 'Almost ready...');
-            }
-            // Transition to game screen
-            setTimeout(() => {
-                if (typeof UI !== 'undefined') {
-                    UI.updateLoadingBar(100, 'Done!');
+        // Generate terrain first (before entering game screen)
+        setTimeout(() => {
+            try {
+                if (typeof UI !== 'undefined') UI.updateLoadingBar(20, 'Generating world...');
+
+                // Initialize World if needed
+                if (typeof World !== 'undefined' && !World.scene) {
+                    World.init();
+                }
+
+                // Generate terrain
+                if (typeof World !== 'undefined') {
+                    World.generateTerrain(gameConfig.template);
+                }
+
+                if (typeof UI !== 'undefined') UI.updateLoadingBar(60, 'Starting server...');
+
+                // Try to host via multiplayer
+                if (typeof Multiplayer !== 'undefined') {
+                    Multiplayer.hostGame(code, gameConfig).then(() => {
+                        if (typeof UI !== 'undefined') UI.updateLoadingBar(90, 'Almost ready...');
+                        setTimeout(() => {
+                            if (typeof UI !== 'undefined') {
+                                UI.updateLoadingBar(100, 'Done!');
+                                setTimeout(() => {
+                                    UI.hideLoading();
+                                    UI.showScreen('screen-game');
+                                    UI.showGameCodeModal(code);
+                                }, 300);
+                            }
+                        }, 500);
+                    }).catch((err) => {
+                        console.warn('[Lobby] Multiplayer host failed, starting solo:', err);
+                        // Still launch in single-player mode
+                        setTimeout(() => {
+                            if (typeof UI !== 'undefined') {
+                                UI.updateLoadingBar(100, 'Done!');
+                                setTimeout(() => {
+                                    UI.hideLoading();
+                                    UI.showScreen('screen-game');
+                                    UI.showGameCodeModal(code);
+                                }, 300);
+                            }
+                        }, 300);
+                    });
+                } else {
                     setTimeout(() => {
-                        UI.hideLoading();
-                        UI.showScreen('screen-game');
-                        if (typeof UI !== 'undefined') UI.showGameCodeModal(code);
+                        if (typeof UI !== 'undefined') {
+                            UI.updateLoadingBar(100, 'Done!');
+                            setTimeout(() => {
+                                UI.hideLoading();
+                                UI.showScreen('screen-game');
+                                UI.showGameCodeModal(code);
+                            }, 300);
+                        }
                     }, 300);
                 }
-            }, 500);
-        }).catch((err) => {
-            console.error('[Lobby] Failed to host game:', err);
-            if (typeof UI !== 'undefined') UI.hideLoading();
-            Utils.showToast('Failed to create game. Please try again.', 'error');
-        });
+            } catch (err) {
+                console.error('[Lobby] Error creating game:', err);
+                if (typeof UI !== 'undefined') UI.hideLoading();
+                Utils.showToast('Failed to create game.', 'error');
+            }
+        }, 200);
     }
 
-    /**
-     * Start hosting an existing game.
-     * @param {string} gameCode
-     * @returns {Promise<void>}
-     */
     function hostGame(gameCode) {
-        // Load game config
         const games = _getUserGames();
         const config = games.find((g) => g.code === gameCode) || {};
 
         if (typeof UI !== 'undefined') UI.showLoading('Starting server...');
 
-        return Multiplayer.hostGame(gameCode, config).then((serverPeerId) => {
-            if (typeof UI !== 'undefined') UI.updateLoadingBar(40, 'Generating world...');
-
-            return new Promise((resolve) => {
-                if (typeof World !== 'undefined') {
+        return new Promise((resolve, reject) => {
+            try {
+                // Initialize World if needed
+                if (typeof World !== 'undefined' && !World.scene) {
                     World.init();
+                }
+
+                // Generate terrain
+                if (typeof World !== 'undefined') {
                     World.generateTerrain(config.template || 'flat');
                 }
 
-                if (typeof UI !== 'undefined') UI.updateLoadingBar(80, 'Ready!');
-                setTimeout(() => {
-                    if (typeof UI !== 'undefined') {
-                        UI.updateLoadingBar(100);
+                if (typeof UI !== 'undefined') UI.updateLoadingBar(50, 'Connecting...');
+
+                // Try to host multiplayer
+                if (typeof Multiplayer !== 'undefined') {
+                    Multiplayer.hostGame(gameCode, config).then(() => {
+                        if (typeof UI !== 'undefined') UI.updateLoadingBar(100, 'Ready!');
                         setTimeout(() => {
-                            UI.hideLoading();
-                            UI.showScreen('screen-game');
-                            if (typeof UI !== 'undefined') UI.showGameCodeModal(gameCode);
+                            if (typeof UI !== 'undefined') {
+                                UI.hideLoading();
+                                UI.showScreen('screen-game');
+                                UI.showGameCodeModal(gameCode);
+                            }
+                            resolve();
+                        }, 400);
+                    }).catch(() => {
+                        // Solo mode fallback
+                        setTimeout(() => {
+                            if (typeof UI !== 'undefined') {
+                                UI.updateLoadingBar(100, 'Ready!');
+                                setTimeout(() => {
+                                    UI.hideLoading();
+                                    UI.showScreen('screen-game');
+                                    UI.showGameCodeModal(gameCode);
+                                }, 400);
+                            }
+                            resolve();
                         }, 300);
-                    }
-                    resolve();
-                }, 500);
-            });
-        }).catch((err) => {
-            console.error('[Lobby] Failed to host:', err);
-            if (typeof UI !== 'undefined') UI.hideLoading();
-            Utils.showToast('Failed to host game.', 'error');
-            throw err;
+                    });
+                } else {
+                    setTimeout(() => {
+                        if (typeof UI !== 'undefined') {
+                            UI.updateLoadingBar(100, 'Ready!');
+                            setTimeout(() => {
+                                UI.hideLoading();
+                                UI.showScreen('screen-game');
+                                UI.showGameCodeModal(gameCode);
+                            }, 400);
+                        }
+                        resolve();
+                    }, 300);
+                }
+            } catch (err) {
+                console.error('[Lobby] Failed to host:', err);
+                if (typeof UI !== 'undefined') UI.hideLoading();
+                Utils.showToast('Failed to host game.', 'error');
+                reject(err);
+            }
         });
     }
 
-    /**
-     * Join a game by entering its code.
-     * @param {string} code
-     */
     function joinGameByCode(code) {
         if (!code) return;
         code = code.toUpperCase().trim();
@@ -324,7 +357,6 @@ const Lobby = (() => {
         if (code.startsWith('SAMPLE-')) {
             if (typeof UI !== 'undefined') UI.showLoading('Loading game...');
 
-            // Pick template based on game code
             const templates = {
                 'SAMPLE-BLDW': 'flat',
                 'SAMPLE-TOWR': 'obby',
@@ -335,14 +367,13 @@ const Lobby = (() => {
             };
             const template = templates[code] || 'flat';
 
-            // Find game config
             const allGames = [...FEATURED_GAMES, ..._getUserGames()];
             const gameConfig = allGames.find(g => g.code === code) || {};
 
             setTimeout(() => {
                 if (typeof UI !== 'undefined') UI.updateLoadingBar(30, 'Generating world...');
 
-                // Init World if needed
+                // Init World and generate terrain
                 if (typeof World !== 'undefined') {
                     if (!World.scene) World.init();
                     World.generateTerrain(template);
@@ -357,115 +388,98 @@ const Lobby = (() => {
                             Utils.showToast(`Playing ${gameConfig.name || code}`, 'success');
                         }, 200);
                     }
-                }, 300);
-            }, 100);
+                }, 400);
+            }, 200);
             return;
         }
 
         // Normal multiplayer join for user-created games
         if (typeof UI !== 'undefined') UI.showLoading(`Joining game ${code}...`);
+
         const hostPeerId = `${code}-S1`;
-        Multiplayer.joinGame(hostPeerId).then(() => {
-            if (typeof UI !== 'undefined') UI.updateLoadingBar(100, 'Connected!');
-            setTimeout(() => {
-                if (typeof UI !== 'undefined') UI.hideLoading();
-                if (typeof UI !== 'undefined') UI.showScreen('screen-game');
-            }, 400);
-        }).catch((err) => {
-            console.error('[Lobby] Failed to join:', err);
-            if (typeof UI !== 'undefined') UI.hideLoading();
-            Utils.showToast('Could not find or join that game. The host may be offline.', 'error');
-        });
+        if (typeof Multiplayer !== 'undefined') {
+            Multiplayer.joinGame(hostPeerId).then(() => {
+                if (typeof UI !== 'undefined') UI.updateLoadingBar(100, 'Connected!');
+                setTimeout(() => {
+                    if (typeof UI !== 'undefined') {
+                        UI.hideLoading();
+                        UI.showScreen('screen-game');
+                    }
+                }, 400);
+            }).catch(() => {
+                console.warn('[Lobby] Multiplayer join failed, trying solo');
+                // Solo fallback - just load with flat terrain
+                if (typeof World !== 'undefined') {
+                    if (!World.scene) World.init();
+                    World.generateTerrain('flat');
+                }
+                if (typeof UI !== 'undefined') {
+                    UI.updateLoadingBar(100, 'Solo mode');
+                    setTimeout(() => {
+                        UI.hideLoading();
+                        UI.showScreen('screen-game');
+                        Utils.showToast('Joined in solo mode (host offline)', 'info');
+                    }, 400);
+                }
+            });
+        }
     }
 
-    /**
-     * Find and join a random available game.
-     */
     function randomPlay() {
         if (typeof UI !== 'undefined') UI.showLoading('Finding a game...');
+        if (typeof UI !== 'undefined') UI.startCooldown('btn-random-play', BV.RANDOM_PLAY_COOLDOWN);
 
-        // Apply cooldown
-        if (typeof UI !== 'undefined') {
-            UI.startCooldown('btn-random-play', BV.RANDOM_PLAY_COOLDOWN);
-        }
+        // For now, just pick a random sample game
+        const sampleCodes = ['SAMPLE-BLDW', 'SAMPLE-TOWR', 'SAMPLE-SPDB', 'SAMPLE-CTYT', 'SAMPLE-RCEA', 'SAMPLE-SWFT'];
+        const randomCode = sampleCodes[Math.floor(Math.random() * sampleCodes.length)];
 
-        Multiplayer.randomPlay().then((result) => {
-            if (!result) {
-                if (typeof UI !== 'undefined') UI.hideLoading();
-                Utils.showToast('No games available right now. Try again later!', 'info');
-                return;
-            }
-
-            if (typeof UI !== 'undefined') UI.updateLoadingBar(50, `Joining ${result.gameCode}...`);
-            return Multiplayer.joinGame(result.serverId);
-        }).then(() => {
-            if (typeof UI !== 'undefined') {
-                UI.updateLoadingBar(100, 'Connected!');
-                setTimeout(() => {
-                    UI.hideLoading();
-                    UI.showScreen('screen-game');
-                }, 300);
-            }
-        }).catch((err) => {
-            console.error('[Lobby] Random play failed:', err);
-            if (typeof UI !== 'undefined') UI.hideLoading();
-            Utils.showToast('Failed to join a game.', 'error');
-        });
+        setTimeout(() => {
+            joinGameByCode(randomCode);
+        }, 500);
     }
 
-    /**
-     * Load and display the server list for a game code.
-     * @param {string} gameCode
-     */
     function loadServers(gameCode) {
         if (typeof UI !== 'undefined') UI.showLoading('Finding servers...');
+        if (typeof UI !== 'undefined') UI.startCooldown('btn-load-servers', BV.REFRESH_COOLDOWN);
 
-        // Apply refresh cooldown
-        if (typeof UI !== 'undefined') {
-            UI.startCooldown('refresh-servers-btn', BV.REFRESH_COOLDOWN);
-        }
-
-        Multiplayer.findServers(gameCode).then((servers) => {
-            if (typeof UI !== 'undefined') UI.hideLoading();
-            renderServers(servers);
-        }).catch(() => {
+        if (typeof Multiplayer !== 'undefined') {
+            Multiplayer.findServers(gameCode).then((servers) => {
+                if (typeof UI !== 'undefined') UI.hideLoading();
+                renderServers(servers);
+            }).catch(() => {
+                if (typeof UI !== 'undefined') UI.hideLoading();
+                renderServers([]);
+            });
+        } else {
             if (typeof UI !== 'undefined') UI.hideLoading();
             renderServers([]);
-        });
+        }
     }
 
-    /**
-     * Render the server list into the server list modal/container.
-     * @param {Array<{serverId, playerCount, maxPlayers}>} servers
-     */
     function renderServers(servers) {
         const container = document.getElementById('server-list-in-game');
         if (!container) return;
 
         if (!servers || servers.length === 0) {
-            container.innerHTML = '<p class="text-secondary">No servers found for this game.</p>';
+            container.innerHTML = '<p style="color:#a0a0b0">No servers found. Host one from the lobby!</p>';
             return;
         }
 
         container.innerHTML = servers.map((s, i) => {
             const isFull = s.playerCount >= s.maxPlayers;
-            const displayName = s.serverId.split('-').slice(1).join('-');
             return `
                 <div class="server-item">
                     <div class="server-info">
-                        <span class="server-name">Server ${i + 1} (${displayName})</span>
-                        <span class="server-players ${isFull ? 'full' : ''}">
-                            👤 ${s.playerCount}/${s.maxPlayers}
-                        </span>
+                        <span>Server ${i + 1}</span>
+                        <span>👤 ${s.playerCount}/${s.maxPlayers}</span>
                     </div>
-                    <button class="btn btn-sm ${isFull ? 'btn-disabled' : 'btn-primary'} join-server-btn"
+                    <button class="btn btn-sm ${isFull ? 'btn-ghost' : 'btn-primary'} join-server-btn"
                             data-server="${s.serverId}" ${isFull ? 'disabled' : ''}>
                         ${isFull ? 'FULL' : 'JOIN'}
                     </button>
                 </div>`;
         }).join('');
 
-        // Wire join buttons
         container.querySelectorAll('.join-server-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
                 const serverId = btn.dataset.server;
@@ -475,10 +489,6 @@ const Lobby = (() => {
         });
     }
 
-    /**
-     * Delete a created game from localStorage.
-     * @param {string} gameCode
-     */
     function deleteGame(gameCode) {
         let games = _getUserGames();
         games = games.filter((g) => g.code !== gameCode);
@@ -491,7 +501,6 @@ const Lobby = (() => {
     //  Private helpers
     // ========================================
 
-    /** Get user-created games from localStorage. */
     function _getUserGames() {
         try {
             const raw = localStorage.getItem(BV.STORAGE_KEYS.CREATED_GAMES);
@@ -501,7 +510,6 @@ const Lobby = (() => {
         }
     }
 
-    // ---- Sidebar navigation ----
     function _setupSidebarNav() {
         document.querySelectorAll('.sidebar-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -511,7 +519,6 @@ const Lobby = (() => {
         });
     }
 
-    // ---- Create game button ----
     function _setupCreateGameForm() {
         const btn = document.getElementById('btn-create-game');
         if (!btn) return;
@@ -540,9 +547,8 @@ const Lobby = (() => {
         });
     }
 
-    // ---- Populate create-game dropdowns ----
     function _populateCreateGameOptions() {
-        // --- Thumbnail color picker ---
+        // Thumbnail color picker
         const colorContainer = document.getElementById('thumbnail-colors');
         if (colorContainer) {
             const colors = ['#E74C3C', '#E91E63', '#9C27B0', '#3F51B5', '#2196F3',
@@ -561,7 +567,7 @@ const Lobby = (() => {
             });
         }
 
-        // --- Template card selection ---
+        // Template cards
         const templateContainer = document.getElementById('game-templates');
         if (templateContainer) {
             templateContainer.querySelectorAll('.template-card').forEach((card) => {
@@ -575,16 +581,14 @@ const Lobby = (() => {
             });
         }
 
-        // --- Max players range slider ---
+        // Max players slider
         const slider = document.getElementById('game-max-players');
         const valEl = document.getElementById('game-max-players-val');
         if (slider && valEl) {
-            slider.addEventListener('input', () => {
-                valEl.textContent = slider.value;
-            });
+            slider.addEventListener('input', () => { valEl.textContent = slider.value; });
         }
 
-        // --- Allow save checkbox toggle ---
+        // Allow save toggle
         const allowSaveCheckbox = document.getElementById('game-allow-save');
         const saveSettings = document.getElementById('save-settings');
         if (allowSaveCheckbox && saveSettings) {
@@ -594,35 +598,11 @@ const Lobby = (() => {
         }
     }
 
-    /**
-     * Populate a <select> from an array of objects.
-     * @param {string} elementId
-     * @param {Array} items
-     * @param {string} valueKey
-     * @param {string} labelKey
-     */
-    function _populateSelect(elementId, items, valueKey, labelKey) {
-        const select = document.getElementById(elementId);
-        if (!select) return;
-        select.innerHTML = '';
-
-        items.forEach((item) => {
-            const opt = document.createElement('option');
-            opt.value = item[valueKey];
-            opt.textContent = item[labelKey];
-            select.appendChild(opt);
-        });
-    }
-
-    // ---- Random play button ----
     function _setupRandomPlay() {
         const btn = document.getElementById('btn-random-play');
-        if (btn) {
-            btn.addEventListener('click', randomPlay);
-        }
+        if (btn) btn.addEventListener('click', randomPlay);
     }
 
-    // ---- Join-by-code modal ----
     function _setupJoinCodeModal() {
         const btn = document.getElementById('btn-join-code');
         const input = document.getElementById('join-code-input');
@@ -634,22 +614,16 @@ const Lobby = (() => {
                 Utils.showToast('Please enter a game code', 'error');
                 return;
             }
-
-            // Close modal
             const modal = btn.closest('.modal');
             if (modal) modal.classList.add('hidden');
-
             joinGameByCode(code);
         });
 
-        if (input) {
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') btn.click();
-            });
-        }
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') btn.click();
+        });
     }
 
-    // ---- Server list modal ----
     function _setupServerListModal() {
         const loadBtn = document.getElementById('btn-load-servers');
         if (loadBtn) {
@@ -660,7 +634,6 @@ const Lobby = (() => {
         }
     }
 
-    // ---- Search ----
     function _setupSearch() {
         const input = document.getElementById('lobby-search');
         if (!input) return;
@@ -673,17 +646,12 @@ const Lobby = (() => {
         });
     }
 
-    /**
-     * Filter visible game cards by search text.
-     * @param {string} query
-     */
     function _filterGames(query) {
         const cards = document.querySelectorAll('#games-grid .game-card');
         if (!query) {
             cards.forEach((c) => c.style.display = '');
             return;
         }
-
         cards.forEach((card) => {
             const title = (card.querySelector('.game-card-title')?.textContent || '').toLowerCase();
             const desc = (card.querySelector('.game-card-desc')?.textContent || '').toLowerCase();
@@ -693,25 +661,35 @@ const Lobby = (() => {
         });
     }
 
-    // ---- Settings ----
     function _setupSettings() {
         const saveBtn = document.getElementById('btn-save-settings');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', _saveSettings);
+        if (saveBtn) saveBtn.addEventListener('click', _saveSettings);
+
+        const sensitivitySlider = document.getElementById('setting-sensitivity');
+        const sensitivityVal = document.getElementById('setting-sensitivity-val');
+        if (sensitivitySlider && sensitivityVal) {
+            sensitivitySlider.addEventListener('input', () => {
+                sensitivityVal.textContent = sensitivitySlider.value;
+            });
+        }
+
+        const renderDistSlider = document.getElementById('setting-render-dist');
+        const renderDistVal = document.getElementById('setting-render-dist-val');
+        if (renderDistSlider && renderDistVal) {
+            renderDistSlider.addEventListener('input', () => {
+                renderDistVal.textContent = renderDistSlider.value;
+            });
         }
     }
 
-    /** Load current settings from localStorage into the settings form. */
     function _loadSettings() {
         const settings = _getSettings();
-
         _setInputValue('setting-sensitivity', settings.sensitivity ?? BV.MOUSE_SENSITIVITY);
         _setInputValue('setting-render-dist', settings.renderDistance ?? BV.RENDER_DISTANCE);
         _setChecked('setting-shadows', settings.shadows !== false);
         _setChecked('setting-particles', settings.particles !== false);
     }
 
-    /** Persist settings to localStorage. */
     function _saveSettings() {
         const settings = {
             sensitivity: parseFloat(document.getElementById('setting-sensitivity')?.value) || BV.MOUSE_SENSITIVITY,
@@ -719,23 +697,17 @@ const Lobby = (() => {
             shadows: document.getElementById('setting-shadows')?.checked ?? true,
             particles: document.getElementById('setting-particles')?.checked ?? true,
         };
-
         localStorage.setItem(BV.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-
-        // Apply sensitivity immediately
         BV.MOUSE_SENSITIVITY = settings.sensitivity;
-
+        BV.RENDER_DISTANCE = settings.renderDistance;
         Utils.showToast('Settings saved!', 'success');
     }
 
-    /** Get settings from localStorage. */
     function _getSettings() {
         try {
             const raw = localStorage.getItem(BV.STORAGE_KEYS.SETTINGS);
             return raw ? JSON.parse(raw) : {};
-        } catch {
-            return {};
-        }
+        } catch { return {}; }
     }
 
     function _setInputValue(id, value) {
@@ -748,15 +720,11 @@ const Lobby = (() => {
         if (el) el.checked = checked;
     }
 
-    // ---- Category filter listener ----
     document.addEventListener('lobby:filterCategory', (e) => {
         _activeCategory = e.detail.category;
         renderFeaturedGames();
     });
 
-    // ========================================
-    //  Return the public interface
-    // ========================================
     return {
         init,
         showSection,

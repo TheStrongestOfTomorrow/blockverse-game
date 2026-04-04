@@ -2,7 +2,7 @@
 // BLOCKVERSE - Player Engine (Third-Person)
 // ============================================
 // Third-person player with visible blocky avatar,
-// orbit camera (right-click drag), zoom (I/O keys),
+// orbit camera (right-click drag), zoom (I/O keys + scroll),
 // WASD movement, jump, collision detection.
 // No pointer lock required.
 // ============================================
@@ -13,7 +13,7 @@ const Player = {
     _domElement: null,
 
     // --- State ---
-    position: { x: 0, y: 2, z: 0 },
+    position: { x: 0, y: 5, z: 0 },
     velocity: { x: 0, y: 0, z: 0 },
     rotation: { yaw: 0, pitch: 0 },
 
@@ -23,12 +23,12 @@ const Player = {
     _sprinting: false,
 
     // --- Camera orbit ---
-    _cameraDistance: 6,         // Distance from player to camera
-    _cameraMinDistance: 2,      // Minimum zoom
-    _cameraMaxDistance: 20,     // Maximum zoom
-    _cameraHeightOffset: 2.5,  // Camera height relative to player feet
-    _cameraPitch: 0.4,         // Camera pitch angle (radians, 0 = horizontal)
-    _cameraYaw: 0,             // Camera orbit yaw
+    _cameraDistance: 5,
+    _cameraMinDistance: 1.5,
+    _cameraMaxDistance: 25,
+    _cameraHeightOffset: 2.5,
+    _cameraPitch: 0.35,       // Radians: slight downward angle (0 = horizontal, PI/2 = straight down)
+    _cameraYaw: 0,             // Orbit yaw around player
     _rightMouseDown: false,
     _lastMouseX: 0,
     _lastMouseY: 0,
@@ -37,7 +37,7 @@ const Player = {
     _playerWidth: 0.6,
     _playerHeight: 1.8,
     _eyeOffset: 1.6,
-    _fallThreshold: -20,
+    _fallThreshold: -30,
 
     // --- Avatar ---
     _avatarGroup: null,
@@ -46,7 +46,7 @@ const Player = {
     _walkAnimTime: 0,
 
     // --- Active state ---
-    _isActive: false,           // True when game screen is visible
+    _isActive: false,
     _gameCanvasHovered: false,
 
     // --- Input handling ---
@@ -74,12 +74,12 @@ const Player = {
         this._domElement = domElement;
 
         // Reset state
-        this.position = { x: 0, y: 2, z: 0 };
+        this.position = { x: 0, y: 5, z: 0 };
         this.velocity = { x: 0, y: 0, z: 0 };
         this.rotation = { yaw: 0, pitch: 0 };
         this._cameraYaw = 0;
-        this._cameraPitch = 0.4;
-        this._cameraDistance = 6;
+        this._cameraPitch = 0.35;
+        this._cameraDistance = 5;
         this._isGrounded = false;
         this._isActive = true;
         this._keys = {};
@@ -93,7 +93,7 @@ const Player = {
         document.addEventListener('keydown', this._onKeyDown);
         document.addEventListener('keyup', this._onKeyUp);
 
-        // --- Mouse move ---
+        // --- Mouse move (on document so dragging outside canvas works) ---
         this._onMouseMove = this._handleMouseMove.bind(this);
         document.addEventListener('mousemove', this._onMouseMove);
 
@@ -129,7 +129,6 @@ const Player = {
         }
         document.removeEventListener('mouseup', this._onMouseUp);
 
-        // Remove avatar from scene
         if (this._avatarGroup && this._avatarGroup.parent) {
             this._avatarGroup.parent.remove(this._avatarGroup);
         }
@@ -140,7 +139,6 @@ const Player = {
     // =============================================
 
     _buildAvatar() {
-        // Remove old avatar if exists
         if (this._avatarGroup && this._avatarGroup.parent) {
             this._avatarGroup.parent.remove(this._avatarGroup);
         }
@@ -148,7 +146,6 @@ const Player = {
         this._avatarGroup = new THREE.Group();
         this._avatarGroup.name = 'localPlayer';
 
-        // Load avatar config from Auth if available
         let bodyColor = '#3F51B5';
         let headColor = '#FFCC99';
         let legColor = '#333366';
@@ -156,7 +153,6 @@ const Player = {
             const userData = Auth.getUserData(Auth.getCurrentUser());
             if (userData && userData.avatar) {
                 bodyColor = userData.avatar.bodyColor || bodyColor;
-                legColor = '#333366';
             }
         }
 
@@ -212,10 +208,8 @@ const Player = {
         rightLeg.castShadow = true;
         this._avatarGroup.add(rightLeg);
 
-        // Store part references for animation
         this._avatarParts = { headMesh, bodyMesh, leftArm, rightArm, leftLeg, rightLeg };
 
-        // Add to world scene
         if (typeof World !== 'undefined' && World.scene) {
             World.scene.add(this._avatarGroup);
         }
@@ -227,27 +221,24 @@ const Player = {
 
     _handleKeyDown(e) {
         if (!this._isActive) return;
-
         const tag = e.target.tagName.toLowerCase();
         if (tag === 'input' || tag === 'textarea') return;
-
-        // Don't capture if chat is open
         if (typeof Chat !== 'undefined' && Chat.isVisible()) return;
 
         this._keys[e.code] = true;
 
         // Prevent default for game keys
-        const gameKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight'];
+        const gameKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyI', 'KeyO'];
         if (gameKeys.includes(e.code)) {
             e.preventDefault();
         }
 
         // Zoom keys
         if (e.code === 'KeyI') {
-            this._cameraDistance = Math.max(this._cameraMinDistance, this._cameraDistance - 0.5);
+            this._cameraDistance = Math.max(this._cameraMinDistance, this._cameraDistance - 0.8);
         }
         if (e.code === 'KeyO') {
-            this._cameraDistance = Math.min(this._cameraMaxDistance, this._cameraDistance + 0.5);
+            this._cameraDistance = Math.min(this._cameraMaxDistance, this._cameraDistance + 0.8);
         }
     },
 
@@ -262,10 +253,13 @@ const Player = {
         const dx = e.clientX - this._lastMouseX;
         const dy = e.clientY - this._lastMouseY;
 
-        // Orbit camera
+        // Orbit camera around player
         this._cameraYaw -= dx * sensitivity;
         this._cameraPitch -= dy * sensitivity * 0.6;
-        this._cameraPitch = Utils.clamp(this._cameraPitch, -0.2, 1.2);
+
+        // Clamp pitch: allow from below-horizontal to nearly top-down
+        // -0.5 = slightly below horizontal, 1.4 = almost straight down
+        this._cameraPitch = Utils.clamp(this._cameraPitch, -0.5, 1.4);
 
         this._lastMouseX = e.clientX;
         this._lastMouseY = e.clientY;
@@ -279,6 +273,7 @@ const Player = {
             this._rightMouseDown = true;
             this._lastMouseX = e.clientX;
             this._lastMouseY = e.clientY;
+            e.preventDefault();
         }
     },
 
@@ -304,20 +299,9 @@ const Player = {
     // POINTER LOCK (compatibility stubs)
     // =============================================
 
-    lock() {
-        // In third-person, we don't use pointer lock
-        // Just mark as active
-        this._isActive = true;
-    },
-
-    unlock() {
-        // Nothing to unlock in third-person
-    },
-
-    isLocked() {
-        // Always return true in third-person mode when game is active
-        return this._isActive;
-    },
+    lock() { this._isActive = true; },
+    unlock() {},
+    isLocked() { return this._isActive; },
 
     // =============================================
     // ACTIVE STATE
@@ -341,9 +325,9 @@ const Player = {
     update(deltaTime, blockMap) {
         if (!this._isActive) return;
 
-        const dt = Math.min(deltaTime, 0.1);
+        const dt = Math.min(deltaTime, 0.05); // Cap at 50ms to prevent physics tunneling
 
-        // --- Sprint state ---
+        // --- Sprint ---
         this._sprinting = !!(this._keys['ShiftLeft'] || this._keys['ShiftRight']);
         const speed = this._sprinting ? BV.PLAYER_SPRINT_SPEED : BV.PLAYER_SPEED;
 
@@ -372,7 +356,7 @@ const Player = {
 
         // Normalize diagonal movement
         const inputLen = Math.sqrt(inputX * inputX + inputZ * inputZ);
-        const isMoving = inputLen > 0;
+        const isMoving = inputLen > 0.01;
         if (isMoving) {
             inputX = (inputX / inputLen) * speed;
             inputZ = (inputZ / inputLen) * speed;
@@ -387,15 +371,41 @@ const Player = {
             this._isGrounded = false;
         }
 
-        // --- Horizontal movement with damping ---
-        const damping = this._isGrounded ? 12 : 4;
+        // --- Horizontal movement with smooth damping ---
+        const damping = this._isGrounded ? 10 : 3;
         this.velocity.x = Utils.lerp(this.velocity.x, inputX, damping * dt);
         this.velocity.z = Utils.lerp(this.velocity.z, inputZ, damping * dt);
 
-        // --- Apply velocity with collision ---
+        // --- Apply velocity with collision (step by step for better accuracy) ---
         this._moveAxis('x', this.velocity.x * dt, blockMap);
         this._moveAxis('y', this.velocity.y * dt, blockMap);
         this._moveAxis('z', this.velocity.z * dt, blockMap);
+
+        // --- Safety: invisible ground at y = -0.5 if nothing below ---
+        if (blockMap && !this._isGrounded) {
+            const hw = this._playerWidth / 2;
+            const feetY = this.position.y;
+            // Check if there's anything below within 2 blocks
+            let hasGroundBelow = false;
+            for (let by = Math.floor(feetY) - 1; by >= Math.floor(feetY) - 3; by--) {
+                for (let cx = Math.floor(this.position.x - hw); cx <= Math.floor(this.position.x + hw); cx++) {
+                    for (let cz = Math.floor(this.position.z - hw); cz <= Math.floor(this.position.z + hw); cz++) {
+                        if (blockMap[`${cx},${by},${cz}`]) {
+                            hasGroundBelow = true;
+                            break;
+                        }
+                    }
+                    if (hasGroundBelow) break;
+                }
+                if (hasGroundBelow) break;
+            }
+            // If nothing below and we're below y=0.5, snap to y=0.5 (ground level)
+            if (!hasGroundBelow && feetY < 0.5) {
+                this.position.y = 0.5;
+                this.velocity.y = 0;
+                this._isGrounded = true;
+            }
+        }
 
         // --- Fall threshold / respawn ---
         if (this.position.y < this._fallThreshold) {
@@ -426,7 +436,6 @@ const Player = {
             parts.bodyMesh.position.y = 1.05 + bob;
             parts.headMesh.position.y = 1.65 + bob;
         } else if (!this._isGrounded) {
-            // Jumping - arms up
             parts.leftArm.rotation.x = -0.8;
             parts.rightArm.rotation.x = -0.8;
             parts.leftLeg.rotation.x = 0.2;
@@ -434,9 +443,8 @@ const Player = {
             parts.bodyMesh.position.y = 1.05;
             parts.headMesh.position.y = 1.65;
         } else {
-            // Idle - subtle breathing
             this._walkAnimTime = 0;
-            const bob = Math.sin(performance.now() * 0.002) * 0.02;
+            const bob = Math.sin(performance.now() * 0.002) * 0.015;
             parts.leftArm.rotation.x = 0;
             parts.rightArm.rotation.x = 0;
             parts.leftLeg.rotation.x = 0;
@@ -455,7 +463,6 @@ const Player = {
     _syncCamera() {
         if (!this._camera) return;
 
-        // Calculate camera position based on orbit angles
         const camX = this.position.x + Math.sin(this._cameraYaw) * this._cameraDistance * Math.cos(this._cameraPitch);
         const camY = this.position.y + this._cameraHeightOffset + Math.sin(this._cameraPitch) * this._cameraDistance;
         const camZ = this.position.z + Math.cos(this._cameraYaw) * this._cameraDistance * Math.cos(this._cameraPitch);
@@ -472,7 +479,7 @@ const Player = {
     },
 
     // =============================================
-    // COLLISION DETECTION
+    // COLLISION DETECTION (fixed)
     // =============================================
 
     _moveAxis(axis, delta, blockMap) {
@@ -484,11 +491,17 @@ const Player = {
         if (this._checkCollision(newPos, blockMap)) {
             this.velocity[axis] = 0;
 
-            if (axis === 'y' && delta < 0) {
-                this._isGrounded = true;
-                const snapY = this._findGroundY(newPos, blockMap);
-                if (snapY !== null) {
-                    this.position.y = snapY;
+            if (axis === 'y') {
+                if (delta < 0) {
+                    // Moving down and hit something = landing
+                    this._isGrounded = true;
+                    const snapY = this._findGroundY(newPos, blockMap);
+                    if (snapY !== null) {
+                        this.position.y = snapY;
+                    }
+                } else if (delta > 0) {
+                    // Moving up and hit something = bonked head
+                    this.velocity.y = 0;
                 }
             }
         } else {
@@ -516,10 +529,15 @@ const Player = {
                 for (let bz = minBZ; bz <= maxBZ; bz++) {
                     const key = `${bx},${by},${bz}`;
                     if (blockMap[key]) {
+                        // AABB overlap test (with small epsilon for boundary precision)
+                        const eps = 0.001;
                         if (
-                            pos.x - hw < bx + 1 && pos.x + hw > bx &&
-                            pos.y < by + 1 && pos.y + ph > by &&
-                            pos.z - hw < bz + 1 && pos.z + hw > bz
+                            pos.x - hw < bx + 1 - eps &&
+                            pos.x + hw > bx + eps &&
+                            pos.y < by + 1 - eps &&
+                            pos.y + ph > by + eps &&
+                            pos.z - hw < bz + 1 - eps &&
+                            pos.z + hw > bz + eps
                         ) {
                             return true;
                         }
@@ -538,9 +556,12 @@ const Player = {
 
         let highestY = null;
 
+        // Check from the player's foot position down to 3 blocks below
         for (const cx of checkX) {
             for (const cz of checkZ) {
-                for (let by = Math.floor(pos.y); by >= Math.floor(pos.y) - 2; by--) {
+                // Also check the block at the player's exact foot Y
+                const startY = Math.floor(pos.y + 0.5);
+                for (let by = startY; by >= startY - 3; by--) {
                     const key = `${cx},${by},${cz}`;
                     if (blockMap[key]) {
                         const topY = by + 1;
@@ -608,7 +629,6 @@ const Player = {
         this._camera.updateProjectionMatrix();
     },
 
-    /** Get the forward direction the player is facing (for raycasting tools) */
     getForwardDirection() {
         return new THREE.Vector3(
             -Math.sin(this._cameraYaw),
@@ -762,7 +782,6 @@ const RemotePlayers = {
     removePlayer(id) {
         const data = this.players.get(id);
         if (!data) return;
-
         if (this._scene && data.group.parent === this._scene) {
             this._scene.remove(data.group);
         }
@@ -789,6 +808,20 @@ const RemotePlayers = {
         }
     },
 
+    // Alias for compatibility
+    updatePosition(id, position, rotation) {
+        const data = this.players.get(id);
+        if (!data) return;
+        if (position) {
+            data.targetState.position.x = position.x;
+            data.targetState.position.y = position.y;
+            data.targetState.position.z = position.z;
+        }
+        if (rotation) {
+            data.targetState.rotation = rotation.yaw || rotation;
+        }
+    },
+
     updateAll(deltaTime) {
         const dt = Math.min(deltaTime, 0.1);
         const lerpFactor = Utils.clamp(this._lerpSpeed * dt, 0, 1);
@@ -805,6 +838,15 @@ const RemotePlayers = {
                 data.state.position.z
             );
             data.group.rotation.y = data.state.rotation;
+
+            // Determine animation based on movement
+            const dx = Math.abs(data.targetState.position.x - data.state.position.x);
+            const dz = Math.abs(data.targetState.position.z - data.state.position.z);
+            if (dx > 0.05 || dz > 0.05) {
+                data.animation = 'walk';
+            } else {
+                data.animation = 'idle';
+            }
 
             data.animTime += dt;
             this._animateAvatar(data, dt);
