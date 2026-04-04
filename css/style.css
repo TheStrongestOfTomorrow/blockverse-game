@@ -1326,25 +1326,30 @@ img {
   position: fixed;
   top: 0.75rem;
   right: 0.75rem;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(214, 48, 49, 0.85);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
+  background: rgba(214, 48, 49, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
   color: #fff;
-  font-size: 1.1rem;
-  font-weight: 800;
+  font-size: 1.2rem;
   cursor: pointer;
   z-index: 200;
   transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
   box-shadow: 0 2px 12px rgba(214, 48, 49, 0.4);
   line-height: 1;
   padding: 0;
   font-family: var(--font-main);
+  animation: leave-btn-pulse 3s ease-in-out infinite;
+}
+
+@keyframes leave-btn-pulse {
+  0%, 100% { box-shadow: 0 2px 12px rgba(214, 48, 49, 0.4); }
+  50% { box-shadow: 0 2px 20px rgba(214, 48, 49, 0.7), 0 0 8px rgba(214, 48, 49, 0.3); }
 }
 
 .leave-corner-btn:hover {
@@ -1352,10 +1357,34 @@ img {
   transform: scale(1.1);
   box-shadow: 0 4px 20px rgba(214, 48, 49, 0.6);
   border-color: rgba(255, 255, 255, 0.4);
+  animation: none;
 }
 
 .leave-corner-btn:active {
   transform: scale(0.95);
+  animation: none;
+}
+
+/* Door exit icon using CSS */
+.leave-corner-btn::before {
+  content: '';
+  display: block;
+  width: 14px;
+  height: 10px;
+  border: 2.5px solid #fff;
+  border-radius: 7px 7px 0 0;
+  position: relative;
+}
+.leave-corner-btn::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 3px solid #fff;
+  border-bottom: 3px solid #fff;
+  top: 18px;
+  right: 12px;
+  transform: rotate(-45deg);
 }
 
 /* ==========================================================
@@ -2524,7 +2553,7 @@ textarea:focus-visible {
   text-transform: uppercase;
 }
 
-/* Controls hint (third-person) */
+/* Controls hint (third-person) — auto-fades after 6 seconds */
 .controls-hint {
   position: fixed;
   bottom: 5.5rem;
@@ -2537,7 +2566,12 @@ textarea:focus-visible {
   white-space: nowrap;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   font-family: var(--font-main);
-  transition: opacity 0.5s ease;
+  transition: opacity 1s ease;
+  opacity: 1;
+}
+
+#screen-game.active .controls-hint.fade-out {
+  opacity: 0;
 }
 
 /* Block count in HUD */

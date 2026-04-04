@@ -124,6 +124,12 @@ const App = (() => {
             Chat.addSystemMessage('I/O or scroll to zoom | Left-click to use tools');
             Chat.addSystemMessage('B/X/P/G to switch tools | ESC for menu');
         }
+
+        // Auto-fade controls hint after 6 seconds
+        const hint = document.getElementById('controls-hint');
+        if (hint) {
+            setTimeout(() => { hint.classList.add('fade-out'); }, 6000);
+        }
     }
 
     function leaveGame() {

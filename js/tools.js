@@ -1,13 +1,9 @@
 // ============================================
 // BLOCKVERSE - Tools Engine (tools.js)
 // ============================================
-// Handles tool selection, block placement/deletion,
-// painting, the grab tool, toolbar UI, block picker,
-// paint color picker, and block highlight rendering.
-//
-// KEY FIX: All raycasting now uses mouse cursor position
-// (not screen center), making block highlight and placement
-// truly cursor-based like Roblox.
+// V2.0 — Uses DDA voxel raycasting (via BlockRenderer) instead of
+// mesh-based raycasting. Single shared Raycaster object.
+// Paint/grab tools adapted for InstancedMesh architecture.
 // ============================================
 
 const Tools = {
@@ -25,10 +21,12 @@ const Tools = {
     _onMouseDown: null,
     _onMouseUp: null,
     _onKeyDown: null,
-    _onMouseMove: null,
 
     _toolbarEl: null,
     _slotElements: [],
+
+    // Shared raycaster (reused every frame — no allocation)
+    _sharedRaycaster: null,
 
     // =============================================
     // INITIALIZATION
@@ -39,6 +37,9 @@ const Tools = {
         this._currentBlockType = 'grass';
         this._currentPaintColor = '#4CAF50';
         this._activeSlot = 0;
+
+        // Shared raycaster — created once, reused forever
+        this._sharedRaycaster = new THREE.Raycaster();
 
         this._toolbarSlots = [...BV.DEFAULT_TOOLBAR];
         while (this._toolbarSlots.length < BV.TOOLBAR_SIZE) {
@@ -63,10 +64,6 @@ const Tools = {
 
         this._onKeyDown = this._handleKeyDown.bind(this);
         document.addEventListener('keydown', this._onKeyDown);
-
-        // Track mouse move for continuous highlight updates
-        this._onMouseMove = this._handleMouseMove.bind(this);
-        document.addEventListener('mousemove', this._onMouseMove);
     },
 
     destroy() {
@@ -76,7 +73,6 @@ const Tools = {
         }
         document.removeEventListener('mouseup', this._onMouseUp);
         document.removeEventListener('keydown', this._onKeyDown);
-        document.removeEventListener('mousemove', this._onMouseMove);
     },
 
     // =============================================
@@ -166,65 +162,42 @@ const Tools = {
     },
 
     // =============================================
-    // CURSOR-BASED RAYCASTING
+    // CURSOR-BASED RAYCASTING (DDA via BlockRenderer)
     // =============================================
 
     /**
-     * Get a raycaster from the camera through the mouse cursor position.
-     * This is the KEY Roblox-like behavior: you point at blocks with your cursor.
+     * Get ray from camera through the mouse cursor position.
+     * Uses the shared raycaster — no allocation per frame.
      */
-    _getCursorRaycaster() {
+    _getCursorRay() {
         if (typeof World === 'undefined' || !World.camera) return null;
 
         const ndc = (typeof Player !== 'undefined' && Player.isActive())
             ? Player.getMouseNDC()
             : { x: 0, y: 0 };
 
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(new THREE.Vector2(ndc.x, ndc.y), World.camera);
-        raycaster.far = 10;
-        return raycaster;
-    },
-
-    /**
-     * Perform a raycast from the cursor into the world.
-     * @returns {object|null} Hit result with position, normal, mesh, distance.
-     */
-    _cursorRaycast() {
-        const raycaster = this._getCursorRaycaster();
-        if (!raycaster) return null;
-
-        // Get block mesh array (cached)
-        if (typeof World === 'undefined') return null;
-
-        if (World._blockMeshDirty || !World._blockMeshArray) {
-            World._blockMeshArray = Object.values(World.blockMap).map(b => b.mesh);
-            World._blockMeshDirty = false;
-        }
-
-        if (!World._blockMeshArray || World._blockMeshArray.length === 0) return null;
-
-        const intersections = raycaster.intersectObjects(World._blockMeshArray, false);
-        if (intersections.length === 0) return null;
-
-        const hit = intersections[0];
-        const mesh = hit.object;
-        const bx = Math.round(mesh.position.x - 0.5);
-        const by = Math.round(mesh.position.y - 0.5);
-        const bz = Math.round(mesh.position.z - 0.5);
-
-        const normal = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 1, 0);
+        this._sharedRaycaster.setFromCamera(
+            new THREE.Vector2(ndc.x, ndc.y),
+            World.camera
+        );
+        this._sharedRaycaster.far = 10;
 
         return {
-            position: { x: bx, y: by, z: bz },
-            normal: { nx: Math.round(normal.x), ny: Math.round(normal.y), nz: Math.round(normal.z) },
-            mesh: mesh,
-            distance: hit.distance,
+            origin: this._sharedRaycaster.ray.origin,
+            direction: this._sharedRaycaster.ray.direction,
         };
     },
 
-    _handleMouseMove(e) {
-        // Update highlight on mouse move (handled in updateHighlight from game loop)
+    /**
+     * Perform DDA voxel raycast from cursor into the world.
+     * Delegates to BlockRenderer.raycast — O(distance) instead of O(num_blocks).
+     */
+    _cursorRaycast() {
+        const ray = this._getCursorRay();
+        if (!ray || typeof World === 'undefined') return null;
+
+        const hit = World.getRaycastTarget(ray.origin, ray.direction, 10);
+        return hit;
     },
 
     // =============================================
@@ -250,7 +223,12 @@ const Tools = {
     _performPrimaryAction() {
         if (typeof World === 'undefined' || !World.camera) return;
 
-        // Use cursor-based raycasting
+        // If holding a grabbed block, place it
+        if (this._isGrabbing) {
+            this._placeGrabbedBlock();
+            return;
+        }
+
         const hit = this._cursorRaycast();
         if (!hit) return;
 
@@ -288,9 +266,35 @@ const Tools = {
 
     _paintAction(hit) {
         const block = World.getBlock(hit.position.x, hit.position.y, hit.position.z);
-        if (!block || !block.mesh || !block.mesh.material) return;
+        if (!block) return;
 
-        block.mesh.material.color.set(this._currentPaintColor);
+        // Already painted with same color — skip
+        if (block.customColor === this._currentPaintColor) return;
+
+        // Remove from InstancedMesh (standard block)
+        if (!block.customColor) {
+            if (typeof BlockRenderer !== 'undefined') {
+                BlockRenderer.removeBlock(hit.position.x, hit.position.y, hit.position.z, block.type);
+            }
+        }
+
+        // Remove old custom mesh if exists
+        if (typeof BlockRenderer !== 'undefined') {
+            BlockRenderer.removeCustomMesh(hit.position.x, hit.position.y, hit.position.z);
+        }
+
+        // Create new custom mesh with paint color
+        const mat = new THREE.MeshLambertMaterial({ color: this._currentPaintColor });
+        let customMesh = null;
+        if (typeof BlockRenderer !== 'undefined') {
+            customMesh = BlockRenderer.addCustomMesh(
+                hit.position.x, hit.position.y, hit.position.z, mat
+            );
+        }
+
+        // Update block data
+        block.customColor = this._currentPaintColor;
+        block.mesh = customMesh;
 
         window.dispatchEvent(new CustomEvent('tools:block_painted', {
             detail: { x: hit.position.x, y: hit.position.y, z: hit.position.z, color: this._currentPaintColor },
@@ -298,47 +302,140 @@ const Tools = {
     },
 
     _grabAction(hit) {
-        if (this._isGrabbing) this._releaseGrabbedBlock();
-
-        const key = `${hit.position.x},${hit.position.y},${hit.position.z}`;
         const block = World.getBlock(hit.position.x, hit.position.y, hit.position.z);
         if (!block) return;
 
-        this._grabbedBlock = {
-            key, x: hit.position.x, y: hit.position.y, z: hit.position.z,
-            type: block.type, mesh: block.mesh,
-        };
-        this._isGrabbing = true;
+        const key = hit.position.x + ',' + hit.position.y + ',' + hit.position.z;
 
-        block.mesh.material.emissive = new THREE.Color('#FFA000');
-        block.mesh.material.emissiveIntensity = 0.5;
-    },
-
-    _releaseGrabbedBlock() {
-        if (!this._grabbedBlock) return;
-
-        const block = this._grabbedBlock;
-        const newX = Math.round(block.mesh.position.x - 0.5);
-        const newY = Math.round(block.mesh.position.y - 0.5);
-        const newZ = Math.round(block.mesh.position.z - 0.5);
-
-        if (newX !== block.x || newY !== block.y || newZ !== block.z) {
-            delete World.blockMap[block.key];
-            const newKey = `${newX},${newY},${newZ}`;
-            if (!World.blockMap[newKey]) {
-                World.blockMap[newKey] = { x: newX, y: newY, z: newZ, type: block.type, mesh: block.mesh };
-            } else {
-                block.mesh.position.set(block.x + 0.5, block.y + 0.5, block.z + 0.5);
+        // Remove from render
+        if (block.customColor) {
+            if (typeof BlockRenderer !== 'undefined') {
+                BlockRenderer.removeCustomMesh(hit.position.x, hit.position.y, hit.position.z);
+            }
+        } else {
+            if (typeof BlockRenderer !== 'undefined') {
+                BlockRenderer.removeBlock(hit.position.x, hit.position.y, hit.position.z, block.type);
             }
         }
 
-        const config = BV.BLOCK_TYPES[block.type];
-        if (config && config.emissive) {
-            block.mesh.material.emissive = new THREE.Color(config.emissive);
-            block.mesh.material.emissiveIntensity = 0.4;
+        // Create temporary grab mesh with glow effect
+        const config = BV.BLOCK_TYPES[block.type] || {};
+        const color = block.customColor || config.color || '#ffffff';
+        const mat = new THREE.MeshLambertMaterial({ color: color });
+        mat.emissive = new THREE.Color('#FFA000');
+        mat.emissiveIntensity = 0.5;
+
+        const grabMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1), mat
+        );
+        grabMesh.position.set(hit.position.x + 0.5, hit.position.y + 0.5, hit.position.z + 0.5);
+        if (typeof World !== 'undefined' && World.scene) {
+            World.scene.add(grabMesh);
+        }
+
+        this._grabbedBlock = {
+            key: key,
+            x: hit.position.x,
+            y: hit.position.y,
+            z: hit.position.z,
+            type: block.type,
+            mesh: grabMesh,
+            customColor: block.customColor || null,
+        };
+
+        this._isGrabbing = true;
+
+        // Remove from blockMap (will be re-added on place)
+        delete World.blockMap[key];
+        World.blockCount--;
+    },
+
+    _placeGrabbedBlock() {
+        if (!this._grabbedBlock) return;
+
+        // Raycast to find placement position
+        const hit = this._cursorRaycast();
+        if (!hit) {
+            // No valid position — put block back
+            this._cancelGrab();
+            return;
+        }
+
+        const placeX = hit.position.x + hit.normal.nx;
+        const placeY = hit.position.y + hit.normal.ny;
+        const placeZ = hit.position.z + hit.normal.nz;
+
+        // Check if position is occupied
+        const existingKey = placeX + ',' + placeY + ',' + placeZ;
+        if (World.blockMap[existingKey]) {
+            this._cancelGrab();
+            return;
+        }
+
+        // Remove temp mesh from scene
+        if (this._grabbedBlock.mesh && this._grabbedBlock.mesh.parent) {
+            this._grabbedBlock.mesh.parent.remove(this._grabbedBlock.mesh);
+        }
+        this._grabbedBlock.mesh.material.dispose();
+
+        // Add block at new position
+        World.blockMap[existingKey] = {
+            x: placeX, y: placeY, z: placeZ,
+            type: this._grabbedBlock.type,
+        };
+        World.blockCount++;
+
+        if (this._grabbedBlock.customColor) {
+            if (typeof BlockRenderer !== 'undefined') {
+                const mat = new THREE.MeshLambertMaterial({ color: this._grabbedBlock.customColor });
+                BlockRenderer.addCustomMesh(placeX, placeY, placeZ, mat);
+            }
         } else {
-            block.mesh.material.emissive = new THREE.Color(0x000000);
-            block.mesh.material.emissiveIntensity = 0;
+            if (typeof BlockRenderer !== 'undefined') {
+                BlockRenderer.addBlock(placeX, placeY, placeZ, this._grabbedBlock.type);
+            }
+        }
+
+        window.dispatchEvent(new CustomEvent('tools:block_placed', {
+            detail: { x: placeX, y: placeY, z: placeZ, type: this._grabbedBlock.type },
+        }));
+
+        this._grabbedBlock = null;
+        this._isGrabbing = false;
+    },
+
+    _releaseGrabbedBlock() {
+        this._placeGrabbedBlock();
+    },
+
+    _cancelGrab() {
+        if (!this._grabbedBlock) return;
+
+        // Put block back at original position
+        const key = this._grabbedBlock.key;
+
+        if (this._grabbedBlock.mesh && this._grabbedBlock.mesh.parent) {
+            this._grabbedBlock.mesh.parent.remove(this._grabbedBlock.mesh);
+        }
+        this._grabbedBlock.mesh.material.dispose();
+
+        World.blockMap[key] = {
+            x: this._grabbedBlock.x,
+            y: this._grabbedBlock.y,
+            z: this._grabbedBlock.z,
+            type: this._grabbedBlock.type,
+        };
+        World.blockCount++;
+
+        if (this._grabbedBlock.customColor) {
+            if (typeof BlockRenderer !== 'undefined') {
+                const mat = new THREE.MeshLambertMaterial({ color: this._grabbedBlock.customColor });
+                BlockRenderer.addCustomMesh(this._grabbedBlock.x, this._grabbedBlock.y, this._grabbedBlock.z, mat);
+            }
+        } else {
+            if (typeof BlockRenderer !== 'undefined') {
+                BlockRenderer.addBlock(this._grabbedBlock.x, this._grabbedBlock.y, this._grabbedBlock.z, this._grabbedBlock.type);
+            }
         }
 
         this._grabbedBlock = null;
@@ -361,17 +458,12 @@ const Tools = {
     // BLOCK HIGHLIGHT (cursor-based)
     // =============================================
 
-    /**
-     * Update block highlight using cursor position.
-     * Called from the game loop every frame.
-     */
     updateHighlight() {
         if (typeof Player !== 'undefined' && !Player.isActive()) {
             if (typeof World !== 'undefined') World.removeHighlight();
             return;
         }
 
-        // Use cursor-based raycast
         const hit = this._cursorRaycast();
 
         if (!hit) {
