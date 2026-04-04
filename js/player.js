@@ -48,6 +48,14 @@ const Player = {
      * @param {HTMLElement} domElement - Element to attach pointer lock and events to
      */
     init(camera, domElement) {
+        // Auto-detect if not provided
+        if (!domElement) domElement = document.getElementById('game-canvas');
+        if (!camera && typeof World !== 'undefined' && World.camera) camera = World.camera;
+        if (!camera || !domElement) {
+            console.warn('[Player] Cannot init without camera or domElement');
+            return;
+        }
+
         this._camera = camera;
         this._domElement = domElement;
 
@@ -467,6 +475,12 @@ const Player = {
         this._camera.updateProjectionMatrix();
     },
 };
+
+// Backward-compatible getters used by main.js and other modules
+Object.defineProperty(Player, 'camera', { get() { return Player._camera; }, configurable: true });
+Object.defineProperty(Player, 'yaw', { get() { return Player.rotation ? Player.rotation.yaw : 0; }, configurable: true });
+Object.defineProperty(Player, 'pitch', { get() { return Player.rotation ? Player.rotation.pitch : 0; }, configurable: true });
+
 
 
 // =============================================

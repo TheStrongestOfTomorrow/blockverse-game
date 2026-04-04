@@ -78,6 +78,10 @@ const Lobby = (() => {
     // Debounced search handler
     let _searchDebounce = null;
 
+    // Track selected create-game options
+    let _selectedThumbnailColor = null;
+    let _selectedTemplate = 'flat';
+
     // ========================================
     //  Public API
     // ========================================
@@ -340,7 +344,7 @@ const Lobby = (() => {
 
         // Apply cooldown
         if (typeof UI !== 'undefined') {
-            UI.startCooldown('random-play-btn', BV.RANDOM_PLAY_COOLDOWN);
+            UI.startCooldown('btn-random-play', BV.RANDOM_PLAY_COOLDOWN);
         }
 
         Multiplayer.randomPlay().then((result) => {
@@ -465,24 +469,24 @@ const Lobby = (() => {
         });
     }
 
-    // ---- Create game form ----
+    // ---- Create game button ----
     function _setupCreateGameForm() {
-        const form = document.getElementById('create-game-form');
-        if (!form) return;
+        const btn = document.getElementById('btn-create-game');
+        if (!btn) return;
 
-        form.addEventListener('submit', (e) => {
+        btn.addEventListener('click', (e) => {
             e.preventDefault();
 
             const formData = {
-                name: form.querySelector('#game-name')?.value?.trim(),
-                description: form.querySelector('#game-description')?.value?.trim(),
-                category: form.querySelector('#game-category')?.value || 'sandbox',
-                maxPlayers: form.querySelector('#game-max-players')?.value || BV.MAX_PLAYERS_PER_SERVER,
-                thumbnailColor: form.querySelector('#game-thumbnail-color')?.value || BV.COLORS.PRIMARY,
-                template: form.querySelector('#game-template')?.value || 'flat',
-                allowSave: form.querySelector('#game-allow-save')?.checked ?? true,
-                saveableBlocks: form.querySelector('#game-saveable-blocks')?.checked ?? true,
-                maxBlocksPerPlayer: form.querySelector('#game-max-blocks')?.value || BV.MAX_BLOCKS_PER_PLAYER_SAVE,
+                name: document.getElementById('game-name')?.value?.trim(),
+                description: document.getElementById('game-desc')?.value?.trim(),
+                category: document.getElementById('game-category')?.value || 'sandbox',
+                maxPlayers: document.getElementById('game-max-players')?.value || BV.MAX_PLAYERS_PER_SERVER,
+                thumbnailColor: _selectedThumbnailColor || BV.COLORS.PRIMARY,
+                template: _selectedTemplate || 'flat',
+                allowSave: document.getElementById('game-allow-save')?.checked ?? true,
+                saveableBlocks: true,
+                maxBlocksPerPlayer: document.getElementById('game-max-blocks')?.value || BV.MAX_BLOCKS_PER_PLAYER_SAVE,
             };
 
             if (!formData.name) {
@@ -551,7 +555,7 @@ const Lobby = (() => {
 
     // ---- Random play button ----
     function _setupRandomPlay() {
-        const btn = document.getElementById('random-play-btn');
+        const btn = document.getElementById('btn-random-play');
         if (btn) {
             btn.addEventListener('click', randomPlay);
         }
@@ -559,24 +563,29 @@ const Lobby = (() => {
 
     // ---- Join-by-code modal ----
     function _setupJoinCodeModal() {
-        const form = document.getElementById('join-code-form');
-        if (!form) return;
+        const btn = document.getElementById('btn-join-code');
+        const input = document.getElementById('join-code-input');
+        if (!btn || !input) return;
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const input = form.querySelector('#join-code-input');
-            const code = input ? input.value.trim() : '';
+        btn.addEventListener('click', () => {
+            const code = input.value.trim();
             if (!code) {
                 Utils.showToast('Please enter a game code', 'error');
                 return;
             }
 
             // Close modal
-            const modal = form.closest('.modal');
+            const modal = btn.closest('.modal');
             if (modal) modal.classList.add('hidden');
 
             joinGameByCode(code);
         });
+
+        if (input) {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') btn.click();
+            });
+        }
     }
 
     // ---- Server list modal ----
@@ -638,7 +647,7 @@ const Lobby = (() => {
 
     // ---- Settings ----
     function _setupSettings() {
-        const saveBtn = document.getElementById('save-settings-btn');
+        const saveBtn = document.getElementById('btn-save-settings');
         if (saveBtn) {
             saveBtn.addEventListener('click', _saveSettings);
         }
@@ -649,7 +658,7 @@ const Lobby = (() => {
         const settings = _getSettings();
 
         _setInputValue('setting-sensitivity', settings.sensitivity ?? BV.MOUSE_SENSITIVITY);
-        _setInputValue('setting-render-distance', settings.renderDistance ?? BV.RENDER_DISTANCE);
+        _setInputValue('setting-render-dist', settings.renderDistance ?? BV.RENDER_DISTANCE);
         _setChecked('setting-shadows', settings.shadows !== false);
         _setChecked('setting-particles', settings.particles !== false);
     }
@@ -658,7 +667,7 @@ const Lobby = (() => {
     function _saveSettings() {
         const settings = {
             sensitivity: parseFloat(document.getElementById('setting-sensitivity')?.value) || BV.MOUSE_SENSITIVITY,
-            renderDistance: parseInt(document.getElementById('setting-render-distance')?.value) || BV.RENDER_DISTANCE,
+            renderDistance: parseInt(document.getElementById('setting-render-dist')?.value) || BV.RENDER_DISTANCE,
             shadows: document.getElementById('setting-shadows')?.checked ?? true,
             particles: document.getElementById('setting-particles')?.checked ?? true,
         };

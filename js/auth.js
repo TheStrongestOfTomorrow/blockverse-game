@@ -254,16 +254,17 @@ const Auth = (() => {
                 tabs.forEach((t) => t.classList.remove('active'));
                 tab.classList.add('active');
 
-                document.querySelectorAll('.auth-panel').forEach((p) => p.classList.remove('active'));
-                const panel = document.getElementById(target);
-                if (panel) panel.classList.add('active');
+                const loginForm = document.getElementById('form-login');
+                const signupForm = document.getElementById('form-signup');
+                if (loginForm) loginForm.classList.toggle('hidden', target !== 'login');
+                if (signupForm) signupForm.classList.toggle('hidden', target !== 'signup');
             });
         });
     }
 
     // ---- Form submission ----
     function _setupFormHandlers() {
-        const loginForm = document.getElementById('login-form');
+        const loginForm = document.getElementById('form-login');
         if (loginForm) {
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -278,7 +279,7 @@ const Auth = (() => {
             });
         }
 
-        const signupForm = document.getElementById('signup-form');
+        const signupForm = document.getElementById('form-signup');
         if (signupForm) {
             signupForm.addEventListener('submit', async (e) => {
                 e.preventDefault();

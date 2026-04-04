@@ -156,9 +156,9 @@ const UI = (() => {
      * @param {string} [text='Loading...']
      */
     function showLoading(text) {
-        const overlay = document.getElementById('loading-overlay');
+        const overlay = document.getElementById('loading-screen');
         const bar = document.getElementById('loading-bar');
-        const label = document.getElementById('loading-text');
+ const label = document.getElementById('loading-text');
 
         if (overlay) overlay.classList.remove('hidden');
         if (label) label.textContent = text || 'Loading...';
@@ -167,7 +167,7 @@ const UI = (() => {
 
     /** Hide the global loading overlay. */
     function hideLoading() {
-        const overlay = document.getElementById('loading-overlay');
+        const overlay = document.getElementById('loading-screen');
         if (overlay) overlay.classList.add('hidden');
     }
 
@@ -197,10 +197,10 @@ const UI = (() => {
 
         return `
             <div class="game-card" data-code="${game.code || ''}" data-category="${game.category || ''}">
-                <div class="game-card-thumbnail" style="background:${gradient};">
-                    <span class="game-card-icon">${game.icon || '🏗️'}</span>
+                <div class="game-card-thumb" style="background:${gradient};">
+                    <span class="thumb-icon">${game.icon || '🏗️'}</span>
                 </div>
-                <div class="game-card-body">
+                <div class="game-card-info">
                     <h3 class="game-card-title">${game.name || 'Untitled'}</h3>
                     <p class="game-card-desc">${game.description || ''}</p>
                     <div class="game-card-meta">
@@ -219,30 +219,8 @@ const UI = (() => {
      * @param {string} code
      */
     function showGameCodeModal(code) {
-        const modal = document.getElementById('game-code-modal');
-        if (!modal) return;
-
-        const codeDisplay = modal.querySelector('.game-code-display');
-        if (codeDisplay) codeDisplay.textContent = code;
-
-        modal.classList.remove('hidden');
-
-        // Copy button
-        const copyBtn = modal.querySelector('.copy-code-btn');
-        if (copyBtn) {
-            const newCopy = copyBtn.cloneNode(true);
-            copyBtn.parentNode.replaceChild(newCopy, copyBtn);
-            newCopy.addEventListener('click', () => {
-                navigator.clipboard.writeText(code).then(() => {
-                    Utils.showToast('Code copied to clipboard!', 'success');
-                }).catch(() => {
-                    // Fallback
-                    codeDisplay.select && codeDisplay.select();
-                    document.execCommand('copy');
-                    Utils.showToast('Code copied!', 'success');
-                });
-            });
-        }
+        Utils.showToast('Game Code: ' + code + ' (copied to clipboard!)', 'success', 8000);
+        navigator.clipboard.writeText(code).catch(() => {});
     }
 
     /** @returns {string|null} The id of the currently visible screen. */
@@ -260,19 +238,27 @@ const UI = (() => {
      */
     function _onLobbyScreen() {
         // Update sidebar username
-        const nameEl = document.getElementById('sidebar-username');
-        if (nameEl && Auth.isLoggedIn()) {
-            nameEl.textContent = Auth.getCurrentUser();
-        }
+        try {
+            const nameEl = document.getElementById('sidebar-username');
+            if (nameEl && Auth.isLoggedIn()) {
+                nameEl.textContent = Auth.getCurrentUser();
+            }
 
-        // Update sidebar avatar
-        const avatarEl = document.getElementById('sidebar-avatar');
-        if (avatarEl && Auth.isLoggedIn()) {
-            avatarEl.innerHTML = Avatar.getAvatarHTML(Auth.getCurrentUser(), 'small');
+            // Update sidebar avatar
+            const avatarEl = document.getElementById('sidebar-avatar');
+            if (avatarEl && Auth.isLoggedIn() && typeof Avatar !== 'undefined') {
+                avatarEl.innerHTML = Avatar.getAvatarHTML(Auth.getCurrentUser(), 'small');
+            }
+        } catch (err) {
+            console.error('[UI] _onLobbyScreen error:', err);
         }
 
         // Render category filters
-        renderCategoryFilters();
+        try {
+            renderCategoryFilters();
+        } catch (err) {
+            console.error('[UI] renderCategoryFilters error:', err);
+        }
     }
 
     /**

@@ -178,6 +178,14 @@ const Tools = {
         return this._currentPaintColor;
     },
 
+    /**
+     * Alias for setToolbarSlot (used by main.js keyboard shortcuts).
+     * @param {number} index
+     */
+    selectSlot(index) {
+        this.setToolbarSlot(index);
+    },
+
     // =============================================
     // TOOLBAR MANAGEMENT
     // =============================================

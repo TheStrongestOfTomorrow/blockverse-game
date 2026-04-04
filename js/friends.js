@@ -450,18 +450,29 @@ const Friends = (() => {
     function _startIdentityPeer() {
         if (!Auth.isLoggedIn()) return;
 
+        // Check if PeerJS is available
+        if (typeof Peer === 'undefined') {
+            console.warn('[Friends] PeerJS not loaded — identity peer disabled');
+            return;
+        }
+
         const username = Auth.getCurrentUser();
         const peerId = `BV-Peer-${username}`;
 
-        if (identityPeer && !identityPeer.destroyed) {
-            identityPeer.destroy();
-        }
+        try {
+            if (identityPeer && !identityPeer.destroyed) {
+                identityPeer.destroy();
+            }
 
-        identityPeer = new Peer(peerId, {
-            host: BV.PEERJS_HOST,
-            port: BV.PEERJS_PORT,
-            secure: BV.PEERJS_SECURE,
-        });
+            identityPeer = new Peer(peerId, {
+                host: BV.PEERJS_HOST,
+                port: BV.PEERJS_PORT,
+                secure: BV.PEERJS_SECURE,
+            });
+        } catch (err) {
+            console.error('[Friends] Failed to create identity peer:', err);
+            return;
+        }
 
         identityPeer.on('open', (id) => {
             console.log(`[Friends] Identity peer open: ${id}`);
@@ -555,8 +566,8 @@ const Friends = (() => {
 
     function _setupUIHandlers() {
         // Add friend form
-        const addInput = document.getElementById('add-friend-input');
-        const addBtn = document.getElementById('add-friend-btn');
+        const addInput = document.getElementById('add-friend-username');
+        const addBtn = document.getElementById('btn-send-friend-request');
         if (addBtn) {
             addBtn.addEventListener('click', () => {
                 const username = addInput.value.trim();
@@ -576,11 +587,11 @@ const Friends = (() => {
         }
 
         // Refresh button
-        const refreshBtn = document.getElementById('refresh-friends-btn');
+        const refreshBtn = document.getElementById('btn-refresh-friends');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
                 if (typeof UI !== 'undefined') {
-                    UI.startCooldown('refresh-friends-btn', BV.REFRESH_COOLDOWN, () => {
+                    UI.startCooldown('btn-refresh-friends', BV.REFRESH_COOLDOWN, () => {
                         refreshFriendStatuses();
                     });
                 } else {
@@ -625,7 +636,7 @@ const Friends = (() => {
      * Apply a cooldown badge to the refresh button.
      */
     function _startRefreshCooldown() {
-        const btn = document.getElementById('refresh-friends-btn');
+        const btn = document.getElementById('btn-refresh-friends');
         if (!btn) return;
 
         let remaining = BV.REFRESH_COOLDOWN;

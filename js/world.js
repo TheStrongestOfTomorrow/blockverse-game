@@ -38,9 +38,12 @@ const World = {
      * @param {HTMLCanvasElement} canvasElement - The canvas to render into.
      */
     init(canvasElement) {
+        const canvas = canvasElement || document.getElementById('game-canvas');
+        if (!canvas) { console.warn('[World] No canvas found'); return; }
+
         // --- Renderer ---
         this.renderer = new THREE.WebGLRenderer({
-            canvas: canvasElement,
+            canvas: canvas,
             antialias: true,
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -201,6 +204,21 @@ const World = {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+    },
+
+    /**
+     * Handle resize event (alias for resize).
+     */
+    onResize() {
+        this.resize();
+    },
+
+    /**
+     * Clear the world and stop the render loop. Called when leaving a game.
+     */
+    clearWorld() {
+        this.clearAll();
+        this.stop();
     },
 
     // =============================================

@@ -38,20 +38,26 @@ const App = (() => {
         // ---- Initialise core UI first (needed by everything) ----
         UI.init();
 
-        // ---- Check existing session ----
-        if (Auth.isLoggedIn()) {
-            _initLoggedInState();
-        } else {
-            UI.showScreen('screen-auth');
-        }
-
-        // ---- Initialise auth (sets up forms regardless of login state) ----
-        Auth.init();
-
-        // ---- Global event listeners ----
+        // ---- Global event listeners MUST be set up BEFORE Auth.init() ----
+        // so that auth:login events are caught immediately.
         _setupGlobalEvents();
         _setupKeyboardShortcuts();
         _setupWindowEvents();
+        _setupGameMenuButtons();
+
+        // ---- Initialise auth (sets up forms, restores session, fires events) ----
+        Auth.init();
+
+        // ---- Check existing session ----
+        // Auth.init() already restored the session and fired auth:login,
+        // so _initLoggedInState was already called by the event handler.
+        // If for some reason the user is logged in but the event didn't fire,
+        // force-init the logged-in state here.
+        if (Auth.isLoggedIn() && UI.getCurrentScreen() !== 'screen-lobby') {
+            _initLoggedInState();
+        } else if (!Auth.isLoggedIn()) {
+            UI.showScreen('screen-auth');
+        }
     }
 
     /**
@@ -119,6 +125,11 @@ const App = (() => {
         if (!_worldInitialised && typeof World !== 'undefined') {
             World.init();
             _worldInitialised = true;
+            
+            // Initialise remote players with the world scene
+            if (typeof RemotePlayers !== 'undefined') {
+                RemotePlayers.init(World.scene);
+            }
         }
 
         // Initialise Player
@@ -215,24 +226,26 @@ const App = (() => {
 
     /**
      * Initialise all modules that require a logged-in user.
+     * Each init is wrapped in try-catch so one failure doesn't
+     * prevent the lobby from showing.
      */
     function _initLoggedInState() {
         const username = Auth.getCurrentUser();
         console.log(`[App] Logged in as ${username}`);
 
-        // Initialise modules in dependency order
-        if (typeof Avatar !== 'undefined') Avatar.init();
-        if (typeof Friends !== 'undefined') Friends.init();
-        if (typeof Lobby !== 'undefined') Lobby.init();
-        if (typeof Multiplayer !== 'undefined') Multiplayer.init();
+        // Initialise modules in dependency order (safe wrappers)
+        try { if (typeof Avatar !== 'undefined') Avatar.init(); } catch (err) { console.error('[App] Avatar.init failed:', err); }
+        try { if (typeof Friends !== 'undefined') Friends.init(); } catch (err) { console.error('[App] Friends.init failed:', err); }
+        try { if (typeof Lobby !== 'undefined') Lobby.init(); } catch (err) { console.error('[App] Lobby.init failed:', err); }
+        try { if (typeof Multiplayer !== 'undefined') Multiplayer.init(); } catch (err) { console.error('[App] Multiplayer.init failed:', err); }
 
-        // Show the lobby
+        // Show the lobby (must always execute)
         UI.showScreen('screen-lobby');
 
         // Refresh friend statuses in the background
         setTimeout(() => {
-            if (typeof Friends !== 'undefined') Friends.refreshFriendStatuses();
-        }, 2000);
+            try { if (typeof Friends !== 'undefined') Friends.refreshFriendStatuses(); } catch (_) {}
+        }, 3000);
     }
 
     /**
@@ -242,7 +255,13 @@ const App = (() => {
         // ---- Auth events ----
         document.addEventListener('auth:login', (e) => {
             console.log(`[App] User logged in: ${e.detail.username}`);
-            _initLoggedInState();
+            try {
+                _initLoggedInState();
+            } catch (err) {
+                console.error('[App] Failed to init logged-in state:', err);
+                // Always ensure the lobby is shown even if something fails
+                UI.showScreen('screen-lobby');
+            }
         });
 
         document.addEventListener('auth:logout', () => {
@@ -402,7 +421,7 @@ const App = (() => {
 
         // Update player list content
         if (!panel.classList.contains('hidden') && typeof Multiplayer !== 'undefined') {
-            const list = panel.querySelector('.player-list-entries');
+            const list = panel.querySelector('.player-list');
             if (list) {
                 let html = '';
                 Multiplayer.players.forEach((info, peerId) => {
@@ -416,6 +435,39 @@ const App = (() => {
                 });
                 list.innerHTML = html || '<p class="text-secondary">No players</p>';
             }
+        }
+    }
+
+    // ========================================
+    //  Game Menu Button Wiring
+    // ========================================
+    function _setupGameMenuButtons() {
+        const resumeBtn = document.getElementById('btn-resume');
+        if (resumeBtn) {
+            resumeBtn.addEventListener('click', () => toggleGameMenu());
+        }
+
+        const leaveBtn = document.getElementById('btn-leave-game');
+        if (leaveBtn) {
+            leaveBtn.addEventListener('click', () => leaveGame());
+        }
+
+        const hudLeave = document.getElementById('hud-leave');
+        if (hudLeave) {
+            hudLeave.addEventListener('click', () => leaveGame());
+        }
+
+        const togglePlayersBtn = document.getElementById('btn-toggle-players');
+        if (togglePlayersBtn) {
+            togglePlayersBtn.addEventListener('click', () => _togglePlayerList());
+        }
+
+        // Wire up the logout button in the sidebar
+        const logoutBtn = document.getElementById('btn-logout');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                if (typeof Auth !== 'undefined') Auth.logout();
+            });
         }
     }
 

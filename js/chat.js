@@ -30,7 +30,7 @@ const Chat = (() => {
     function init() {
         _inputWrapper = document.getElementById('chat-input-wrapper');
         _inputEl = document.getElementById('chat-input');
-        _sendBtn = document.getElementById('chat-send-btn');
+        _sendBtn = document.getElementById('chat-send');
         _messagesEl = document.getElementById('chat-messages');
 
         // Ensure the input starts hidden
