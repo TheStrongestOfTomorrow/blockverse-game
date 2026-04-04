@@ -748,7 +748,7 @@
 }
 
 /* ----------------------------------------------------------
-   Auth UI (Device Flow / PAT)
+   Auth UI (Device Flow + PAT — Tabbed)
    ---------------------------------------------------------- */
 .device-flow-ui {
     display: flex;
@@ -775,6 +775,161 @@
 .device-flow-subtitle {
     font-size: 0.85rem;
     color: var(--text-secondary);
+}
+
+/* Auth Method Tabs (Device Flow / PAT) */
+.auth-method-tabs {
+    display: flex;
+    gap: 0;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: var(--font-main);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border-radius: 6px;
+    text-align: center;
+}
+
+.auth-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.auth-tab.active {
+    color: var(--text-primary);
+    background: rgba(var(--primary-rgb), 0.15);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Auth Panels */
+.auth-panel {
+    display: none;
+}
+
+.auth-panel.active {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+.auth-method-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+/* Device Flow: Setup (no client_id) */
+.device-flow-setup {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.setup-notice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255, 193, 7, 0.06);
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    border-radius: var(--radius-sm);
+}
+
+.setup-notice-icon {
+    font-size: 1.8rem;
+}
+
+.setup-notice p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.setup-steps {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+}
+
+.setup-steps h4 {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.setup-steps ol {
+    padding-left: 1.25rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.setup-steps ol strong {
+    color: var(--text-primary);
+}
+
+.setup-steps ol code {
+    font-size: 0.78rem;
+    color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.08);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    word-break: break-all;
+}
+
+.setup-alternative {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.setup-alternative strong {
+    color: var(--text-secondary);
+}
+
+/* Auth Success */
+.auth-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.auth-success-icon {
+    font-size: 2.5rem;
+}
+
+.auth-success p {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+/* Device code label */
+.device-code-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .device-flow-instructions {
@@ -806,6 +961,12 @@
     text-decoration: underline;
 }
 
+.device-flow-pat-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
 .device-flow-pat-form {
     display: flex;
     flex-direction: column;
@@ -823,6 +984,7 @@
     justify-content: center;
     gap: 0.75rem;
     margin: 1.5rem 0;
+    flex-wrap: wrap;
 }
 
 .user-code {

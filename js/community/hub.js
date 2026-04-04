@@ -62,33 +62,41 @@ const CommunityHub = {
     },
 
     /**
-     * Start GitHub Device Flow — placeholder.
-     * Full device flow requires a registered OAuth App client_id.
-     * Shows the user what they would need to do.
+     * Start GitHub Device Flow.
+     * Delegates to the DeviceFlow module which handles the full flow:
+     *   1. Request device code from GitHub
+     *   2. User enters code at github.com/login/device
+     *   3. Poll for authorization
+     *   4. Return access token
+     *
+     * Requires a registered OAuth App client_id (configurable in the auth UI).
+     * Falls back to PAT if not configured.
      */
     async startDeviceFlow() {
-        // Placeholder: In production, this would POST to
-        // https://github.com/login/device/code with client_id
-        return {
-            type: 'device-flow-placeholder',
-            message: 'GitHub Device Flow requires a registered OAuth App. Please use a Personal Access Token (PAT) instead.',
-            instructions: [
-                '1. Go to https://github.com/settings/tokens',
-                '2. Click "Generate new token (classic)"',
-                '3. Give it a name like "BlockVerse Community"',
-                '4. Select the "public_repo" scope',
-                '5. Click "Generate token"',
-                '6. Copy the token and paste it in the login form below',
-            ],
-        };
+        if (!DeviceFlow.isAvailable()) {
+            return {
+                success: false,
+                type: 'no-client',
+                message: 'Device Flow requires an OAuth App client_id. Please configure one in the auth settings, or use a Personal Access Token (PAT) instead.',
+            };
+        }
+        // Delegate to DeviceFlow module
+        return await DeviceFlow.requestDeviceCode();
     },
 
     /**
      * Poll GitHub device flow for authorization.
+     * Delegates to the DeviceFlow module.
+     *
+     * @param {string} deviceCode - The device_code from startDeviceFlow()
+     * @param {function} onPolling - Optional callback for poll status updates
+     * @param {number} interval - Polling interval in seconds
      */
-    async pollDeviceFlow(deviceCode, interval) {
-        // Placeholder for device flow polling
-        return { success: false, error: 'Device flow is not configured. Please use PAT authentication.' };
+    async pollDeviceFlow(deviceCode, onPolling, interval) {
+        if (!DeviceFlow.isAvailable()) {
+            return { success: false, error: 'Device Flow is not configured. Please use PAT authentication.' };
+        }
+        return await DeviceFlow.pollForToken(deviceCode, onPolling, interval);
     },
 
     /** Check if currently authenticated */
