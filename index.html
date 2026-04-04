@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockVerse - Build. Play. Connect.</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>">
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- ========== AUTH SCREEN ========== -->
+    <div id="screen-auth" class="screen active">
+        <div class="auth-bg">
+            <div class="floating-blocks">
+                <div class="fb fb-1">🧱</div>
+                <div class="fb fb-2">🎮</div>
+                <div class="fb fb-3">🏗️</div>
+                <div class="fb fb-4">⚔️</div>
+                <div class="fb fb-5">🏆</div>
+            </div>
+        </div>
+        <div class="auth-container">
+            <div class="auth-logo">
+                <h1 class="logo-text">BLOCK<span class="logo-accent">VERSE</span></h1>
+                <p class="logo-subtitle">Build. Play. Connect.</p>
+            </div>
+            <div class="auth-card">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Login</button>
+                    <button class="auth-tab" data-tab="signup">Sign Up</button>
+                </div>
+                
+                <!-- Login Form -->
+                <form id="form-login" class="auth-form">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="login-username" placeholder="Enter username" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" placeholder="Enter password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Login</button>
+                    <div id="login-error" class="form-error"></div>
+                </form>
+
+                <!-- Signup Form -->
+                <form id="form-signup" class="auth-form hidden">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <div class="input-with-status">
+                            <input type="text" id="signup-username" placeholder="Choose a username" required autocomplete="off" minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]+">
+                            <span id="username-status" class="username-status"></span>
+                        </div>
+                        <small class="form-hint">3-20 characters, letters, numbers, underscores only</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signup-password" placeholder="Create password" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" id="signup-confirm" placeholder="Confirm password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+                    <div id="signup-error" class="form-error"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== LOBBY SCREEN ========== -->
+    <div id="screen-lobby" class="screen">
+        <div class="lobby-layout">
+            <!-- Sidebar -->
+            <aside class="lobby-sidebar">
+                <div class="sidebar-header">
+                    <h1 class="logo-text-sm">BLOCK<span class="logo-accent">VERSE</span></h1>
+                    <div id="sidebar-user" class="sidebar-user">
+                        <div id="sidebar-avatar" class="avatar-small"></div>
+                        <span id="sidebar-username" class="sidebar-username"></span>
+                    </div>
+                </div>
+                <nav class="sidebar-nav">
+                    <button class="sidebar-btn active" data-section="discover">
+                        <span class="sidebar-icon">🏠</span> Discover
+                    </button>
+                    <button class="sidebar-btn" data-section="my-games">
+                        <span class="sidebar-icon">🎮</span> My Games
+                    </button>
+                    <button class="sidebar-btn" data-section="create-game">
+                        <span class="sidebar-icon">➕</span> Create Game
+                    </button>
+                    <button class="sidebar-btn" data-section="friends">
+                        <span class="sidebar-icon">👥</span> Friends
+                    </button>
+                    <button class="sidebar-btn" data-section="avatar">
+                        <span class="sidebar-icon">👤</span> Avatar
+                    </button>
+                    <button class="sidebar-btn" data-section="inventory">
+                        <span class="sidebar-icon">🎒</span> Inventory
+                    </button>
+                    <button class="sidebar-btn" data-section="settings">
+                        <span class="sidebar-icon">⚙️</span> Settings
+                    </button>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="btn-logout" class="btn btn-ghost btn-sm btn-full">Logout</button>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="lobby-main">
+                <!-- Top Bar -->
+                <div class="lobby-topbar">
+                    <div class="topbar-left">
+                        <div class="search-box">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="lobby-search" placeholder="Search games...">
+                        </div>
+                        <div class="category-filters" id="category-filters">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+                    <div class="topbar-right">
+                        <button id="btn-random-play" class="btn btn-accent">
+                            <span>🎲</span> Random Play
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sections -->
+                <!-- Discover -->
+                <section id="section-discover" class="lobby-section active">
+                    <div class="section-header">
+                        <h2>🎮 Discover Games</h2>
+                    </div>
+                    <div id="games-grid" class="games-grid">
+                        <!-- Game cards filled dynamically -->
+                    </div>
+                </section>
+
+                <!-- My Games -->
+                <section id="section-my-games" class="lobby-section">
+                    <div class="section-header">
+                        <h2>🎮 My Games</h2>
+                    </div>
+                    <div id="my-games-grid" class="games-grid">
+                        <!-- Created games listed here -->
+                    </div>
+                    <div id="no-games-msg" class="empty-state">
+                        <div class="empty-icon">🏗️</div>
+                        <h3>No games yet</h3>
+                        <p>Create your first game and start building!</p>
+                        <button class="btn btn-primary" onclick="Lobby.showSection('create-game')">Create Game</button>
+                    </div>
+                </section>
+
+                <!-- Create Game -->
+                <section id="section-create-game" class="lobby-section">
+                    <div class="section-header">
+                        <h2>➕ Create New Game</h2>
+                    </div>
+                    <div class="create-game-form">
+                        <div class="form-group">
+                            <label>Game Name</label>
+                            <input type="text" id="game-name" placeholder="My Awesome Game" maxlength="40">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="game-desc" placeholder="Describe your game..." maxlength="200" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="game-category">
+                                <option value="sandbox">🏗️ Sandbox</option>
+                                <option value="obby">🏃 Obby</option>
+                                <option value="tycoon">💰 Tycoon</option>
+                                <option value="racing">🏎️ Racing</option>
+                                <option value="adventure">⚔️ Adventure</option>
+                                <option value="roleplay">🎭 Roleplay</option>
+                                <option value="minigame">🎯 Minigame</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Max Players Per Server</label>
+                            <input type="range" id="game-max-players" min="2" max="12" value="8" class="range-input">
+                            <span id="game-max-players-val" class="range-val">8</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Thumbnail Color</label>
+                            <div id="thumbnail-colors" class="color-picker-row">
+                                <!-- Filled dynamically -->
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Starting Template</label>
+                            <div id="game-templates" class="template-grid">
+                                <div class="template-card" data-template="empty">
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #1a1a2e, #2d2d44);">✨</div>
+                                    <span>Empty World</span>
+                                </div>
+                                <div class="template-card" data-template="flat">
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #4CAF50, #795548);">🏔️</div>
+                                    <span>Flat Terrain</span>
+                                </div>
+                                <div class="template-card" data-template="hills">
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #66BB6A, #8D6E63);">⛰️</div>
+                                    <span>Rolling Hills</span>
+                                </div>
+                                <div class="template-card" data-template="obby">
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #E74C3C, #FF9800);">🏃</div>
+                                    <span>Obby Starter</span>
+                                </div>
+                                <div class="template-card" data-template="city">
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #9E9E9E, #607D8B);">🏙️</div>
+                                    <span>City Blocks</span>
+                                </div>
+                                <div class="template-card" data-template="arena">
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #673AB7, #E91E63);">🏟️</div>
+                                    <span>Arena</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="game-allow-save" checked>
+                                <span>Allow players to save their blocks</span>
+                            </label>
+                        </div>
+                        <div id="save-settings" class="sub-settings">
+                            <div class="form-group">
+                                <label>Saveable Block Types (owner allows)</label>
+                                <div id="saveable-blocks" class="block-toggle-grid">
+                                    <!-- Filled dynamically -->
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Max blocks per player</label>
+                                <input type="number" id="game-max-blocks" value="200" min="10" max="1000" step="10">
+                            </div>
+                        </div>
+                        <button id="btn-create-game" class="btn btn-primary btn-lg">🚀 Create & Play</button>
+                    </div>
+                </section>
+
+                <!-- Friends -->
+                <section id="section-friends" class="lobby-section">
+                    <div class="section-header">
+                        <h2>👥 Friends</h2>
+                        <div class="section-actions">
+                            <button id="btn-add-friend" class="btn btn-sm btn-secondary">+ Add Friend</button>
+                            <button id="btn-refresh-friends" class="btn btn-sm btn-ghost">
+                                🔄 Refresh <span id="friends-cooldown" class="cooldown-badge"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="friends-list" class="friends-list">
+                        <!-- Friend items filled dynamically -->
+                    </div>
+                    <div id="friend-requests-section" class="requests-section hidden">
+                        <h3>📨 Friend Requests</h3>
+                        <div id="friend-requests-list"></div>
+                    </div>
+                </section>
+
+                <!-- Avatar Customization -->
+                <section id="section-avatar" class="lobby-section">
+                    <div class="section-header">
+                        <h2>👤 Avatar Customization</h2>
+                    </div>
+                    <div class="avatar-editor">
+                        <div class="avatar-preview-container">
+                            <canvas id="avatar-preview-canvas" width="200" height="300"></canvas>
+                            <div class="avatar-preview-label">Preview</div>
+                        </div>
+                        <div class="avatar-controls">
+                            <div class="form-group">
+                                <label>Body Color</label>
+                                <div id="avatar-body-colors" class="color-picker-row"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Head Shape</label>
+                                <div id="avatar-head-options" class="option-row"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Body Shape</label>
+                                <div id="avatar-body-options" class="option-row"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Accessory</label>
+                                <div id="avatar-accessory-options" class="option-row"></div>
+                            </div>
+                            <button id="btn-save-avatar" class="btn btn-primary btn-full">Save Avatar</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Inventory -->
+                <section id="section-inventory" class="lobby-section">
+                    <div class="section-header">
+                        <h2>🎒 Inventory</h2>
+                    </div>
+                    <div id="inventory-grid" class="inventory-grid">
+                        <!-- Inventory items filled dynamically -->
+                    </div>
+                </section>
+
+                <!-- Settings -->
+                <section id="section-settings" class="lobby-section">
+                    <div class="section-header">
+                        <h2>⚙️ Settings</h2>
+                    </div>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label>Mouse Sensitivity</label>
+                            <input type="range" id="setting-sensitivity" min="0.5" max="5" step="0.1" value="2" class="range-input">
+                            <span id="setting-sensitivity-val" class="range-val">2</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Render Distance</label>
+                            <input type="range" id="setting-render-dist" min="2" max="8" step="1" value="4" class="range-input">
+                            <span id="setting-render-dist-val" class="range-val">4</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="setting-shadows" checked>
+                                <span>Shadows</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="setting-particles" checked>
+                                <span>Particle Effects</span>
+                            </label>
+                        </div>
+                        <button id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- ========== GAME SCREEN ========== -->
+    <div id="screen-game" class="screen">
+        <!-- Game Canvas (Three.js) -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Crosshair -->
+        <div id="crosshair" class="crosshair">+</div>
+
+        <!-- HUD Top -->
+        <div id="hud-top" class="hud-top">
+            <div id="hud-game-name" class="hud-game-name"></div>
+            <div id="hud-server-info" class="hud-server-info"></div>
+            <div id="hud-players-count" class="hud-players-count"></div>
+            <button id="hud-leave" class="btn btn-danger btn-sm">Leave</button>
+        </div>
+
+        <!-- Toolbar -->
+        <div id="toolbar" class="toolbar">
+            <!-- Toolbar slots filled dynamically -->
+        </div>
+
+        <!-- Player List (toggle) -->
+        <div id="player-list-panel" class="player-list-panel hidden">
+            <h3>Players</h3>
+            <div id="player-list" class="player-list"></div>
+        </div>
+
+        <!-- Chat -->
+        <div id="chat-container" class="chat-container">
+            <div id="chat-messages" class="chat-messages"></div>
+            <div id="chat-input-wrapper" class="chat-input-wrapper hidden">
+                <input type="text" id="chat-input" placeholder="Press Enter to chat..." maxlength="200">
+                <button id="chat-send" class="btn btn-sm btn-secondary">Send</button>
+            </div>
+        </div>
+
+        <!-- Game Menu (ESC) -->
+        <div id="game-menu" class="game-menu hidden">
+            <div class="game-menu-content">
+                <h2>Game Paused</h2>
+                <div id="game-menu-tools" class="menu-section">
+                    <h3>Tools</h3>
+                    <div class="tool-buttons">
+                        <button class="btn btn-tool active" data-tool="build">🔨 Build</button>
+                        <button class="btn btn-tool" data-tool="delete">🗑️ Delete</button>
+                        <button class="btn btn-tool" data-tool="paint">🎨 Paint</button>
+                        <button class="btn btn-tool" data-tool="grab">✋ Grab</button>
+                    </div>
+                </div>
+                <div class="menu-section">
+                    <h3>Color Picker (Paint Tool)</h3>
+                    <div id="paint-colors" class="color-picker-row"></div>
+                </div>
+                <div class="menu-section">
+                    <h3>Block Type (Build Tool)</h3>
+                    <div id="block-type-picker" class="block-picker-grid"></div>
+                </div>
+                <div class="menu-actions">
+                    <button id="btn-toggle-players" class="btn btn-secondary">👥 Players</button>
+                    <button id="btn-resume" class="btn btn-primary">Resume</button>
+                    <button id="btn-leave-game" class="btn btn-danger">Leave Game</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Server List Modal (in-game) -->
+        <div id="server-list-modal" class="modal hidden">
+            <div class="modal-content modal-lg">
+                <div class="modal-header">
+                    <h2>📂 Servers</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div id="server-list-in-game" class="server-list"></div>
+                <div class="modal-footer">
+                    <button id="btn-load-servers" class="btn btn-primary">Load Servers <span class="cooldown-badge"></span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Join Code Modal -->
+        <div id="join-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Join Game</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="form-group">
+                    <label>Enter Game Code</label>
+                    <input type="text" id="join-code-input" placeholder="BV-XXXX" maxlength="10" style="text-transform:uppercase;">
+                </div>
+                <div id="join-modal-error" class="form-error"></div>
+                <button id="btn-join-code" class="btn btn-primary btn-full">Join</button>
+            </div>
+        </div>
+
+        <!-- Add Friend Modal -->
+        <div id="add-friend-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Add Friend</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="add-friend-username" placeholder="Enter username" maxlength="20">
+                </div>
+                <div id="add-friend-error" class="form-error"></div>
+                <button id="btn-send-friend-request" class="btn btn-primary btn-full">Send Request</button>
+            </div>
+        </div>
+
+        <!-- Invite Modal -->
+        <div id="invite-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🎮 Game Invitation</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div id="invite-details" class="invite-details"></div>
+                <div class="invite-actions">
+                    <button id="btn-accept-invite" class="btn btn-primary">Accept</button>
+                    <button id="btn-decline-invite" class="btn btn-ghost">Decline</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-screen hidden">
+            <div class="loading-content">
+                <h1 class="logo-text">BLOCK<span class="logo-accent">VERSE</span></h1>
+                <div class="loading-bar-container">
+                    <div id="loading-bar" class="loading-bar"></div>
+                </div>
+                <p id="loading-text">Connecting...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/avatar.js"></script>
+    <script src="js/friends.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/multiplayer.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/tools.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/lobby.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
