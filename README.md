@@ -1,90 +1,83 @@
 # 🧱 BlockVerse
 
-A Roblox-like multiplayer block building game running entirely on **GitHub Pages** using **WebRTC** (PeerJS) for real-time multiplayer. Zero servers, zero databases, zero cost.
+**Build. Play. Connect.**
 
-## 🎮 Play Now
+A Roblox-like browser 3D multiplayer game — zero cost, no databases, powered by WebRTC P2P.
 
-Visit: **https://thestrongestoftomorrow.github.io/blockverse-game/**
+## 🚀 Play Now
+
+👉 **[BlockVerse on GitHub Pages](https://thestrongestoftomorrow.github.io/blockverse-game/)**
 
 ## ✨ Features
 
-- **3D Block World** — Build, destroy, and paint blocks in a Three.js-powered 3D world
-- **Real-time Multiplayer** — WebRTC peer-to-peer mesh networking (up to 12 players per server)
-- **No Server Required** — One player's browser hosts, others connect directly
-- **Account System** — localStorage-based signup/login with unique usernames
+- **3D Block Building** — Place, delete, paint, and grab blocks with cursor-based tools
+- **Third-Person Camera** — Orbit with right-click drag, zoom with I/O or scroll wheel
+- **Multiplayer** — Real-time P2P via WebRTC (PeerJS mesh networking)
+- **Game Creator** — Create and publish your own games with 12 terrain templates
+- **Avatar Customization** — Customize your character's colors and shape
 - **Friends System** — Add friends, see online status, join their games
-- **Avatar Customization** — Customize your character's color, shape, and accessories
-- **Multiple Game Templates** — Empty, Flat Terrain, Hills, Obby, City, Arena
-- **Infinite Servers** — Games can auto-scale with multiple servers
-- **Host Migration** — If host leaves, oldest player becomes new host
-- **Player Saves** — Owner allows specific blocks to be saved to IndexedDB
-- **Chat System** — In-game text chat with all players
-- **4 Tools** — Build, Delete, Paint, and Grab
+- **Chat** — In-game text chat with all players
+- **Host Migration** — If the host leaves, another player takes over seamlessly
+- **100% Client-Side** — No servers, no databases. localStorage + IndexedDB only
+- **Zero Cost** — Hosted free on GitHub Pages
 
-## 🏗️ Architecture
-
-```
-GitHub Pages (Free Hosting)
-├── Three.js (3D Rendering)
-├── PeerJS / WebRTC (Multiplayer)
-├── localStorage (Accounts, Friends, Game Metadata)
-├── IndexedDB (Player Block Saves)
-└── No server, no database, no cost
-```
-
-## 📁 Project Structure
-
-```
-├── index.html          # Main HTML (all screens)
-├── css/
-│   └── style.css       # Complete styling
-├── js/
-│   ├── config.js       # Shared constants & utilities
-│   ├── auth.js         # Account system (localStorage)
-│   ├── avatar.js       # Avatar customization
-│   ├── friends.js      # Friends system + PeerJS identity
-│   ├── ui.js           # UI utilities, modals, cooldowns
-│   ├── multiplayer.js  # WebRTC networking (PeerJS)
-│   ├── world.js        # 3D world engine (Three.js)
-│   ├── player.js       # Player controls + remote avatars
-│   ├── tools.js        # Build/Delete/Paint/Grab tools
-│   ├── chat.js         # In-game chat
-│   ├── lobby.js        # Game browser, server management
-│   └── main.js         # Entry point, game loop
-└── assets/
-    ├── avatars/
-    ├── sounds/
-    └── icons/
-```
-
-## 🚀 Getting Started
-
-1. Sign up with a unique username
-2. Browse games in the Discover tab or create your own
-3. Click Play to enter a 3D block world
-4. Use WASD to move, mouse to look, click to place/delete blocks
-5. Share your game code with friends!
-
-## 🎯 Controls
+## 🎮 Controls
 
 | Key | Action |
 |-----|--------|
 | WASD | Move |
-| Mouse | Look around |
-| Left Click | Use tool |
-| Right Click | Secondary action |
 | Space | Jump |
-| Shift | Sprint |
-| 1-9 | Select toolbar slot |
-| Scroll | Cycle toolbar |
-| T / Enter | Open chat |
-| Escape | Pause menu |
-| F1 | Toggle player list |
+| Right-Click Drag | Orbit Camera |
+| I / O | Zoom In / Out |
+| Scroll Wheel | Zoom |
+| Left-Click | Place/Remove Block (build/delete tool) |
+| B / X / P / G | Switch Tools (Build/Delete/Paint/Grab) |
+| 1-9 | Select Toolbar Slot |
+| ESC | Game Menu |
+| F1 | Player List |
 
-## 💰 Cost
+## 📋 Update Log
 
-**$0.00** — Everything runs on GitHub Pages for free!
+### V1.1 — "The Big Revamp" (April 2026)
 
-## 📜 License
+- ✅ Added **leave button** with ✕ symbol at top-right corner of game screen
+- ✅ **12 working terrain templates** that actually generate proper worlds:
+  - Flat World (grass + stone border walls)
+  - Rolling Hills (trees, lake, varied terrain)
+  - Obby Course (5-stage obstacle course with checkpoints)
+  - City Blocks (buildings with doors/windows, roads, park)
+  - Battle Arena (walled arena with spectator stands)
+  - Sky Island (floating island with house, trees, water below)
+  - Village (6 houses with doors/windows, central well, garden)
+  - Castle (medieval castle with towers, battlements, inner keep)
+  - Pirate Ship (ship with hull, deck, mast, sail, treasure)
+  - Bridge Challenge (two cliffs connected by bridge over water)
+  - Parkour (ascending spiral platforms)
+  - Empty World (clean slate with spawn marker)
+- ✅ **9 featured base games** in Discovery — all with proper templates that work
+- ✅ Improved **game creator** with better template previews and descriptions
+- ✅ System optimization and code cleanup
+- ✅ All templates now generate **platforms, terrain, and interactive elements** — no more blank white worlds
+
+### V1.0 — Initial Release
+
+- Basic 3D block world with Three.js
+- Third-person camera with orbit controls
+- Block placement and deletion tools
+- WebRTC multiplayer via PeerJS
+- Auth system with localStorage
+- Friends system
+- Avatar customization
+- Game creator with basic templates
+- In-game chat
+
+## 🛠️ Tech Stack
+
+- **Three.js** — 3D rendering
+- **PeerJS** — WebRTC P2P networking
+- **localStorage/IndexedDB** — Data persistence (no databases!)
+- **GitHub Pages** — Static hosting ($0)
+
+## 📄 License
 
 MIT

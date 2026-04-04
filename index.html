@@ -201,29 +201,86 @@
                         <div class="form-group">
                             <label>Starting Template</label>
                             <div id="game-templates" class="template-grid">
-                                <div class="template-card" data-template="empty">
-                                    <div class="template-preview" style="background: linear-gradient(135deg, #1a1a2e, #2d2d44);">✨</div>
-                                    <span>Empty World</span>
-                                </div>
                                 <div class="template-card" data-template="flat">
-                                    <div class="template-preview" style="background: linear-gradient(135deg, #4CAF50, #795548);">🏔️</div>
-                                    <span>Flat Terrain</span>
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #4CAF50, #795548);">
+                                        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                            <span style="font-size:1.5rem;">🏔️</span>
+                                            <span style="font-size:0.65rem;color:#fff;opacity:0.8;">Grass + Walls</span>
+                                        </div>
+                                    </div>
+                                    <span>Flat World</span>
                                 </div>
                                 <div class="template-card" data-template="hills">
-                                    <div class="template-preview" style="background: linear-gradient(135deg, #66BB6A, #8D6E63);">⛰️</div>
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #66BB6A, #8D6E63);">
+                                        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                            <span style="font-size:1.5rem;">⛰️</span>
+                                            <span style="font-size:0.65rem;color:#fff;opacity:0.8;">Trees + Lake</span>
+                                        </div>
+                                    </div>
                                     <span>Rolling Hills</span>
                                 </div>
                                 <div class="template-card" data-template="obby">
-                                    <div class="template-preview" style="background: linear-gradient(135deg, #E74C3C, #FF9800);">🏃</div>
-                                    <span>Obby Starter</span>
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #E74C3C, #FF9800);">
+                                        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                            <span style="font-size:1.5rem;">🏃</span>
+                                            <span style="font-size:0.65rem;color:#fff;opacity:0.8;">5 Stages</span>
+                                        </div>
+                                    </div>
+                                    <span>Obby Course</span>
                                 </div>
                                 <div class="template-card" data-template="city">
-                                    <div class="template-preview" style="background: linear-gradient(135deg, #9E9E9E, #607D8B);">🏙️</div>
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #9E9E9E, #607D8B);">
+                                        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                            <span style="font-size:1.5rem;">🏙️</span>
+                                            <span style="font-size:0.65rem;color:#fff;opacity:0.8;">Buildings + Park</span>
+                                        </div>
+                                    </div>
                                     <span>City Blocks</span>
                                 </div>
                                 <div class="template-card" data-template="arena">
-                                    <div class="template-preview" style="background: linear-gradient(135deg, #673AB7, #E91E63);">🏟️</div>
-                                    <span>Arena</span>
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #673AB7, #E91E63);">
+                                        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                            <span style="font-size:1.5rem;">🏟️</span>
+                                            <span style="font-size:0.65rem;color:#fff;opacity:0.8;">Walls + Stands</span>
+                                        </div>
+                                    </div>
+                                    <span>Battle Arena</span>
+                                </div>
+                                <div class="template-card" data-template="island">
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #00BCD4, #4CAF50);">
+                                        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                            <span style="font-size:1.5rem;">🏝️</span>
+                                            <span style="font-size:0.65rem;color:#fff;opacity:0.8;">Floating Island</span>
+                                        </div>
+                                    </div>
+                                    <span>Sky Island</span>
+                                </div>
+                                <div class="template-card" data-template="village">
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #8D6E63, #FFC107);">
+                                        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                            <span style="font-size:1.5rem;">🏘️</span>
+                                            <span style="font-size:0.65rem;color:#fff;opacity:0.8;">6 Houses</span>
+                                        </div>
+                                    </div>
+                                    <span>Village</span>
+                                </div>
+                                <div class="template-card" data-template="castle">
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #795548, #9E9E9E);">
+                                        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                            <span style="font-size:1.5rem;">🏰</span>
+                                            <span style="font-size:0.65rem;color:#fff;opacity:0.8;">Towers + Keep</span>
+                                        </div>
+                                    </div>
+                                    <span>Castle</span>
+                                </div>
+                                <div class="template-card" data-template="pirate">
+                                    <div class="template-preview" style="background: linear-gradient(135deg, #1565C0, #8D6E63);">
+                                        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                            <span style="font-size:1.5rem;">🏴‍☠️</span>
+                                            <span style="font-size:0.65rem;color:#fff;opacity:0.8;">Ship + Ocean</span>
+                                        </div>
+                                    </div>
+                                    <span>Pirate Ship</span>
                                 </div>
                             </div>
                         </div>
@@ -477,6 +534,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- Leave Button (always visible, right corner) -->
+        <button id="btn-leave-game-corner" class="leave-corner-btn" title="Leave Game">✕</button>
 
         <!-- Loading Screen -->
         <div id="loading-screen" class="loading-screen hidden">

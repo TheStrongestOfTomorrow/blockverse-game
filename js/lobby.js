@@ -8,7 +8,7 @@ const Lobby = (() => {
     const FEATURED_GAMES = [
         {
             name: 'Block World',
-            description: 'Build anything you can imagine with blocks!',
+            description: 'Build anything you can imagine on a flat green terrain with border walls!',
             category: 'sandbox',
             icon: '🏗️',
             code: 'SAMPLE-BLDW',
@@ -17,8 +17,18 @@ const Lobby = (() => {
             players: 0,
         },
         {
+            name: 'Sky Island',
+            description: 'Explore a floating island with trees, a house, and ocean below!',
+            category: 'adventure',
+            icon: '🏝️',
+            code: 'SAMPLE-ISLD',
+            maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
+            color: '#00BCD4',
+            players: 0,
+        },
+        {
             name: 'Tower of Doom',
-            description: 'Climb the tallest tower!',
+            description: 'Climb through 5 stages of obstacles in this epic obby course!',
             category: 'obby',
             icon: '🏰',
             code: 'SAMPLE-TOWR',
@@ -27,18 +37,8 @@ const Lobby = (() => {
             players: 0,
         },
         {
-            name: 'Speed Builder',
-            description: 'Build fast, build smart!',
-            category: 'minigame',
-            icon: '⚡',
-            code: 'SAMPLE-SPDB',
-            maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
-            color: '#FF9800',
-            players: 0,
-        },
-        {
             name: 'City Tycoon',
-            description: 'Build your city empire!',
+            description: 'Explore a full city with buildings, roads, parks, and shops!',
             category: 'tycoon',
             icon: '💰',
             code: 'SAMPLE-CTYT',
@@ -47,23 +47,53 @@ const Lobby = (() => {
             players: 0,
         },
         {
-            name: 'Racing Arena',
-            description: 'Race your friends!',
-            category: 'racing',
-            icon: '🏎️',
-            code: 'SAMPLE-RCEA',
+            name: 'Pirate Adventure',
+            description: 'Set sail on a pirate ship across the open ocean!',
+            category: 'adventure',
+            icon: '🏴‍☠️',
+            code: 'SAMPLE-PIRT',
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
-            color: '#2196F3',
+            color: '#1565C0',
             players: 0,
         },
         {
-            name: 'Sword Fight',
-            description: 'Battle with swords!',
-            category: 'adventure',
+            name: 'Castle Siege',
+            description: 'Battle in a medieval castle with towers and battlements!',
+            category: 'minigame',
             icon: '⚔️',
-            code: 'SAMPLE-SWFT',
+            code: 'SAMPLE-CSTL',
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
             color: '#9C27B0',
+            players: 0,
+        },
+        {
+            name: 'Speed Builder',
+            description: 'Build fast on this clean flat world! Perfect for creative mode.',
+            category: 'sandbox',
+            icon: '⚡',
+            code: 'SAMPLE-SPDB',
+            maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
+            color: '#FF9800',
+            players: 0,
+        },
+        {
+            name: 'Village Life',
+            description: 'Explore a peaceful village with houses, gardens, and a well!',
+            category: 'roleplay',
+            icon: '🏘️',
+            code: 'SAMPLE-VLG',
+            maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
+            color: '#8D6E63',
+            players: 0,
+        },
+        {
+            name: 'Battle Arena',
+            description: 'Fight in a walled arena with spectator stands and diamond center!',
+            category: 'minigame',
+            icon: '🏟️',
+            code: 'SAMPLE-ARNA',
+            maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
+            color: '#673AB7',
             players: 0,
         },
     ];
@@ -360,10 +390,13 @@ const Lobby = (() => {
             const templates = {
                 'SAMPLE-BLDW': 'flat',
                 'SAMPLE-TOWR': 'obby',
-                'SAMPLE-SPDB': 'flat',
+                'SAMPLE-SPDB': 'empty',
                 'SAMPLE-CTYT': 'city',
-                'SAMPLE-RCEA': 'arena',
-                'SAMPLE-SWFT': 'arena',
+                'SAMPLE-ISLD': 'island',
+                'SAMPLE-PIRT': 'pirate',
+                'SAMPLE-CSTL': 'castle',
+                'SAMPLE-VLG': 'village',
+                'SAMPLE-ARNA': 'arena',
             };
             const template = templates[code] || 'flat';
 
@@ -430,7 +463,7 @@ const Lobby = (() => {
         if (typeof UI !== 'undefined') UI.startCooldown('btn-random-play', BV.RANDOM_PLAY_COOLDOWN);
 
         // For now, just pick a random sample game
-        const sampleCodes = ['SAMPLE-BLDW', 'SAMPLE-TOWR', 'SAMPLE-SPDB', 'SAMPLE-CTYT', 'SAMPLE-RCEA', 'SAMPLE-SWFT'];
+        const sampleCodes = ['SAMPLE-BLDW', 'SAMPLE-TOWR', 'SAMPLE-SPDB', 'SAMPLE-CTYT', 'SAMPLE-ISLD', 'SAMPLE-PIRT', 'SAMPLE-CSTL', 'SAMPLE-VLG', 'SAMPLE-ARNA'];
         const randomCode = sampleCodes[Math.floor(Math.random() * sampleCodes.length)];
 
         setTimeout(() => {

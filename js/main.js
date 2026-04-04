@@ -352,6 +352,9 @@ const App = (() => {
         const hudLeave = document.getElementById('hud-leave');
         if (hudLeave) hudLeave.addEventListener('click', () => leaveGame());
 
+        const cornerLeaveBtn = document.getElementById('btn-leave-game-corner');
+        if (cornerLeaveBtn) cornerLeaveBtn.addEventListener('click', () => leaveGame());
+
         const togglePlayersBtn = document.getElementById('btn-toggle-players');
         if (togglePlayersBtn) togglePlayersBtn.addEventListener('click', () => _togglePlayerList());
 

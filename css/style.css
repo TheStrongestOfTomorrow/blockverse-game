@@ -1320,6 +1320,45 @@ img {
 }
 
 /* ==========================================================
+   LEAVE CORNER BUTTON
+   ========================================================== */
+.leave-corner-btn {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(214, 48, 49, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  z-index: 200;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 12px rgba(214, 48, 49, 0.4);
+  line-height: 1;
+  padding: 0;
+  font-family: var(--font-main);
+}
+
+.leave-corner-btn:hover {
+  background: rgba(224, 64, 64, 0.95);
+  transform: scale(1.1);
+  box-shadow: 0 4px 20px rgba(214, 48, 49, 0.6);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.leave-corner-btn:active {
+  transform: scale(0.95);
+}
+
+/* ==========================================================
    GAME SCREEN
    ========================================================== */
 #screen-game {
