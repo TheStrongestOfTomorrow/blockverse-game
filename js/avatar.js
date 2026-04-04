@@ -354,33 +354,34 @@ const Avatar = (() => {
 
     /** Populate head, body, and accessory selectors from BV.AVATAR_PARTS. */
     function _populateSelectors() {
-        _populateSelector('avatar-head-shape', BV.AVATAR_PARTS.head, 'headShape');
-        _populateSelector('avatar-body-shape', BV.AVATAR_PARTS.body, 'bodyShape');
-        _populateSelector('avatar-accessory', BV.AVATAR_PARTS.accessory, 'accessory');
+        _populateOptionRow('avatar-head-options', BV.AVATAR_PARTS.head, 'headShape');
+        _populateOptionRow('avatar-body-options', BV.AVATAR_PARTS.body, 'bodyShape');
+        _populateOptionRow('avatar-accessory-options', BV.AVATAR_PARTS.accessory, 'accessory');
     }
 
     /**
-     * Fill a <select> element with options and wire change events.
-     * @param {string} elementId
+     * Fill a div container with option buttons and wire click events.
+     * @param {string} containerId
      * @param {string[]} options
      * @param {string} configKey
      */
-    function _populateSelector(elementId, options, configKey) {
-        const select = document.getElementById(elementId);
-        if (!select) return;
-        select.innerHTML = '';
+    function _populateOptionRow(containerId, options, configKey) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
 
         options.forEach((opt) => {
-            const option = document.createElement('option');
-            option.value = opt;
-            option.textContent = opt.charAt(0).toUpperCase() + opt.slice(1);
-            if (opt === _config[configKey]) option.selected = true;
-            select.appendChild(option);
-        });
-
-        select.addEventListener('change', () => {
-            _config[configKey] = select.value;
-            _drawPreview();
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            if (opt === _config[configKey]) btn.classList.add('selected');
+            btn.textContent = opt.charAt(0).toUpperCase() + opt.slice(1);
+            btn.addEventListener('click', () => {
+                container.querySelectorAll('.option-btn').forEach((b) => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                _config[configKey] = opt;
+                _drawPreview();
+            });
+            container.appendChild(btn);
         });
     }
 
@@ -391,7 +392,7 @@ const Avatar = (() => {
 
     /** Wire up the save avatar button. */
     function _setupSaveButton() {
-        const btn = document.getElementById('save-avatar-btn');
+        const btn = document.getElementById('btn-save-avatar');
         if (btn) {
             btn.addEventListener('click', saveAvatar);
         }

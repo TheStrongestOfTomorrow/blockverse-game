@@ -80,7 +80,7 @@ const App = (() => {
 
             // Update game systems
             if (typeof World !== 'undefined') World.update(dt);
-            if (typeof Player !== 'undefined') Player.update(dt);
+            if (typeof Player !== 'undefined') Player.update(dt, World.blockMap);
             if (typeof Tools !== 'undefined' && Player.camera) {
                 // Cast a ray from the camera for the block highlight
                 const raycaster = new THREE.Raycaster();

@@ -2482,3 +2482,16 @@ textarea:focus-visible {
 .mb-sm { margin-bottom: 0.5rem; }
 .mb-md { margin-bottom: 1rem; }
 .mb-lg { margin-bottom: 1.5rem; }
+
+
+/* Game card play button */
+.game-card-play-btn {
+  display: block;
+  width: calc(100% - 2rem);
+  margin: 0 1rem 1rem 1rem;
+  padding: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}

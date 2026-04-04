@@ -118,8 +118,9 @@ const Lobby = (() => {
             el.classList.remove('active');
         });
 
-        // Show target
-        const target = document.getElementById(sectionId);
+        // Show target - prepend 'section-' if needed
+        const targetId = sectionId.startsWith('section-') ? sectionId : `section-${sectionId}`;
+        const target = document.getElementById(targetId);
         if (target) target.classList.add('active');
 
         // Update sidebar buttons
@@ -131,13 +132,13 @@ const Lobby = (() => {
         });
 
         // Refresh data when switching sections
-        if (sectionId === 'section-my-games') {
+        if (sectionId === 'my-games') {
             renderMyGames();
-        } else if (sectionId === 'section-discover') {
+        } else if (sectionId === 'discover') {
             renderFeaturedGames();
-        } else if (sectionId === 'section-settings') {
+        } else if (sectionId === 'settings') {
             _loadSettings();
-        } else if (sectionId === 'section-friends') {
+        } else if (sectionId === 'friends') {
             if (typeof Friends !== 'undefined') Friends.renderUI();
         }
     }
@@ -173,18 +174,18 @@ const Lobby = (() => {
      */
     function renderMyGames() {
         const grid = document.getElementById('my-games-grid');
+        const noGamesMsg = document.getElementById('no-games-msg');
         if (!grid) return;
 
         const games = _getUserGames();
 
         if (games.length === 0) {
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <p>You haven't created any games yet.</p>
-                    <p class="text-secondary">Go to "Create" to build one!</p>
-                </div>`;
+            grid.innerHTML = '';
+            if (noGamesMsg) noGamesMsg.style.display = '';
             return;
         }
+
+        if (noGamesMsg) noGamesMsg.style.display = 'none';
 
         grid.innerHTML = games.map((g) => `
             <div class="my-game-card" data-code="${g.code}">
@@ -317,12 +318,53 @@ const Lobby = (() => {
      */
     function joinGameByCode(code) {
         if (!code) return;
-
         code = code.toUpperCase().trim();
+
+        // For sample games, launch in single-player mode
+        if (code.startsWith('SAMPLE-')) {
+            if (typeof UI !== 'undefined') UI.showLoading('Loading game...');
+
+            // Pick template based on game code
+            const templates = {
+                'SAMPLE-BLDW': 'flat',
+                'SAMPLE-TOWR': 'obby',
+                'SAMPLE-SPDB': 'flat',
+                'SAMPLE-CTYT': 'city',
+                'SAMPLE-RCEA': 'arena',
+                'SAMPLE-SWFT': 'arena',
+            };
+            const template = templates[code] || 'flat';
+
+            // Find game config
+            const allGames = [...FEATURED_GAMES, ..._getUserGames()];
+            const gameConfig = allGames.find(g => g.code === code) || {};
+
+            setTimeout(() => {
+                if (typeof UI !== 'undefined') UI.updateLoadingBar(30, 'Generating world...');
+
+                // Init World if needed
+                if (typeof World !== 'undefined') {
+                    if (!World.scene) World.init();
+                    World.generateTerrain(template);
+                }
+
+                setTimeout(() => {
+                    if (typeof UI !== 'undefined') {
+                        UI.updateLoadingBar(100, 'Done!');
+                        setTimeout(() => {
+                            UI.hideLoading();
+                            UI.showScreen('screen-game');
+                            Utils.showToast(`Playing ${gameConfig.name || code}`, 'success');
+                        }, 200);
+                    }
+                }, 300);
+            }, 100);
+            return;
+        }
+
+        // Normal multiplayer join for user-created games
         if (typeof UI !== 'undefined') UI.showLoading(`Joining game ${code}...`);
-
         const hostPeerId = `${code}-S1`;
-
         Multiplayer.joinGame(hostPeerId).then(() => {
             if (typeof UI !== 'undefined') UI.updateLoadingBar(100, 'Connected!');
             setTimeout(() => {
@@ -332,7 +374,7 @@ const Lobby = (() => {
         }).catch((err) => {
             console.error('[Lobby] Failed to join:', err);
             if (typeof UI !== 'undefined') UI.hideLoading();
-            Utils.showToast('Could not find or join that game.', 'error');
+            Utils.showToast('Could not find or join that game. The host may be offline.', 'error');
         });
     }
 
@@ -397,7 +439,7 @@ const Lobby = (() => {
      * @param {Array<{serverId, playerCount, maxPlayers}>} servers
      */
     function renderServers(servers) {
-        const container = document.getElementById('server-list-content');
+        const container = document.getElementById('server-list-in-game');
         if (!container) return;
 
         if (!servers || servers.length === 0) {
@@ -500,35 +542,54 @@ const Lobby = (() => {
 
     // ---- Populate create-game dropdowns ----
     function _populateCreateGameOptions() {
-        // Category select
-        _populateSelect('game-category', BV.GAME_CATEGORIES.slice(1), 'id', 'name');
-
-        // Template select
-        _populateSelect('game-template', [
-            { id: 'flat', name: 'Flat World' },
-            { id: 'hills', name: 'Rolling Hills' },
-            { id: 'mountains', name: 'Mountains' },
-            { id: 'islands', name: 'Islands' },
-            { id: 'desert', name: 'Desert' },
-        ], 'id', 'name');
-
-        // Thumbnail color picker
-        const colorContainer = document.getElementById('game-thumbnail-colors');
+        // --- Thumbnail color picker ---
+        const colorContainer = document.getElementById('thumbnail-colors');
         if (colorContainer) {
             const colors = ['#E74C3C', '#E91E63', '#9C27B0', '#3F51B5', '#2196F3',
                 '#009688', '#4CAF50', '#FF9800', '#FF5722', '#795548'];
             colors.forEach((c) => {
                 const el = document.createElement('div');
-                el.className = 'color-circle thumbnail-color';
+                el.className = 'color-circle';
+                if (c === _selectedThumbnailColor) el.classList.add('selected');
                 el.style.background = c;
-                el.dataset.color = c;
                 el.addEventListener('click', () => {
-                    colorContainer.querySelectorAll('.color-circle').forEach((e) => e.classList.remove('active'));
-                    el.classList.add('active');
-                    const hiddenInput = document.getElementById('game-thumbnail-color');
-                    if (hiddenInput) hiddenInput.value = c;
+                    colorContainer.querySelectorAll('.color-circle').forEach((e) => e.classList.remove('selected'));
+                    el.classList.add('selected');
+                    _selectedThumbnailColor = c;
                 });
                 colorContainer.appendChild(el);
+            });
+        }
+
+        // --- Template card selection ---
+        const templateContainer = document.getElementById('game-templates');
+        if (templateContainer) {
+            templateContainer.querySelectorAll('.template-card').forEach((card) => {
+                const tpl = card.dataset.template;
+                if (tpl === _selectedTemplate) card.classList.add('selected');
+                card.addEventListener('click', () => {
+                    templateContainer.querySelectorAll('.template-card').forEach((c) => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    _selectedTemplate = tpl;
+                });
+            });
+        }
+
+        // --- Max players range slider ---
+        const slider = document.getElementById('game-max-players');
+        const valEl = document.getElementById('game-max-players-val');
+        if (slider && valEl) {
+            slider.addEventListener('input', () => {
+                valEl.textContent = slider.value;
+            });
+        }
+
+        // --- Allow save checkbox toggle ---
+        const allowSaveCheckbox = document.getElementById('game-allow-save');
+        const saveSettings = document.getElementById('save-settings');
+        if (allowSaveCheckbox && saveSettings) {
+            allowSaveCheckbox.addEventListener('change', () => {
+                saveSettings.style.display = allowSaveCheckbox.checked ? 'block' : 'none';
             });
         }
     }
@@ -590,24 +651,11 @@ const Lobby = (() => {
 
     // ---- Server list modal ----
     function _setupServerListModal() {
-        const form = document.getElementById('server-list-form');
-        if (!form) return;
-
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const input = form.querySelector('#server-list-code-input');
-            const code = input ? input.value.trim() : '';
-            if (!code) return;
-            loadServers(code);
-        });
-
-        // Refresh button inside server list modal
-        const refreshBtn = document.getElementById('refresh-servers-btn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => {
-                const input = form.querySelector('#server-list-code-input');
-                const code = input ? input.value.trim() : '';
-                if (code) loadServers(code);
+        const loadBtn = document.getElementById('btn-load-servers');
+        if (loadBtn) {
+            loadBtn.addEventListener('click', () => {
+                const code = prompt('Enter game code:');
+                if (code) loadServers(code.trim().toUpperCase());
             });
         }
     }
