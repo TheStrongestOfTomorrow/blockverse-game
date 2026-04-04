@@ -38,7 +38,8 @@ const BlockRenderer = (() => {
 
             const mesh = new THREE.InstancedMesh(_geo, mat, MAX_INSTANCES);
             mesh.name = 'blocks_' + type;
-            mesh.castShadow = true;
+            // Shadow optimization: transparent blocks don't cast meaningful shadows
+            mesh.castShadow = !config.transparent;
             mesh.receiveShadow = true;
             mesh.frustumCulled = false; // Don't cull — we manage visibility ourselves
 
@@ -96,7 +97,7 @@ const BlockRenderer = (() => {
         _tempMatrix.makeTranslation(x + 0.5, y + 0.5, z + 0.5);
         inst.mesh.setMatrixAt(idx, _tempMatrix);
 
-        inst.data[idx] = { x, y, z, key: x + ',' + y + ',' + z };
+        inst.data[idx] = { x, y, z, key: blockKey(x, y, z) };
         inst.count++;
 
         // Try to set render count (works in most Three.js versions)
@@ -111,7 +112,7 @@ const BlockRenderer = (() => {
         const inst = _instances[type];
         if (!inst || inst.count === 0) return false;
 
-        const key = x + ',' + y + ',' + z;
+        const key = blockKey(x, y, z);
         let idx = -1;
 
         for (let i = 0; i < inst.count; i++) {
@@ -153,7 +154,7 @@ const BlockRenderer = (() => {
     // =============================================
 
     function addCustomMesh(x, y, z, material) {
-        const key = x + ',' + y + ',' + z;
+        const key = blockKey(x, y, z);
 
         if (_customMeshes[key]) {
             _customGroup.remove(_customMeshes[key]);
@@ -173,7 +174,7 @@ const BlockRenderer = (() => {
     }
 
     function removeCustomMesh(x, y, z) {
-        const key = x + ',' + y + ',' + z;
+        const key = blockKey(x, y, z);
         if (_customMeshes[key]) {
             _customGroup.remove(_customMeshes[key]);
             if (_customMeshes[key].material && _customMeshes[key].material.dispose) {
@@ -186,7 +187,7 @@ const BlockRenderer = (() => {
     }
 
     function getCustomMesh(x, y, z) {
-        return _customMeshes[x + ',' + y + ',' + z] || null;
+        return _customMeshes[blockKey(x, y, z)] || null;
     }
 
     // =============================================
@@ -227,10 +228,10 @@ const BlockRenderer = (() => {
         let t = 0;
 
         for (let step = 0; step < 200; step++) {
-            const key = x + ',' + y + ',' + z;
+            const key = blockKey(x, y, z);
 
             // Skip the block the camera is inside
-            if (blockMap[key] && t > 0.01) {
+            if (blockMap.get && blockMap.get(key) && t > 0.01) {
                 return { x: x, y: y, z: z, nx: nx, ny: ny, nz: nz, distance: t };
             }
 
@@ -267,6 +268,72 @@ const BlockRenderer = (() => {
         }
 
         return null;
+    }
+
+    // =============================================
+    // BLOCK-LEVEL OCCLUSION CULLING
+    // =============================================
+
+    /**
+     * Rebuild visibility for all blocks using occlusion culling.
+     * A block is hidden (not rendered) if ALL 6 neighbors exist AND are opaque.
+     * Transparent blocks are always visible.
+     * Call after terrain generation and after every block add/remove.
+     */
+    function rebuildVisibility(blockMap) {
+        if (!blockMap) return;
+
+        const neighbors = [
+            [1, 0, 0], [-1, 0, 0],
+            [0, 1, 0], [0, -1, 0],
+            [0, 0, 1], [0, 0, -1],
+        ];
+
+        // Step 1: Clear all InstancedMesh instances back to zero scale
+        for (const type in _instances) {
+            const inst = _instances[type];
+            inst.count = 0;
+            inst.data.fill(null);
+        }
+
+        // Step 2: For each block, check visibility and add to InstancedMesh if visible
+        blockMap.forEach((block) => {
+            const { x, y, z, type } = block;
+
+            // Transparent blocks are always visible (no occlusion)
+            if (!isOpaque(type)) {
+                addBlock(x, y, z, type);
+                return;
+            }
+
+            // Check all 6 neighbors
+            let allOpaqueNeighbors = true;
+            for (const [dx, dy, dz] of neighbors) {
+                const nKey = blockKey(x + dx, y + dy, z + dz);
+                const neighbor = blockMap.get ? blockMap.get(nKey) : blockMap[nKey];
+                if (!neighbor || !isOpaque(neighbor.type)) {
+                    allOpaqueNeighbors = false;
+                    break;
+                }
+            }
+
+            // If NOT fully surrounded by opaque neighbors, render it
+            if (!allOpaqueNeighbors) {
+                addBlock(x, y, z, type);
+            }
+        });
+
+        // Step 3: Finalize — set zero-scale matrices for unused slots, update GPU
+        _tempMatrix.makeScale(0, 0, 0);
+        for (const type in _instances) {
+            const inst = _instances[type];
+            // Zero-scale remaining slots beyond count
+            for (let i = inst.count; i < MAX_INSTANCES; i++) {
+                inst.mesh.setMatrixAt(i, _tempMatrix);
+            }
+            try { inst.mesh.count = inst.count; } catch (e) {}
+            inst.mesh.instanceMatrix.needsUpdate = true;
+        }
     }
 
     // =============================================
@@ -347,5 +414,8 @@ const BlockRenderer = (() => {
         clearAll,
         dispose,
         getStats,
+        rebuildVisibility,
+        // Expose _instances for World.generateTerrain matrix flush
+        get _instances() { return _instances; },
     };
 })();

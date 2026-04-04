@@ -10,7 +10,7 @@ const World = {
     camera: null,
     renderer: null,
 
-    blockMap: {},
+    blockMap: new Map(),
     blockCount: 0,
 
     _blockGroup: null,
@@ -247,6 +247,8 @@ const World = {
             for (const type in BlockRenderer._instances) {
                 BlockRenderer._instances[type].mesh.instanceMatrix.needsUpdate = true;
             }
+            // Run occlusion culling after terrain is fully generated
+            BlockRenderer.rebuildVisibility(this.blockMap);
         }
     },
 
@@ -729,8 +731,8 @@ const World = {
 
         if (y < -32 || y > BV.WORLD_HEIGHT_LIMIT) return false;
 
-        const key = x + ',' + y + ',' + z;
-        if (this.blockMap[key]) return false;
+        const key = blockKey(x, y, z);
+        if (this.blockMap.has(key)) return false;
 
         const config = BV.BLOCK_TYPES[blockType];
         if (!config) {
@@ -739,7 +741,7 @@ const World = {
         }
 
         // Data layer
-        this.blockMap[key] = { x, y, z, type: blockType };
+        this.blockMap.set(key, { x, y, z, type: blockType });
         this.blockCount++;
 
         // Render layer (InstancedMesh)
@@ -762,8 +764,8 @@ const World = {
         y = Math.round(y);
         z = Math.round(z);
 
-        const key = x + ',' + y + ',' + z;
-        const block = this.blockMap[key];
+        const key = blockKey(x, y, z);
+        const block = this.blockMap.get(key);
         if (!block) return false;
 
         // Render layer
@@ -776,7 +778,7 @@ const World = {
         }
 
         // Data layer
-        delete this.blockMap[key];
+        this.blockMap.delete(key);
         this.blockCount--;
 
         if (emitEvent) {
@@ -790,16 +792,15 @@ const World = {
     },
 
     getBlock(x, y, z) {
-        const key = Math.round(x) + ',' + Math.round(y) + ',' + Math.round(z);
-        return this.blockMap[key] || null;
+        const key = blockKey(Math.round(x), Math.round(y), Math.round(z));
+        return this.blockMap.get(key) || null;
     },
 
     getBlocksSnapshot() {
         const blocks = [];
-        for (const key of Object.keys(this.blockMap)) {
-            const b = this.blockMap[key];
+        this.blockMap.forEach((b) => {
             blocks.push({ x: b.x, y: b.y, z: b.z, type: b.type });
-        }
+        });
         return blocks;
     },
 
@@ -813,7 +814,7 @@ const World = {
 
     clearAll() {
         // Data layer
-        this.blockMap = {};
+        this.blockMap = new Map();
         this.blockCount = 0;
 
         // Render layer

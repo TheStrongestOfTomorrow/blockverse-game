@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockVerse - Tutorials & Documentation</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>">
+    <style>
+        /* ============================================================
+           BlockVerse Tutorials - Dark Theme
+           ============================================================ */
+        :root {
+            --bg-dark: #0a0a1a;
+            --bg-card: #1a1a2e;
+            --bg-hover: #2d2d44;
+            --bg-code: #12121f;
+            --primary: #6c5ce7;
+            --primary-rgb: 108, 92, 231;
+            --primary-light: #8b7cf7;
+            --secondary: #00b894;
+            --secondary-rgb: 0, 184, 148;
+            --accent-orange: #f39c12;
+            --accent-pink: #e91e63;
+            --accent-blue: #0984e3;
+            --accent-red: #d63031;
+            --accent-teal: #00cec9;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #6c6c80;
+            --border-color: #2a2a3e;
+            --border-light: #363650;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.25s ease;
+            --font-main: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+        }
+
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        ::selection {
+            background: rgba(var(--primary-rgb), 0.3);
+            color: var(--text-primary);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        a { color: var(--primary); text-decoration: none; transition: color var(--transition-fast); }
+        a:hover { color: var(--primary-light); }
+
+        /* ============================================================
+           HEADER / NAVIGATION
+           ============================================================ */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(10, 10, 26, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 1.5rem;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-logo span { color: var(--primary); }
+
+        .nav-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .nav-breadcrumb a { color: var(--text-secondary); }
+        .nav-breadcrumb a:hover { color: var(--primary); }
+        .nav-breadcrumb .sep { color: var(--text-muted); font-size: 0.7rem; }
+        .nav-breadcrumb .current { color: var(--text-primary); font-weight: 600; }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-search {
+            position: relative;
+        }
+
+        .nav-search input {
+            padding: 0.45rem 0.9rem 0.45rem 2.2rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-family: var(--font-main);
+            outline: none;
+            width: 220px;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast), width var(--transition-base);
+        }
+
+        .nav-search input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
+            width: 280px;
+        }
+
+        .nav-search input::placeholder { color: var(--text-muted); }
+
+        .nav-search-icon {
+            position: absolute;
+            left: 0.65rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .nav-search-shortcut {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.1rem 0.4rem;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        .progress-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.8rem;
+            background: rgba(var(--secondary-rgb), 0.12);
+            border: 1px solid rgba(var(--secondary-rgb), 0.3);
+            border-radius: var(--radius-sm);
+            color: var(--secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .progress-btn:hover {
+            background: rgba(var(--secondary-rgb), 0.2);
+        }
+
+        /* ============================================================
+           LAYOUT
+           ============================================================ */
+        .layout {
+            display: flex;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Sidebar TOC */
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            border-right: 1px solid var(--border-color);
+            background: var(--bg-card);
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            padding: 1.25rem 0;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 0 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            width: 100%;
+            padding: 0.55rem 1.25rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            font-weight: 500;
+            font-family: var(--font-main);
+            cursor: pointer;
+            text-align: left;
+            transition: background var(--transition-fast), color var(--transition-fast);
+            border-left: 3px solid transparent;
+        }
+
+        .toc-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .toc-item.active {
+            background: rgba(var(--primary-rgb), 0.1);
+            color: var(--primary);
+            border-left-color: var(--primary);
+            font-weight: 600;
+        }
+
+        .toc-item.completed .toc-check {
+            background: var(--secondary);
+            border-color: var(--secondary);
+            color: #fff;
+        }
+
+        .toc-check {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: transparent;
+            transition: all var(--transition-fast);
+        }
+
+        .toc-icon {
+            font-size: 1.1rem;
+        }
+
+        .toc-difficulty {
+            margin-left: auto;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+        }
+
+        .diff-beginner { background: rgba(var(--secondary-rgb), 0.15); color: var(--secondary); }
+        .diff-intermediate { background: rgba(243, 156, 18, 0.15); color: var(--accent-orange); }
+        .diff-advanced { background: rgba(233, 30, 99, 0.15); color: var(--accent-pink); }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2.5rem 3rem;
+        }
+
+        /* ============================================================
+           TUTORIAL HERO
+           ============================================================ */
+        .tutorial-hero {
+            margin-bottom: 2.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tutorial-hero h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 0.5rem;
+            line-height: 1.15;
+        }
+
+        .tutorial-hero h1 .hl { color: var(--primary); }
+
+        .tutorial-hero .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        .tutorial-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-top: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        .meta-tag .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* ============================================================
+           SECTION HEADERS
+           ============================================================ */
+        .section-block {
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .section-block.hidden-section { display: none; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header .section-num {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .section-num-green { background: rgba(var(--secondary-rgb), 0.15); color: var(--secondary); }
+        .section-num-purple { background: rgba(var(--primary-rgb), 0.15); color: var(--primary); }
+        .section-num-orange { background: rgba(243, 156, 18, 0.15); color: var(--accent-orange); }
+        .section-num-pink { background: rgba(233, 30, 99, 0.15); color: var(--accent-pink); }
+        .section-num-blue { background: rgba(9, 132, 227, 0.15); color: var(--accent-blue); }
+        .section-num-teal { background: rgba(0, 206, 201, 0.15); color: var(--accent-teal); }
+        .section-num-red { background: rgba(214, 48, 49, 0.15); color: var(--accent-red); }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .section-header .section-diff {
+            margin-left: auto;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.2rem 0.6rem;
+            border-radius: 3px;
+        }
+
+        /* ============================================================
+           CONTENT STYLES
+           ============================================================ */
+        .content-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 1rem;
+        }
+
+        .content-text strong { color: var(--text-primary); font-weight: 600; }
+        .content-text em { color: var(--primary-light); font-style: italic; }
+
+        .content-text ul, .content-text ol {
+            margin: 0.5rem 0 1rem 1.5rem;
+        }
+
+        .content-text li {
+            margin-bottom: 0.35rem;
+        }
+
+        /* Info / Warning / Tip boxes */
+        .callout {
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            border-left: 4px solid;
+        }
+
+        .callout-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .callout-info {
+            background: rgba(var(--primary-rgb), 0.08);
+            border-color: var(--primary);
+            color: var(--text-secondary);
+        }
+
+        .callout-tip {
+            background: rgba(var(--secondary-rgb), 0.08);
+            border-color: var(--secondary);
+            color: var(--text-secondary);
+        }
+
+        .callout-warning {
+            background: rgba(243, 156, 18, 0.08);
+            border-color: var(--accent-orange);
+            color: var(--text-secondary);
+        }
+
+        .callout-danger {
+            background: rgba(214, 48, 49, 0.08);
+            border-color: var(--accent-red);
+            color: var(--text-secondary);
+        }
+
+        /* ============================================================
+           STEP BLOCKS
+           ============================================================ */
+        .step-list {
+            margin: 1.25rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .step-item {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            padding: 1rem 1.25rem;
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            transition: border-color var(--transition-fast), background var(--transition-fast);
+        }
+
+        .step-item:hover {
+            border-color: var(--border-light);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3);
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-content h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.35rem;
+        }
+
+        .step-content p {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .step-content ul {
+            margin: 0.3rem 0 0 1.25rem;
+            list-style: disc;
+        }
+
+        .step-content li {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.2rem;
+        }
+
+        /* ============================================================
+           CODE BLOCKS
+           ============================================================ */
+        .code-block {
+            position: relative;
+            margin: 1rem 0 1.25rem;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.9rem;
+            background: rgba(0, 0, 0, 0.35);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .code-lang {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+        }
+
+        .code-lang.visual { color: var(--accent-teal); }
+        .code-lang.javascript { color: var(--accent-orange); }
+        .code-lang.api { color: var(--primary); }
+
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.6rem;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-family: var(--font-main);
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            border-color: var(--border-light);
+        }
+
+        .copy-btn.copied {
+            background: rgba(var(--secondary-rgb), 0.15);
+            border-color: rgba(var(--secondary-rgb), 0.3);
+            color: var(--secondary);
+        }
+
+        .code-body {
+            background: var(--bg-code);
+            padding: 1rem 1.25rem;
+            overflow-x: auto;
+        }
+
+        .code-body pre {
+            margin: 0;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: #c8c8d8;
+            white-space: pre;
+        }
+
+        /* Syntax highlighting */
+        .code-body .kw { color: #c792ea; }    /* keywords */
+        .code-body .fn { color: #82aaff; }    /* functions */
+        .code-body .str { color: #c3e88d; }   /* strings */
+        .code-body .num { color: #f78c6c; }   /* numbers */
+        .code-body .cm { color: #546e7a; font-style: italic; }  /* comments */
+        .code-body .op { color: #89ddff; }    /* operators */
+        .code-body .prop { color: #ffcb6b; }  /* properties */
+        .code-body .type { color: #ff5370; }  /* types */
+
+        /* Inline code */
+        code:not(pre code) {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.15rem 0.45rem;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--accent-teal);
+        }
+
+        /* ============================================================
+           API REFERENCE TABLE
+           ============================================================ */
+        .api-category {
+            margin-bottom: 2rem;
+        }
+
+        .api-category h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .api-category h3 .api-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+        }
+
+        .api-icon-block { background: rgba(var(--secondary-rgb), 0.15); }
+        .api-icon-player { background: rgba(var(--primary-rgb), 0.15); }
+        .api-icon-ui { background: rgba(243, 156, 18, 0.15); }
+        .api-icon-tween { background: rgba(9, 132, 227, 0.15); }
+        .api-icon-sound { background: rgba(233, 30, 99, 0.15); }
+        .api-icon-events { background: rgba(0, 206, 201, 0.15); }
+        .api-icon-timer { background: rgba(214, 48, 49, 0.15); }
+        .api-icon-math { background: rgba(108, 92, 231, 0.15); }
+
+        .api-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+
+        .api-table th {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.6rem 1rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .api-table td {
+            padding: 0.55rem 1rem;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(42, 42, 62, 0.5);
+            vertical-align: top;
+        }
+
+        .api-table tr:last-child td { border-bottom: none; }
+
+        .api-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .api-method {
+            font-family: var(--font-mono);
+            color: var(--accent-teal);
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
+
+        .api-desc {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        .api-return {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* ============================================================
+           VISUAL DIAGRAMS
+           ============================================================ */
+        .diagram {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin: 1.25rem 0;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            line-height: 1.5;
+            overflow-x: auto;
+            color: var(--text-secondary);
+        }
+
+        .diagram .highlight { color: var(--primary); font-weight: 600; }
+        .diagram .accent { color: var(--secondary); font-weight: 600; }
+        .diagram .warn { color: var(--accent-orange); }
+
+        /* Block color swatches */
+        .block-types-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .block-type-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.65rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            transition: border-color var(--transition-fast);
+        }
+
+        .block-type-item:hover { border-color: var(--border-light); }
+
+        .block-swatch {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* ============================================================
+           PROGRESS BAR
+           ============================================================ */
+        .progress-overview {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .progress-overview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .progress-overview h3 {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .progress-stats {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .progress-stats strong {
+            color: var(--secondary);
+        }
+
+        .progress-bar-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        /* ============================================================
+           COMPLETE BUTTON
+           ============================================================ */
+        .complete-section-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            padding: 0.6rem 1.25rem;
+            background: rgba(var(--secondary-rgb), 0.1);
+            border: 1.5px solid rgba(var(--secondary-rgb), 0.25);
+            border-radius: var(--radius-sm);
+            color: var(--secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-family: var(--font-main);
+        }
+
+        .complete-section-btn:hover {
+            background: rgba(var(--secondary-rgb), 0.18);
+            border-color: rgba(var(--secondary-rgb), 0.4);
+        }
+
+        .complete-section-btn.completed {
+            background: rgba(var(--secondary-rgb), 0.2);
+            border-color: var(--secondary);
+            color: #fff;
+        }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        .page-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 2rem 3rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            margin-top: 2rem;
+        }
+
+        .page-footer a { color: var(--primary); }
+
+        /* ============================================================
+           SEARCH RESULTS
+           ============================================================ */
+        .search-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            z-index: 200;
+            padding: 4rem 1rem 2rem;
+            overflow-y: auto;
+        }
+
+        .search-overlay.active { display: flex; justify-content: center; }
+
+        .search-modal {
+            width: 100%;
+            max-width: 600px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .search-modal-input {
+            width: 100%;
+            padding: 1.25rem;
+            background: none;
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-family: var(--font-main);
+            outline: none;
+        }
+
+        .search-modal-input::placeholder { color: var(--text-muted); }
+
+        .search-results {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .search-result-item:hover { background: var(--bg-hover); }
+
+        .search-result-item .sr-icon { font-size: 1.2rem; }
+
+        .search-result-item .sr-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .search-result-item .sr-snippet {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 0.15rem;
+        }
+
+        .search-no-results {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 900px) {
+            .sidebar {
+                position: fixed;
+                left: -300px;
+                top: 60px;
+                z-index: 90;
+                width: 280px;
+                transition: left var(--transition-base);
+                box-shadow: var(--shadow-lg);
+            }
+
+            .sidebar.open { left: 0; }
+
+            .main-content {
+                padding: 1.5rem 1.25rem;
+            }
+
+            .tutorial-hero h1 { font-size: 1.8rem; }
+
+            .mobile-toggle {
+                display: flex !important;
+            }
+        }
+
+        @media (min-width: 901px) {
+            .mobile-toggle { display: none !important; }
+            .sidebar-overlay { display: none !important; }
+        }
+
+        .mobile-toggle {
+            width: 36px;
+            height: 36px;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            top: 60px;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 89;
+        }
+
+        .sidebar-overlay.active { display: block; }
+
+        /* Mark complete animation */
+        @keyframes checkPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .check-pop { animation: checkPop 0.3s ease; }
+    </style>
+</head>
+<body>
+
+    <!-- Search Overlay -->
+    <div id="search-overlay" class="search-overlay">
+        <div class="search-modal">
+            <input id="search-input" class="search-modal-input" type="text" placeholder="Search tutorials, APIs, concepts..." autofocus>
+            <div id="search-results" class="search-results"></div>
+        </div>
+    </div>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <button class="mobile-toggle" id="mobile-toggle">&#9776;</button>
+            <div class="nav-logo">BLOCK<span>VERSE</span></div>
+            <div class="nav-breadcrumb">
+                <a href="../index.html">Docs</a>
+                <span class="sep">&#9656;</span>
+                <span class="current">Tutorials</span>
+            </div>
+        </div>
+        <div class="nav-actions">
+            <div class="nav-search">
+                <span class="nav-search-icon">&#128269;</span>
+                <input id="nav-search-input" type="text" placeholder="Search docs...">
+                <span class="nav-search-shortcut">/</span>
+            </div>
+            <button class="progress-btn" id="progress-btn">
+                <span>&#9989;</span>
+                <span id="progress-text">0 / 8</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Layout -->
+    <div class="layout">
+        <!-- Sidebar TOC -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-title">Tutorials</div>
+            <button class="toc-item" data-section="getting-started">
+                <span class="toc-check" id="check-getting-started">&#10003;</span>
+                <span class="toc-icon">&#127919;</span>
+                Getting Started
+                <span class="toc-difficulty diff-beginner">Beginner</span>
+            </button>
+            <button class="toc-item" data-section="block-basics">
+                <span class="toc-check" id="check-block-basics">&#10003;</span>
+                <span class="toc-icon">&#129513;</span>
+                Block Basics
+                <span class="toc-difficulty diff-beginner">Beginner</span>
+            </button>
+            <button class="toc-item" data-section="player-control">
+                <span class="toc-check" id="check-player-control">&#10003;</span>
+                <span class="toc-icon">&#127939;</span>
+                Player Control
+                <span class="toc-difficulty diff-beginner">Beginner</span>
+            </button>
+            <button class="toc-item" data-section="first-game">
+                <span class="toc-check" id="check-first-game">&#10003;</span>
+                <span class="toc-icon">&#127942;</span>
+                First Game (Obby)
+                <span class="toc-difficulty diff-beginner">Beginner</span>
+            </button>
+
+            <div class="sidebar-title" style="margin-top:1rem;">Advanced</div>
+            <button class="toc-item" data-section="custom-nodes">
+                <span class="toc-check" id="check-custom-nodes">&#10003;</span>
+                <span class="toc-icon">&#129302;</span>
+                Custom Nodes
+                <span class="toc-difficulty diff-advanced">Advanced</span>
+            </button>
+            <button class="toc-item" data-section="variables">
+                <span class="toc-check" id="check-variables">&#10003;</span>
+                <span class="toc-icon">&#128202;</span>
+                Variables &amp; State
+                <span class="toc-difficulty diff-intermediate">Medium</span>
+            </button>
+            <button class="toc-item" data-section="sharing">
+                <span class="toc-check" id="check-sharing">&#10003;</span>
+                <span class="toc-icon">&#127760;</span>
+                Sharing
+                <span class="toc-difficulty diff-beginner">Beginner</span>
+            </button>
+
+            <div class="sidebar-title" style="margin-top:1rem;">Reference</div>
+            <button class="toc-item" data-section="api-reference">
+                <span class="toc-check" id="check-api-reference">&#10003;</span>
+                <span class="toc-icon">&#128218;</span>
+                JavaScript API
+                <span class="toc-difficulty diff-intermediate">Ref</span>
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+
+            <!-- Hero -->
+            <div class="tutorial-hero">
+                <h1>BlockVerse <span class="hl">Tutorials</span></h1>
+                <p class="subtitle">Learn to create amazing games in BlockVerse. From your first "Hello World" to advanced custom nodes &mdash; we've got you covered.</p>
+                <div class="tutorial-meta">
+                    <div class="meta-tag"><span class="dot" style="background:var(--secondary)"></span> 8 Tutorials</div>
+                    <div class="meta-tag"><span class="dot" style="background:var(--primary)"></span> Beginner to Advanced</div>
+                    <div class="meta-tag"><span class="dot" style="background:var(--accent-orange)"></span> ~45 min total</div>
+                </div>
+            </div>
+
+            <!-- Progress Overview -->
+            <div class="progress-overview" id="progress-overview">
+                <div class="progress-overview-header">
+                    <h3>&#128640; Your Progress</h3>
+                    <div class="progress-stats"><strong id="progress-count">0</strong> / 8 completed</div>
+                </div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progress-bar"></div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 TUTORIAL 1: Getting Started with Scripting
+                 ============================================================ -->
+            <section class="section-block" id="sec-getting-started" data-tutorial="getting-started">
+                <div class="section-header">
+                    <span class="section-num section-num-green">01</span>
+                    <h2>Getting Started with Scripting</h2>
+                    <span class="section-diff diff-beginner">Beginner</span>
+                </div>
+
+                <p class="content-text">
+                    Welcome to BlockVerse Scripting! BlockVerse lets you add interactivity to your games using <strong>two methods</strong>:
+                </p>
+                <p class="content-text">
+                    <strong>1. Visual Blocks (Beginner Mode)</strong> &mdash; Drag and snap blocks together<br>
+                    <strong>2. JavaScript Code (Advanced Mode)</strong> &mdash; Write code directly
+                </p>
+                <p class="content-text">This tutorial covers the <strong>Visual Blocks</strong> system. No coding experience needed!</p>
+
+                <div class="callout callout-info">
+                    <span class="callout-icon">&#128161;</span>
+                    <div><strong>Visual Blocks</strong> work like puzzle pieces &mdash; each block has a unique shape that only connects to compatible blocks. This prevents errors and makes learning fun!</div>
+                </div>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-circle">1</div>
+                        <div class="step-content">
+                            <h4>Open the Creator</h4>
+                            <ul>
+                                <li>Click <strong>"Creator Studio"</strong> in the sidebar</li>
+                                <li>Wait for the 3D viewport to load</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">2</div>
+                        <div class="step-content">
+                            <h4>Open the Scripting Panel</h4>
+                            <ul>
+                                <li>Click the <strong>"Scripting"</strong> tab on the right panel</li>
+                                <li>Make sure <strong>"Beginner Mode"</strong> is selected (toggle at top)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">3</div>
+                        <div class="step-content">
+                            <h4>Add Your First Block</h4>
+                            <ul>
+                                <li>From the palette on the left, find <strong>"Events"</strong> (green blocks)</li>
+                                <li>Drag <strong>"when game starts"</strong> to the workspace</li>
+                                <li>This is the starting point for your script</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">4</div>
+                        <div class="step-content">
+                            <h4>Add an Action</h4>
+                            <ul>
+                                <li>Find <strong>"Looks"</strong> (purple blocks)</li>
+                                <li>Drag <strong>"show hint 'Hello World!'"</strong> and snap it below the green event block</li>
+                                <li>The blocks should click together like puzzle pieces</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">5</div>
+                        <div class="step-content">
+                            <h4>Test It!</h4>
+                            <ul>
+                                <li>Click the <strong>"Play"</strong> button to test your game</li>
+                                <li>When the game starts, you should see <strong>"Hello World!"</strong> on screen</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang visual">Visual Blocks</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre>when game starts
+  show hint "Hello World!"</pre></div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript Equivalent</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="cm">// The same script in JavaScript (Advanced Mode)</span>
+<span class="kw">Events</span>.<span class="fn">on</span>(<span class="str">'gameStart'</span>, <span class="kw">function</span>() {
+    <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">'Hello World!'</span>);
+});</pre></div>
+                </div>
+
+                <div class="callout callout-tip">
+                    <span class="callout-icon">&#127881;</span>
+                    <div><strong>Congratulations!</strong> You've created your first script! The event block (green) triggers when the game starts, and the action block (purple) shows a message on screen.</div>
+                </div>
+
+                <button class="complete-section-btn" onclick="Tutorials.markComplete('getting-started', this)">
+                    &#9744; Mark as Complete
+                </button>
+            </section>
+
+            <!-- ============================================================
+                 TUTORIAL 2: Block Basics
+                 ============================================================ -->
+            <section class="section-block" id="sec-block-basics" data-tutorial="block-basics">
+                <div class="section-header">
+                    <span class="section-num section-num-green">02</span>
+                    <h2>Block Basics</h2>
+                    <span class="section-diff diff-beginner">Beginner</span>
+                </div>
+
+                <p class="content-text">
+                    Blocks are the building blocks of your world (pun intended!). You can place, remove, and detect blocks using scripts.
+                </p>
+
+                <div class="diagram">
+<pre>
+   <span class="accent">World Grid</span> (Top-Down View)
+
+        X →
+    Z   ┌───┬───┬───┬───┬───┐
+    ↓   │   │<span class="highlight"> G </span>│   │   │   │
+        ├───┼───┼───┼───┼───┤
+        │   │<span class="highlight"> G </span>│<span class="highlight"> G </span>│   │   │
+        ├───┼───┼───┼───┼───┤
+        │   │<span class="highlight"> P </span>│<span class="highlight"> G </span>│<span class="highlight"> S </span>│   │
+        └───┴───┴───┴───┴───┘
+              <span class="warn">P</span> = Player
+              <span class="highlight">G</span> = Grass
+              <span class="highlight">S</span> = Stone
+</pre>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Placing Blocks</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang visual">Visual Blocks</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre>place block at (5, 1, 0) type [grass]</pre></div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">Block</span>.<span class="fn">place</span>(<span class="num">5</span>, <span class="num">1</span>, <span class="num">0</span>, <span class="str">'grass'</span>);</pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Removing Blocks</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang visual">Visual Blocks</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre>remove block at (5, 1, 0)</pre></div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">Block</span>.<span class="fn">remove</span>(<span class="num">5</span>, <span class="num">1</span>, <span class="num">0</span>);</pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Checking if a Block Exists</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang visual">Visual Blocks</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre>if block at (5, 1, 0) is [grass] then
+  show hint "Found grass!"
+end</pre></div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">if</span> (<span class="kw">Block</span>.<span class="fn">get</span>(<span class="num">5</span>, <span class="num">1</span>, <span class="num">0</span>)) {
+    <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">"Found grass!"</span>);
+}</pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Finding All Blocks of a Type</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang visual">Visual Blocks</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre>find all [gold] blocks</pre></div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">const</span> goldBlocks <span class="op">=</span> <span class="kw">Block</span>.<span class="fn">find</span>(<span class="str">'gold'</span>);
+<span class="cm">// Returns an array of {x, y, z} positions</span></pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Available Block Types</h3>
+
+                <div class="block-types-grid">
+                    <div class="block-type-item"><span class="block-swatch" style="background:#4CAF50"></span> grass</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#9E9E9E"></span> stone</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#795548"></span> dirt</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#8D6E63"></span> wood</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#C0392B"></span> brick</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#F4D03F"></span> sand</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#3498DB"></span> water</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#E74C3C"></span> lava</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:rgba(255,255,255,0.3)"></span> glass</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#FFD700"></span> gold</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#00BCD4"></span> diamond</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#1a1a2e"></span> obsidian</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#FAFAFA"></span> snow</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#81D4FA"></span> ice</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#2E7D32"></span> leaf</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#BCAAA4"></span> plank</div>
+                    <div class="block-type-item"><span class="block-swatch" style="background:#616161"></span> cobble</div>
+                </div>
+
+                <div class="callout callout-warning">
+                    <span class="callout-icon">&#9888;&#65039;</span>
+                    <div><strong>Coordinate System:</strong> BlockVerse uses a 3D coordinate system. <code>X</code> is left-right, <code>Y</code> is up-down, and <code>Z</code> is forward-backward. Y=0 is the ground floor.</div>
+                </div>
+
+                <div class="callout callout-tip">
+                    <span class="callout-icon">&#128161;</span>
+                    <div><strong>Practice Exercise:</strong> Try creating a script that (1) places a gold block above the player when the game starts, (2) shows a hint "Find the gold!", and (3) when the player touches the gold block, shows "You found it!" and removes the block.</div>
+                </div>
+
+                <button class="complete-section-btn" onclick="Tutorials.markComplete('block-basics', this)">
+                    &#9744; Mark as Complete
+                </button>
+            </section>
+
+            <!-- ============================================================
+                 TUTORIAL 3: Player Control
+                 ============================================================ -->
+            <section class="section-block" id="sec-player-control" data-tutorial="player-control">
+                <div class="section-header">
+                    <span class="section-num section-num-green">03</span>
+                    <h2>Player Control</h2>
+                    <span class="section-diff diff-beginner">Beginner</span>
+                </div>
+
+                <p class="content-text">
+                    Learn how to control the player character &mdash; move them around, detect touches, and handle death/respawn.
+                </p>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Getting Player Position</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">const</span> pos <span class="op">=</span> <span class="kw">Player</span>.<span class="fn">getPosition</span>();
+<span class="cm">// Returns: { x: 0, y: 5, z: 0 }</span></pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Teleporting the Player</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang visual">Visual Blocks</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre>move player to (10, 5, 0)</pre></div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">Player</span>.<span class="fn">setPosition</span>(<span class="num">10</span>, <span class="num">5</span>, <span class="num">0</span>);</pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Smooth Movement (Tweening)</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang visual">Visual Blocks</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre>tween player to (10, 5, 0) over 2 seconds</pre></div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">Tween</span>.<span class="fn">moveTo</span>(<span class="str">'player'</span>, <span class="num">10</span>, <span class="num">5</span>, <span class="num">0</span>, <span class="num">2</span>); <span class="cm">// 2 second duration</span></pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Changing Speed</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">Player</span>.<span class="fn">setSpeed</span>(<span class="num">10</span>); <span class="cm">// Normal is 8, range: 1-20</span></pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Detecting Block Touches</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang visual">Visual Blocks</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre>when player touches [gold] then
+  show hint "You touched gold!"
+end</pre></div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">Player</span>.<span class="fn">onTouched</span>(<span class="str">'gold'</span>, <span class="kw">function</span>() {
+    <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">"Touched gold!"</span>);
+});</pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Player Death &amp; Respawn</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">Player</span>.<span class="fn">onDied</span>(<span class="kw">function</span>() {
+    <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">"You died! Respawning..."</span>);
+});
+
+<span class="kw">Player</span>.<span class="fn">onRespawned</span>(<span class="kw">function</span>() {
+    <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">"Welcome back!"</span>);
+});</pre></div>
+                </div>
+
+                <div class="callout callout-tip">
+                    <span class="callout-icon">&#128161;</span>
+                    <div><strong>Practice: Create a teleporter!</strong> (1) Place an obsidian block at (0, 1, 10), (2) Place another at (20, 1, 10), (3) When player touches the first obsidian, teleport to (20, 2, 10), (4) When player touches the second, teleport back!</div>
+                </div>
+
+                <button class="complete-section-btn" onclick="Tutorials.markComplete('player-control', this)">
+                    &#9744; Mark as Complete
+                </button>
+            </section>
+
+            <!-- ============================================================
+                 TUTORIAL 4: Making Your First Game (Obby)
+                 ============================================================ -->
+            <section class="section-block" id="sec-first-game" data-tutorial="first-game">
+                <div class="section-header">
+                    <span class="section-num section-num-orange">04</span>
+                    <h2>Making Your First Game &mdash; Obby</h2>
+                    <span class="section-diff diff-beginner">Beginner</span>
+                </div>
+
+                <p class="content-text">
+                    Let's build a complete obstacle course (obby) from scratch! This walkthrough covers everything from setup to publishing.
+                </p>
+
+                <div class="diagram">
+<pre>
+    <span class="accent">OBBY COURSE LAYOUT</span>
+
+    <span class="warn">START</span>                              <span class="highlight">FINISH</span>
+      │                                    │
+      ▼                                    ▼
+    ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+    │<span class="accent"> G </span>│ ─ │<span class="accent"> G </span>│ ─ │<span class="accent"> G </span>│ ─ │<span class="accent"> G </span>│ ─ │<span class="highlight"> D </span>│
+    └───┘   └───┘   └───┘   └───┘   └───┘
+      │       │       │       │
+    <span class="accent">Gold</span>   <span class="accent">Gold</span>   <span class="accent">Gold</span>   <span class="highlight">Diamond</span>
+   Check   Check   Check   <span class="highlight">WIN!</span>
+      │       │       │
+    <span class="warn">~~~lava~~~lava~~~lava~~~</span>
+</pre>
+                </div>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-circle">1</div>
+                        <div class="step-content">
+                            <h4>Create a New Game</h4>
+                            <ul>
+                                <li>Go to Creator Studio</li>
+                                <li>Choose the <strong>"Obby Course"</strong> template</li>
+                                <li>Name your game <strong>"My First Obby"</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">2</div>
+                        <div class="step-content">
+                            <h4>Set Up the Script</h4>
+                            <ul>
+                                <li>Open the Scripting Panel</li>
+                                <li>Switch to <strong>"Beginner Mode"</strong></li>
+                                <li>Drag <strong>"when game starts"</strong> to workspace</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">3</div>
+                        <div class="step-content">
+                            <h4>Add a Welcome Message</h4>
+                            <ul>
+                                <li>Snap <strong>"show hint 'Welcome to My Obby!'"</strong> below it</li>
+                                <li>Add <strong>"wait 3 seconds"</strong></li>
+                                <li>Add <strong>"show hint 'Reach the gold block to win!'"</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">4</div>
+                        <div class="step-content">
+                            <h4>Create Checkpoints</h4>
+                            <ul>
+                                <li>Drag <strong>"when player touches [gold] then { ... }"</strong></li>
+                                <li>Inside: <strong>"show hint 'Checkpoint reached!'"</strong></li>
+                                <li>Add: <strong>"show score 1"</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">5</div>
+                        <div class="step-content">
+                            <h4>Create a Win Condition</h4>
+                            <ul>
+                                <li>Drag <strong>"when player touches [diamond] then { ... }"</strong></li>
+                                <li>Inside: <strong>"show hint 'You Win!'"</strong></li>
+                                <li>Add: <strong>"show score 10"</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">6</div>
+                        <div class="step-content">
+                            <h4>Build the Course</h4>
+                            <ul>
+                                <li>Use Build tool to create platforms</li>
+                                <li>Place <strong>gold blocks</strong> as checkpoints</li>
+                                <li>Place a <strong>diamond block</strong> at the end</li>
+                                <li>Add <strong>lava</strong> below as penalty for falling</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">7</div>
+                        <div class="step-content">
+                            <h4>Test and Publish!</h4>
+                            <ul>
+                                <li>Click <strong>Play</strong> to test</li>
+                                <li>Adjust difficulty as needed</li>
+                                <li>Click <strong>Publish</strong> when ready!</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">Complete JavaScript Script</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="cm">// Welcome message</span>
+<span class="kw">Events</span>.<span class="fn">on</span>(<span class="str">'gameStart'</span>, <span class="kw">function</span>() {
+    <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">'Welcome to My Obby!'</span>, <span class="num">3</span>);
+    <span class="kw">Tween</span>.<span class="fn">wait</span>(<span class="num">3</span>).<span class="fn">then</span>(<span class="kw">function</span>() {
+        <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">'Reach the diamond block to win!'</span>, <span class="num">4</span>);
+    });
+});
+
+<span class="cm">// Checkpoints (gold blocks)</span>
+<span class="kw">Player</span>.<span class="fn">onTouched</span>(<span class="str">'gold'</span>, <span class="kw">function</span>() {
+    <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">'Checkpoint reached!'</span>);
+    <span class="kw">UI</span>.<span class="fn">showScore</span>(<span class="num">1</span>);
+});
+
+<span class="cm">// Win condition (diamond block)</span>
+<span class="kw">Player</span>.<span class="fn">onTouched</span>(<span class="str">'diamond'</span>, <span class="kw">function</span>() {
+    <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">'You Win!'</span>, <span class="num">5</span>);
+    <span class="kw">UI</span>.<span class="fn">showScore</span>(<span class="num">10</span>);
+    <span class="kw">Sound</span>.<span class="fn">play</span>(<span class="str">'victory'</span>);
+});</pre></div>
+                </div>
+
+                <div class="callout callout-warning">
+                    <span class="callout-icon">&#9888;&#65039;</span>
+                    <div><strong>Tip:</strong> Place lava blocks below the platforms so players fall into them if they miss a jump. This creates the classic obby "penalty" mechanic!</div>
+                </div>
+
+                <button class="complete-section-btn" onclick="Tutorials.markComplete('first-game', this)">
+                    &#9744; Mark as Complete
+                </button>
+            </section>
+
+            <!-- ============================================================
+                 TUTORIAL 5: Custom Nodes
+                 ============================================================ -->
+            <section class="section-block" id="sec-custom-nodes" data-tutorial="custom-nodes">
+                <div class="section-header">
+                    <span class="section-num section-num-pink">05</span>
+                    <h2>Custom Nodes (My Blocks)</h2>
+                    <span class="section-diff diff-advanced">Advanced</span>
+                </div>
+
+                <p class="content-text">
+                    Custom nodes let you create your own reusable blocks &mdash; just like Scratch's "My Blocks"! Once created, they appear in your palette and can be used just like built-in blocks.
+                </p>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Why Create Custom Nodes?</h3>
+                <ul style="margin-left:1.5rem; color:var(--text-secondary); font-size:0.9rem; line-height:2;">
+                    <li><strong style="color:var(--text-primary)">Reuse code</strong> without copy-pasting</li>
+                    <li><strong style="color:var(--text-primary)">Share</strong> with other players</li>
+                    <li><strong style="color:var(--text-primary)">Organize</strong> complex scripts</li>
+                    <li><strong style="color:var(--text-primary)">Build your own library</strong> of useful blocks</li>
+                </ul>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-circle">1</div>
+                        <div class="step-content">
+                            <h4>Open My Blocks</h4>
+                            <ul>
+                                <li>In the Scripting Panel, click <strong>"My Blocks"</strong> tab</li>
+                                <li>Click <strong>"Create New Block"</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">2</div>
+                        <div class="step-content">
+                            <h4>Define Your Block</h4>
+                            <ul>
+                                <li><strong>Name:</strong> "Teleport to Position"</li>
+                                <li><strong>Description:</strong> "Teleports the player to X, Y, Z"</li>
+                                <li><strong>Add inputs:</strong> x (number), y (number), z (number)</li>
+                                <li><strong>Output type:</strong> Action</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">3</div>
+                        <div class="step-content">
+                            <h4>Write the Logic</h4>
+                            <ul>
+                                <li>In Advanced mode, write your code</li>
+                                <li>OR use visual blocks to define the behavior</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">4</div>
+                        <div class="step-content">
+                            <h4>Save and Use</h4>
+                            <ul>
+                                <li>Click <strong>Save</strong></li>
+                                <li>Your new block now appears in the <strong>"Custom"</strong> (teal) category</li>
+                                <li>Drag it to your workspace and fill in the inputs!</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Example: Score System Node</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">Custom Node Code</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="cm">// Node: "Add to Score"</span>
+<span class="cm">// Description: "Adds points to the player's score"</span>
+<span class="cm">// Input: points (number)</span>
+
+<span class="kw">var</span> current <span class="op">=</span> <span class="fn">parseInt</span>(<span class="kw">UI</span>.<span class="fn">getScore</span>() <span class="op">||</span> <span class="str">'0'</span>);
+<span class="kw">UI</span>.<span class="fn">showScore</span>(current <span class="op">+</span> points);</pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Example: Reset Game Node</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">Custom Node Code</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="cm">// Node: "Reset Game"</span>
+<span class="cm">// Description: "Resets player position and score"</span>
+<span class="cm">// Input: (none)</span>
+
+<span class="kw">Player</span>.<span class="fn">setPosition</span>(<span class="num">0</span>, <span class="num">5</span>, <span class="num">0</span>);
+<span class="kw">UI</span>.<span class="fn">showScore</span>(<span class="num">0</span>);
+<span class="kw">Chat</span>.<span class="fn">send</span>(<span class="str">"Game Reset!"</span>);</pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Sharing Custom Nodes</h3>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-circle">1</div>
+                        <div class="step-content">
+                            <h4>Export Your Block</h4>
+                            <p>Click <strong>"Export"</strong> on your custom block to get a share code.</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">2</div>
+                        <div class="step-content">
+                            <h4>Share It</h4>
+                            <p>Copy the share code and share it in the Community Hub or with friends.</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">3</div>
+                        <div class="step-content">
+                            <h4>Import</h4>
+                            <p>Others paste the code in <strong>"Import"</strong> to add it to their blocks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout callout-danger">
+                    <span class="callout-icon">&#128721;</span>
+                    <div><strong>Rules for Custom Nodes:</strong> No infinite loops (detected automatically), no accessing other players' data, maximum 50 custom nodes per player, names must be 3-30 characters, no inappropriate content (moderated).</div>
+                </div>
+
+                <button class="complete-section-btn" onclick="Tutorials.markComplete('custom-nodes', this)">
+                    &#9744; Mark as Complete
+                </button>
+            </section>
+
+            <!-- ============================================================
+                 TUTORIAL 6: Variables
+                 ============================================================ -->
+            <section class="section-block" id="sec-variables" data-tutorial="variables">
+                <div class="section-header">
+                    <span class="section-num section-num-orange">06</span>
+                    <h2>Variables &amp; Game State</h2>
+                    <span class="section-diff diff-intermediate">Medium</span>
+                </div>
+
+                <p class="content-text">
+                    Variables let you store information like scores, timers, and game state. This is essential for creating real games!
+                </p>
+
+                <div class="callout callout-info">
+                    <span class="callout-icon">&#128218;</span>
+                    <div><strong>What is a variable?</strong> Think of it as a labeled box where you can store a value. You can put things in, take things out, and change the value at any time during your game.</div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Creating Variables</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang visual">Visual Blocks</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre>set [myScore] to 0
+set [playerName] to "Hero"
+set [gameStarted] to true</pre></div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">var</span> myScore <span class="op">=</span> <span class="num">0</span>;
+<span class="kw">var</span> playerName <span class="op">=</span> <span class="str">"Hero"</span>;
+<span class="kw">var</span> gameStarted <span class="op">=</span> <span class="kw">true</span>;</pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Using Variables with Conditions</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">var</span> score <span class="op">=</span> <span class="num">0</span>;
+
+<span class="kw">Player</span>.<span class="fn">onTouched</span>(<span class="str">'gold'</span>, <span class="kw">function</span>() {
+    score <span class="op">+=</span> <span class="num">10</span>;
+    <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">"Score: "</span> <span class="op">+</span> score);
+    <span class="kw">UI</span>.<span class="fn">showScore</span>(score);
+
+    <span class="kw">if</span> (score <span class="op">>=</span> <span class="num">50</span>) {
+        <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">"You're on fire!"</span>);
+    }
+});</pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Countdown Timer Example</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="kw">var</span> timeLeft <span class="op">=</span> <span class="num">60</span>; <span class="cm">// 60 seconds</span>
+
+<span class="kw">UI</span>.<span class="fn">showTimer</span>(timeLeft);
+
+<span class="kw">Timer</span>.<span class="fn">every</span>(<span class="num">1</span>, <span class="kw">function</span>() {
+    timeLeft <span class="op">-=</span> <span class="num">1</span>;
+    <span class="kw">UI</span>.<span class="fn">showTimer</span>(timeLeft);
+
+    <span class="kw">if</span> (timeLeft <span class="op"><=</span> <span class="num">0</span>) {
+        <span class="kw">UI</span>.<span class="fn">showHint</span>(<span class="str">"Time's up!"</span>);
+        <span class="kw">UI</span>.<span class="fn">hideTimer</span>();
+        <span class="cm">// Reset game or show results</span>
+    }
+});</pre></div>
+                </div>
+
+                <h3 style="color:var(--text-primary); font-size:1.1rem; margin:1.5rem 0 0.75rem;">Multiplayer Game State</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang javascript">JavaScript</span>
+                        <button class="copy-btn" onclick="Tutorials.copyCode(this)">&#128203; Copy</button>
+                    </div>
+                    <div class="code-body"><pre><span class="cm">// Track which players have finished</span>
+<span class="kw">var</span> finished <span class="op">=</span> {};
+
+<span class="kw">Events</span>.<span class="fn">on</span>(<span class="str">'playerJoin'</span>, <span class="kw">function</span>(player) {
+    finished[player.name] <span class="op">=</span> <span class="kw">false</span>;
+});
+
+<span class="kw">Player</span>.<span class="fn">onTouched</span>(<span class="str">'diamond'</span>, <span class="kw">function</span>() {
+    finished[<span class="kw">Player</span>.<span class="fn">getName</span>()] <span class="op">=</span> <span class="kw">true</span>;
+    <span class="kw">Chat</span>.<span class="fn">send</span>(<span class="kw">Player</span>.<span class="fn">getName</span>() <span class="op">+</span> <span class="str">" finished!"</span>);
+});</pre></div>
+                </div>
+
+                <div class="callout callout-tip">
+                    <span class="callout-icon">&#128161;</span>
+                    <div><strong>Tip:</strong> Use <code>var</code> for simple variables. For data that needs to persist across sessions, use the BlockVerse save system: <code>Save.set(key, value)</code> and <code>Save.get(key)</code>.</div>
+                </div>
+
+                <button class="complete-section-btn" onclick="Tutorials.markComplete('variables', this)">
+                    &#9744; Mark as Complete
+                </button>
+            </section>
+
+            <!-- ============================================================
+                 TUTORIAL 7: Sharing
+                 ============================================================ -->
+            <section class="section-block" id="sec-sharing" data-tutorial="sharing">
+                <div class="section-header">
+                    <span class="section-num section-num-teal">07</span>
+                    <h2>Sharing Your Creations</h2>
+                    <span class="section-diff diff-beginner">Beginner</span>
+                </div>
+
+                <p class="content-text">
+                    Ready to show off your game to the world? Here's how to publish to the Community Hub and share with friends.
+                </p>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-circle">1</div>
+                        <div class="step-content">
+                            <h4>Test Your Game Thoroughly</h4>
+                            <p>Before publishing, play through your entire game. Check for bugs, test edge cases, and make sure the experience is smooth.</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">2</div>
+                        <div class="step-content">
+                            <h4>Write a Great Description</h4>
+                            <p>Your description is the first thing players see. Include what makes your game special, controls, and any tips.</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">3</div>
+                        <div class="step-content">
+                            <h4>Publish to Community Hub</h4>
+                            <ul>
+                                <li>In Creator Studio, click <strong>"Publish"</strong></li>
+                                <li>Choose your game's category</li>
+                                <li>Set max players per server</li>
+                                <li>Click <strong>"Publish"</strong> to go live!</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">4</div>
+                        <div class="step-content">
+                            <h4>Share with Friends</h4>
+                            <p>Every published game gets a <strong>Game Code</strong> (e.g., BV-A3X7). Share this code so friends can join directly!</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle">5</div>
+                        <div class="step-content">
+                            <h4>Get Feedback &amp; Iterate</h4>
+                            <p>Watch the play count and listen to player feedback. Update your game regularly to keep players coming back!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout callout-info">
+                    <span class="callout-icon">&#127775;</span>
+                    <div><strong>Pro Tip:</strong> Games with good thumbnails and descriptions get 3x more plays! Take time to make your game page look attractive.</div>
+                </div>
+
+                <button class="complete-section-btn" onclick="Tutorials.markComplete('sharing', this)">
+                    &#9744; Mark as Complete
+                </button>
+            </section>
+
+            <!-- ============================================================
+                 TUTORIAL 8: JavaScript API Reference
+                 ============================================================ -->
+            <section class="section-block" id="sec-api-reference" data-tutorial="api-reference">
+                <div class="section-header">
+                    <span class="section-num section-num-blue">08</span>
+                    <h2>JavaScript API Reference</h2>
+                    <span class="section-diff diff-intermediate">Ref</span>
+                </div>
+
+                <p class="content-text">
+                    Complete reference for all BlockVerse scripting APIs. Use these functions in Advanced Mode (JavaScript) to create powerful game logic.
+                </p>
+
+                <!-- Block API -->
+                <div class="api-category">
+                    <h3><span class="api-icon api-icon-block">&#129513;</span> Block API</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Description</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="api-method">Block.place(x, y, z, type)</td>
+                                <td class="api-desc">Place a block at the given coordinates</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Block.remove(x, y, z)</td>
+                                <td class="api-desc">Remove a block at the given coordinates</td>
+                                <td class="api-return">boolean</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Block.get(x, y, z)</td>
+                                <td class="api-desc">Get block info at coordinates, or null if empty</td>
+                                <td class="api-return">object | null</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Block.find(type)</td>
+                                <td class="api-desc">Find all blocks of a given type</td>
+                                <td class="api-return">array</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Block.onPlaced(callback)</td>
+                                <td class="api-desc">Event: fires when any block is placed</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Block.onRemoved(callback)</td>
+                                <td class="api-desc">Event: fires when any block is removed</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Player API -->
+                <div class="api-category">
+                    <h3><span class="api-icon api-icon-player">&#127939;</span> Player API</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Description</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="api-method">Player.getPosition()</td>
+                                <td class="api-desc">Get current player position</td>
+                                <td class="api-return">{x, y, z}</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Player.setPosition(x, y, z)</td>
+                                <td class="api-desc">Teleport player to coordinates</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Player.getSpeed()</td>
+                                <td class="api-desc">Get current movement speed</td>
+                                <td class="api-return">number</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Player.setSpeed(speed)</td>
+                                <td class="api-desc">Set movement speed (1-20, default 8)</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Player.onTouched(type, cb)</td>
+                                <td class="api-desc">When player touches a block type</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Player.onDied(callback)</td>
+                                <td class="api-desc">When player falls into void</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Player.onRespawned(callback)</td>
+                                <td class="api-desc">When player respawns</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Player.getName()</td>
+                                <td class="api-desc">Get the player's username</td>
+                                <td class="api-return">string</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Chat API -->
+                <div class="api-category">
+                    <h3><span class="api-icon api-icon-block">&#128172;</span> Chat API</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Description</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="api-method">Chat.send(message)</td>
+                                <td class="api-desc">Send message to chat</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Chat.onMessage(callback)</td>
+                                <td class="api-desc">When any message is received</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- UI API -->
+                <div class="api-category">
+                    <h3><span class="api-icon api-icon-ui">&#127912;</span> UI API</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Description</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="api-method">UI.showHint(text, duration?)</td>
+                                <td class="api-desc">Show hint on screen (default 3 sec)</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">UI.showScore(value)</td>
+                                <td class="api-desc">Show score on HUD</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">UI.getScore()</td>
+                                <td class="api-desc">Get current displayed score</td>
+                                <td class="api-return">string</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">UI.showTimer(seconds)</td>
+                                <td class="api-desc">Show countdown timer on HUD</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">UI.hideTimer()</td>
+                                <td class="api-desc">Hide the countdown timer</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">UI.showLeaderboard(players)</td>
+                                <td class="api-desc">Show top players</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tween API -->
+                <div class="api-category">
+                    <h3><span class="api-icon api-icon-tween">&#127912;</span> Tween API</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Description</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="api-method">Tween.moveTo(target, x, y, z, dur)</td>
+                                <td class="api-desc">Smooth movement over duration (seconds)</td>
+                                <td class="api-return">Promise</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Tween.rotateTo(target, rx, ry, rz, dur)</td>
+                                <td class="api-desc">Smooth rotation</td>
+                                <td class="api-return">Promise</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Tween.scaleTo(target, sx, sy, sz, dur)</td>
+                                <td class="api-desc">Smooth scaling</td>
+                                <td class="api-return">Promise</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Tween.wait(seconds)</td>
+                                <td class="api-desc">Wait (returns a promise)</td>
+                                <td class="api-return">Promise</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Sound API -->
+                <div class="api-category">
+                    <h3><span class="api-icon api-icon-sound">&#128266;</span> Sound API</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Description</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="api-method">Sound.play(name)</td>
+                                <td class="api-desc">Play a built-in sound (e.g., 'click', 'victory')</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Sound.stopAll()</td>
+                                <td class="api-desc">Stop all sounds</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Sound.setVolume(0-1)</td>
+                                <td class="api-desc">Set master volume (0 to 1)</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Events API -->
+                <div class="api-category">
+                    <h3><span class="api-icon api-icon-events">&#9889;</span> Events API</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Description</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="api-method">Events.on(event, callback)</td>
+                                <td class="api-desc">Listen for an event</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Events.off(event, callback)</td>
+                                <td class="api-desc">Remove event listener</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Events.emit(event, data)</td>
+                                <td class="api-desc">Emit a custom event</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="callout callout-info" style="margin-top:0.75rem;">
+                        <span class="callout-icon">&#128218;</span>
+                        <div><strong>Built-in events:</strong> <code>'gameStart'</code>, <code>'playerJoin'</code>, <code>'playerLeave'</code>, <code>'blockPlace'</code>, <code>'blockRemove'</code></div>
+                    </div>
+                </div>
+
+                <!-- Timer API -->
+                <div class="api-category">
+                    <h3><span class="api-icon api-icon-timer">&#9200;</span> Timer API</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Description</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="api-method">Timer.every(seconds, callback)</td>
+                                <td class="api-desc">Repeating timer (fires every N seconds)</td>
+                                <td class="api-return">timerId</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Timer.after(seconds, callback)</td>
+                                <td class="api-desc">One-shot timer (fires once after N seconds)</td>
+                                <td class="api-return">timerId</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Timer.stop(id)</td>
+                                <td class="api-desc">Stop a running timer</td>
+                                <td class="api-return">void</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Math Helpers -->
+                <div class="api-category">
+                    <h3><span class="api-icon api-icon-math">&#128290;</span> Math Helpers</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Description</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="api-method">Math.random()</td>
+                                <td class="api-desc">Random number between 0 and 1</td>
+                                <td class="api-return">number</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Math.floor(x)</td>
+                                <td class="api-desc">Round down to nearest integer</td>
+                                <td class="api-return">number</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Math.ceil(x)</td>
+                                <td class="api-desc">Round up to nearest integer</td>
+                                <td class="api-return">number</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Math.abs(x)</td>
+                                <td class="api-desc">Absolute value</td>
+                                <td class="api-return">number</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Math.sqrt(x)</td>
+                                <td class="api-desc">Square root</td>
+                                <td class="api-return">number</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Math.min(a, b, ...)</td>
+                                <td class="api-desc">Smallest value</td>
+                                <td class="api-return">number</td>
+                            </tr>
+                            <tr>
+                                <td class="api-method">Math.max(a, b, ...)</td>
+                                <td class="api-desc">Largest value</td>
+                                <td class="api-return">number</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <button class="complete-section-btn" onclick="Tutorials.markComplete('api-reference', this)">
+                    &#9744; Mark as Complete
+                </button>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="page-footer">
+        <p>BlockVerse Tutorials &mdash; Built with &#10084;&#65039; for creators everywhere</p>
+        <p style="margin-top:0.4rem;"><a href="../index.html">Back to BlockVerse</a></p>
+    </footer>
+
+    <script src="../js/community/tutorials.js"></script>
+</body>
+</html>

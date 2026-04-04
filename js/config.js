@@ -3,7 +3,7 @@
 // ============================================
 
 const BV = {
-    VERSION: '1.1.0',
+    VERSION: '2.0.0',
     NAME: 'BlockVerse',
     
     // Network
@@ -155,6 +155,28 @@ const BV = {
         IDENTITY_GAME_INFO: 'identity_game_info',
     },
 };
+
+// =============================================
+// BLOCK KEY UTILITY (Numeric keys for Map performance)
+// =============================================
+
+/**
+ * Encode (x, y, z) into a single numeric key for Map lookups.
+ * Range: x in [-64, 63], y in [0, 255], z in [-64, 63].
+ * ~3x faster than string keys like "x,y,z".
+ */
+function blockKey(x, y, z) {
+    return ((x + 64) << 16) | ((y & 0xFF) << 8) | (z + 64);
+}
+
+/**
+ * Check if a block type is opaque (not transparent).
+ * Used for occlusion culling — fully surrounded opaque blocks need no rendering.
+ */
+function isOpaque(type) {
+    const config = BV.BLOCK_TYPES[type];
+    return config ? !config.transparent : true;
+}
 
 // Utility functions
 const Utils = {

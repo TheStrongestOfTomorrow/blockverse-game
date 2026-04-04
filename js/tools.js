@@ -305,7 +305,7 @@ const Tools = {
         const block = World.getBlock(hit.position.x, hit.position.y, hit.position.z);
         if (!block) return;
 
-        const key = hit.position.x + ',' + hit.position.y + ',' + hit.position.z;
+        const key = blockKey(hit.position.x, hit.position.y, hit.position.z);
 
         // Remove from render
         if (block.customColor) {
@@ -346,7 +346,7 @@ const Tools = {
         this._isGrabbing = true;
 
         // Remove from blockMap (will be re-added on place)
-        delete World.blockMap[key];
+        World.blockMap.delete(key);
         World.blockCount--;
     },
 
@@ -366,8 +366,8 @@ const Tools = {
         const placeZ = hit.position.z + hit.normal.nz;
 
         // Check if position is occupied
-        const existingKey = placeX + ',' + placeY + ',' + placeZ;
-        if (World.blockMap[existingKey]) {
+        const existingKey = blockKey(placeX, placeY, placeZ);
+        if (World.blockMap.has(existingKey)) {
             this._cancelGrab();
             return;
         }
@@ -379,10 +379,10 @@ const Tools = {
         this._grabbedBlock.mesh.material.dispose();
 
         // Add block at new position
-        World.blockMap[existingKey] = {
+        World.blockMap.set(existingKey, {
             x: placeX, y: placeY, z: placeZ,
             type: this._grabbedBlock.type,
-        };
+        });
         World.blockCount++;
 
         if (this._grabbedBlock.customColor) {
@@ -419,12 +419,12 @@ const Tools = {
         }
         this._grabbedBlock.mesh.material.dispose();
 
-        World.blockMap[key] = {
+        World.blockMap.set(key, {
             x: this._grabbedBlock.x,
             y: this._grabbedBlock.y,
             z: this._grabbedBlock.z,
             type: this._grabbedBlock.type,
-        };
+        });
         World.blockCount++;
 
         if (this._grabbedBlock.customColor) {

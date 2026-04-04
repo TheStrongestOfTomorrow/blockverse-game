@@ -433,7 +433,7 @@ const Player = {
             for (let by = Math.floor(feetY) - 1; by >= Math.floor(feetY) - 3; by--) {
                 for (let cx = Math.floor(this.position.x - hw); cx <= Math.floor(this.position.x + hw); cx++) {
                     for (let cz = Math.floor(this.position.z - hw); cz <= Math.floor(this.position.z + hw); cz++) {
-                        if (blockMap[`${cx},${by},${cz}`]) {
+                        if (blockMap.get && blockMap.get(blockKey(cx, by, cz))) {
                             hasGroundBelow = true;
                             break;
                         }
@@ -568,11 +568,12 @@ const Player = {
         const minBZ = Math.floor(pos.z - hw);
         const maxBZ = Math.floor(pos.z + hw);
 
+        const mapGet = blockMap.get ? (k) => blockMap.get(k) : (k) => blockMap[k];
+
         for (let bx = minBX; bx <= maxBX; bx++) {
             for (let by = minBY; by <= maxBY; by++) {
                 for (let bz = minBZ; bz <= maxBZ; bz++) {
-                    const key = `${bx},${by},${bz}`;
-                    if (blockMap[key]) {
+                    if (mapGet(blockKey(bx, by, bz))) {
                         const eps = 0.001;
                         if (
                             pos.x - hw < bx + 1 - eps &&
@@ -597,14 +598,14 @@ const Player = {
         const checkX = [Math.floor(pos.x - hw), Math.floor(pos.x + hw)];
         const checkZ = [Math.floor(pos.z - hw), Math.floor(pos.z + hw)];
 
+        const mapGet = blockMap.get ? (k) => blockMap.get(k) : (k) => blockMap[k];
         let highestY = null;
 
         for (const cx of checkX) {
             for (const cz of checkZ) {
                 const startY = Math.floor(pos.y + 0.5);
                 for (let by = startY; by >= startY - 3; by--) {
-                    const key = `${cx},${by},${cz}`;
-                    if (blockMap[key]) {
+                    if (mapGet(blockKey(cx, by, cz))) {
                         const topY = by + 1;
                         if (highestY === null || topY > highestY) {
                             highestY = topY;

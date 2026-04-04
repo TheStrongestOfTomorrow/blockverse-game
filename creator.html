@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockVerse - Creator Studio</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/creator.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+</head>
+<body>
+    <div class="creator-root">
+
+        <!-- ========== HEADER ========== -->
+        <header class="creator-header">
+            <div class="creator-header-left">
+                <span class="creator-logo">BLOCK<span class="logo-accent">VERSE</span></span>
+                <span class="creator-title">Creator Studio</span>
+            </div>
+            <div class="creator-header-center">
+                <input type="text" class="creator-game-name-input" id="creator-game-name" placeholder="My Awesome Game" value="My Awesome Game" maxlength="40">
+            </div>
+            <div class="creator-header-right">
+                <button class="creator-btn creator-btn-outline" id="btn-settings" data-tooltip="Game Settings">
+                    ⚙️ Settings
+                </button>
+                <button class="creator-btn creator-btn-danger" id="btn-clear-world">
+                    🗑️ Clear
+                </button>
+                <button class="creator-btn creator-btn-primary" id="btn-play">
+                    ▶ Play
+                </button>
+                <button class="creator-btn creator-btn-accent" id="btn-publish">
+                    🚀 Publish
+                </button>
+                <a href="index.html" class="creator-btn creator-btn-ghost">
+                    ← Lobby
+                </a>
+            </div>
+        </header>
+
+        <!-- ========== BODY ========== -->
+        <div class="creator-body">
+
+            <!-- LEFT SIDEBAR - Tools -->
+            <div class="creator-tools-panel">
+                <button class="creator-tool-btn active" data-tool="build" data-tooltip="Build (B)">
+                    🔨
+                </button>
+                <button class="creator-tool-btn" data-tool="delete" data-tooltip="Delete (X)">
+                    🗑️
+                </button>
+                <button class="creator-tool-btn" data-tool="paint" data-tooltip="Paint (P)">
+                    🎨
+                </button>
+                <button class="creator-tool-btn" data-tool="grab" data-tooltip="Grab (G)">
+                    ✋
+                </button>
+                <div class="creator-tool-divider"></div>
+                <button class="creator-tool-btn" data-tool="select" data-tooltip="Select (V)">
+                    🔘
+                </button>
+                <button class="creator-tool-btn" data-tool="move" data-tooltip="Move (M)">
+                    ↕️
+                </button>
+                <button class="creator-tool-btn" data-tool="scale" data-tooltip="Scale (S)">
+                    ⤢
+                </button>
+                <button class="creator-tool-btn" data-tool="rotate" data-tooltip="Rotate (R)">
+                    🔄
+                </button>
+                <div class="creator-tool-divider"></div>
+                <button class="creator-tool-btn" id="btn-undo" data-tooltip="Undo (Ctrl+Z)">
+                    ↩️
+                </button>
+                <button class="creator-tool-btn" id="btn-redo" data-tooltip="Redo (Ctrl+Y)">
+                    ↪️
+                </button>
+            </div>
+
+            <!-- CENTER - 3D Viewport -->
+            <div class="creator-viewport" id="creator-viewport">
+                <canvas id="creator-canvas"></canvas>
+
+                <!-- Viewport info overlay -->
+                <div class="creator-viewport-info">
+                    <div class="creator-viewport-badge">
+                        <span class="badge-dot"></span>
+                        <span id="creator-block-count">0 blocks</span>
+                    </div>
+                    <div class="creator-viewport-badge" id="creator-tool-badge">
+                        🔨 Build
+                    </div>
+                </div>
+
+                <!-- Camera controls hint -->
+                <div class="creator-camera-hint" id="camera-hint">
+                    Right-click drag: Orbit · Scroll: Zoom · Middle-click: Pan
+                </div>
+
+                <!-- Viewport toolbar (block type picker) -->
+                <div class="creator-viewport-toolbar" id="creator-viewport-toolbar">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL - Properties + Scripting -->
+            <div class="creator-right-panel">
+
+                <!-- Panel Tabs -->
+                <div class="creator-panel-tabs">
+                    <button class="creator-panel-tab active" data-panel="properties">
+                        📋 Properties
+                    </button>
+                    <button class="creator-panel-tab" data-panel="scripting">
+                        💻 Scripting
+                    </button>
+                </div>
+
+                <!-- PROPERTIES PANEL -->
+                <div class="creator-panel-content active" id="panel-properties">
+                    <!-- Block Type Picker -->
+                    <div class="properties-section">
+                        <div class="properties-section-title">Block Type</div>
+                        <div class="block-type-grid" id="creator-block-type-grid">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Paint Colors (shown in paint mode) -->
+                    <div class="properties-section hidden" id="paint-section">
+                        <div class="properties-section-title">Paint Color</div>
+                        <div class="paint-color-row" id="creator-paint-colors">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- World Properties -->
+                    <div class="properties-section">
+                        <div class="properties-section-title">World Info</div>
+                        <div class="property-row">
+                            <span class="property-label">Blocks</span>
+                            <span class="property-value" id="prop-block-count">0</span>
+                        </div>
+                        <div class="property-row">
+                            <span class="property-label">Template</span>
+                            <select class="property-select" id="prop-template">
+                                <option value="empty">Empty</option>
+                                <option value="flat" selected>Flat World</option>
+                                <option value="hills">Rolling Hills</option>
+                                <option value="obby">Obby Course</option>
+                                <option value="city">City Blocks</option>
+                                <option value="arena">Battle Arena</option>
+                                <option value="island">Sky Island</option>
+                                <option value="village">Village</option>
+                                <option value="castle">Castle</option>
+                                <option value="pirate">Pirate Ship</option>
+                            </select>
+                        </div>
+                        <div style="padding-top:0.4rem;">
+                            <button class="creator-btn creator-btn-outline" id="btn-generate" style="width:100%;font-size:0.78rem;">
+                                🔄 Generate Terrain
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Selection Properties (shown when block selected) -->
+                    <div class="properties-section hidden" id="selection-section">
+                        <div class="properties-section-title">Selected Block</div>
+                        <div class="property-row">
+                            <span class="property-label">Position</span>
+                            <span class="property-value" id="sel-position">-</span>
+                        </div>
+                        <div class="property-row">
+                            <span class="property-label">Type</span>
+                            <span class="property-value" id="sel-type">-</span>
+                        </div>
+                        <div class="property-row">
+                            <span class="property-label">Color</span>
+                            <span class="property-value" id="sel-color" style="display:flex;align-items:center;gap:4px;">
+                                <span id="sel-color-swatch" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
+                                <span id="sel-color-hex">-</span>
+                            </span>
+                        </div>
+                        <div style="padding-top:0.4rem;">
+                            <button class="creator-btn creator-btn-danger" id="btn-delete-selected" style="width:100%;font-size:0.78rem;">
+                                🗑️ Delete Block
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- No selection hint -->
+                    <div class="no-selection-hint" id="no-selection-hint">
+                        <span class="hint-icon">🔨</span>
+                        Click on the viewport to place blocks.<br>
+                        Use the toolbar at the bottom to select block types.
+                    </div>
+                </div>
+
+                <!-- SCRIPTING PANEL -->
+                <div class="creator-panel-content" id="panel-scripting">
+
+                    <!-- Scripting header with mode toggle -->
+                    <div class="scripting-header">
+                        <div class="scripting-mode-toggle">
+                            <span class="scripting-mode-label" id="mode-label">Beginner</span>
+                            <div class="mode-switch" id="mode-switch">
+                                <div class="mode-switch-knob"></div>
+                            </div>
+                        </div>
+                        <div class="scripting-actions">
+                            <button class="script-action-btn run-btn" id="btn-run-script">▶ Run</button>
+                            <button class="script-action-btn stop-btn" id="btn-stop-script">■ Stop</button>
+                        </div>
+                    </div>
+
+                    <!-- Script Templates -->
+                    <div class="script-templates" id="script-templates">
+                        <button class="script-template-btn" data-template="welcome">
+                            <span class="template-title">👋 Welcome Message</span>
+                            <span class="template-desc">Show a hint when the game starts</span>
+                        </button>
+                        <button class="script-template-btn" data-template="obby">
+                            <span class="template-title">🏃 Obby Scorer</span>
+                            <span class="template-desc">Track score when touching gold blocks</span>
+                        </button>
+                        <button class="script-template-btn" data-template="timer">
+                            <span class="template-title">⏱️ Countdown Timer</span>
+                            <span class="template-desc">Show a countdown timer on screen</span>
+                        </button>
+                        <button class="script-template-btn" data-template="builder">
+                            <span class="template-title">🏗️ Auto Builder</span>
+                            <span class="template-desc">Automatically place blocks in patterns</span>
+                        </button>
+                    </div>
+
+                    <!-- BEGINNER MODE: Visual Node Editor -->
+                    <div class="visual-node-editor" id="visual-node-editor">
+                        <div class="visual-node-canvas" id="node-canvas">
+                            <!-- Nodes rendered here dynamically -->
+                        </div>
+                        <div class="node-placeholder-icon" id="node-placeholder">
+                            🧩
+                        </div>
+                        <div class="node-placeholder-title">Visual Node Editor</div>
+                        <div class="node-placeholder-desc">
+                            Drag and connect blocks to create game logic. Switch to Advanced mode for JavaScript coding.
+                        </div>
+                    </div>
+
+                    <!-- ADVANCED MODE: Monaco Code Editor -->
+                    <div class="script-editor-container hidden" id="advanced-editor">
+                        <div id="monaco-editor-wrapper"></div>
+                    </div>
+
+                    <!-- Console -->
+                    <div class="script-console-header">
+                        <span>Console</span>
+                        <button class="script-action-btn" id="btn-clear-console">Clear</button>
+                    </div>
+                    <div class="script-console" id="script-console"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== BOTTOM PANEL - Asset Library ========== -->
+        <div class="creator-bottom-panel">
+            <div class="creator-bottom-tabs">
+                <button class="creator-bottom-tab active" data-section="blocks">🧱 Blocks</button>
+                <button class="creator-bottom-tab" data-section="decorations">🎭 Decorations</button>
+                <button class="creator-bottom-tab" data-section="terrain">🏔️ Terrain</button>
+                <button class="creator-bottom-tab" data-section="templates">📦 Templates</button>
+            </div>
+            <div class="creator-bottom-content" id="bottom-content">
+                <!-- Filled dynamically -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ========== GAME SETTINGS MODAL ========== -->
+    <div class="creator-modal-overlay" id="settings-modal">
+        <div class="creator-modal">
+            <div class="creator-modal-header">
+                <h2>⚙️ Game Settings</h2>
+                <button class="creator-modal-close" id="btn-close-settings">&times;</button>
+            </div>
+            <div class="creator-modal-body">
+                <div class="settings-group">
+                    <label>Game Name</label>
+                    <input type="text" id="settings-name" placeholder="My Awesome Game" maxlength="40">
+                </div>
+                <div class="settings-group">
+                    <label>Description</label>
+                    <textarea id="settings-desc" placeholder="Describe your game..." maxlength="200" rows="3"></textarea>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-group">
+                        <label>Category</label>
+                        <select id="settings-category">
+                            <option value="sandbox">🏗️ Sandbox</option>
+                            <option value="obby">🏃 Obby</option>
+                            <option value="tycoon">💰 Tycoon</option>
+                            <option value="racing">🏎️ Racing</option>
+                            <option value="adventure">⚔️ Adventure</option>
+                            <option value="roleplay">🎭 Roleplay</option>
+                            <option value="minigame">🎯 Minigame</option>
+                        </select>
+                    </div>
+                    <div class="settings-group">
+                        <label>Max Players</label>
+                        <input type="number" id="settings-max-players" value="8" min="2" max="12">
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="settings-allow-save" checked>
+                        <span>Allow players to save blocks</span>
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="settings-enable-scripts" checked>
+                        <span>Enable scripting (runs game scripts)</span>
+                    </label>
+                </div>
+            </div>
+            <div class="creator-modal-footer">
+                <button class="creator-btn creator-btn-ghost" id="btn-cancel-settings">Cancel</button>
+                <button class="creator-btn creator-btn-accent" id="btn-save-settings">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== PUBLISH MODAL ========== -->
+    <div class="creator-modal-overlay" id="publish-modal">
+        <div class="creator-modal">
+            <div class="creator-modal-header">
+                <h2>🚀 Publish Game</h2>
+                <button class="creator-modal-close" id="btn-close-publish">&times;</button>
+            </div>
+            <div class="creator-modal-body">
+                <div class="publish-preview">
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:80px;">
+                        <span style="font-size:2.5rem;">🎮</span>
+                        <span style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;">Preview</span>
+                    </div>
+                    <div class="publish-stats">
+                        <div class="publish-stat">
+                            <span class="stat-label">Game Name</span>
+                            <span class="stat-value" id="pub-name">-</span>
+                        </div>
+                        <div class="publish-stat">
+                            <span class="stat-label">Blocks</span>
+                            <span class="stat-value" id="pub-blocks">0</span>
+                        </div>
+                        <div class="publish-stat">
+                            <span class="stat-label">Category</span>
+                            <span class="stat-value" id="pub-category">-</span>
+                        </div>
+                        <div class="publish-stat">
+                            <span class="stat-label">Script</span>
+                            <span class="stat-value" id="pub-script">-</span>
+                        </div>
+                        <div class="publish-stat">
+                            <span class="stat-label">Max Players</span>
+                            <span class="stat-value" id="pub-players">8</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="publish-status" class="hidden" style="text-align:center;padding:0.5rem;color:var(--secondary);font-size:0.85rem;"></div>
+            </div>
+            <div class="creator-modal-footer">
+                <button class="creator-btn creator-btn-ghost" id="btn-cancel-publish">Cancel</button>
+                <button class="creator-btn creator-btn-primary" id="btn-confirm-publish">🚀 Publish to Lobby</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container (reuse) -->
+    <div id="toast-container"></div>
+
+    <!-- ========== SCRIPTS ========== -->
+    <!-- Core game scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/avatar.js"></script>
+    <script src="js/block-renderer.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/tools.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/ui.js"></script>
+
+    <!-- Creator scripts -->
+    <script src="js/creator/api.js"></script>
+    <script src="js/creator/sandbox.js"></script>
+    <script src="js/creator/engine.js"></script>
+    <script src="js/creator/node-editor.js"></script>
+    <script src="js/creator/custom-nodes.js"></script>
+    <script src="js/creator/node-compiler.js"></script>
+    <script src="js/creator/monaco-setup.js"></script>
+
+    <!-- Creator App -->
+    <script>
+    // ============================================
+    // BLOCKVERSE CREATOR STUDIO - Main Application
+    // ============================================
+
+    (function() {
+        'use strict';
+
+        // =============================================
+        // CREATOR APP STATE
+        // =============================================
+
+        const CreatorApp = {
+            scene: null,
+            camera: null,
+            renderer: null,
+
+            // Editor state
+            currentTool: 'build',
+            currentBlockType: 'grass',
+            currentPaintColor: '#4CAF50',
+            scriptMode: 'beginner', // 'beginner' or 'advanced'
+
+            // Camera orbit state
+            _orbit: {
+                enabled: false,
+                theta: Math.PI / 4,
+                phi: Math.PI / 3,
+                radius: 20,
+                target: new THREE.Vector3(0, 2, 0),
+                isDragging: false,
+                isPanning: false,
+                lastMouse: { x: 0, y: 0 },
+            },
+
+            _animClock: null,
+            _undoStack: [],
+            _redoStack: [],
+            _maxUndoSteps: 50,
+
+            // =============================================
+            // INITIALIZATION
+            // =============================================
+
+            init() {
+                this._initThreeJS();
+                this._initWorld();
+                this._initUI();
+                this._initScripting();
+                this._initEventListeners();
+                this._initCameraHint();
+
+                // Start render loop
+                this._animClock = new THREE.Clock();
+                this._animate();
+
+                console.log('[Creator] Studio initialized');
+            },
+
+            _initThreeJS() {
+                const canvas = document.getElementById('creator-canvas');
+                const viewport = document.getElementById('creator-viewport');
+
+                // Renderer
+                this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+                this.renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFShadowMap;
+                this.renderer.outputEncoding = THREE.sRGBEncoding;
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 0.85;
+
+                // Scene
+                this.scene = new THREE.Scene();
+                const fogColor = 0x87CEEB;
+                this.scene.fog = new THREE.Fog(fogColor, 20, 100);
+                this.scene.background = new THREE.Color(fogColor);
+
+                // Camera
+                const aspect = viewport.clientWidth / viewport.clientHeight;
+                this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 500);
+                this._updateCameraPosition();
+
+                // Lighting (same as main game)
+                const ambient = new THREE.AmbientLight(0x9090c0, 0.35);
+                this.scene.add(ambient);
+
+                const sun = new THREE.DirectionalLight(0xfff0d0, 1.0);
+                sun.position.set(50, 80, 30);
+                sun.castShadow = true;
+                sun.shadow.mapSize.width = 1024;
+                sun.shadow.mapSize.height = 1024;
+                sun.shadow.camera.near = 0.5;
+                sun.shadow.camera.far = 60;
+                sun.shadow.camera.left = -25;
+                sun.shadow.camera.right = 25;
+                sun.shadow.camera.top = 25;
+                sun.shadow.camera.bottom = -25;
+                this.scene.add(sun);
+
+                const fill = new THREE.DirectionalLight(0xc0d0ff, 0.15);
+                fill.position.set(-30, 40, -20);
+                this.scene.add(fill);
+
+                const hemi = new THREE.HemisphereLight(0x88bbff, 0x445522, 0.2);
+                this.scene.add(hemi);
+
+                // Grid
+                this._gridHelper = new THREE.GridHelper(64, 64, 0x444466, 0x333355);
+                this._gridHelper.position.y = 0.01;
+                this._gridHelper.material.transparent = true;
+                this._gridHelper.material.opacity = 0.3;
+                this.scene.add(this._gridHelper);
+
+                // Sky
+                this._createSky();
+
+                // Highlight mesh
+                const hlGeo = new THREE.BoxGeometry(1.005, 1.005, 1.005);
+                const hlMat = new THREE.MeshBasicMaterial({
+                    color: 0x00ff00,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.7,
+                });
+                this._highlightMesh = new THREE.Mesh(hlGeo, hlMat);
+                this._highlightMesh.visible = false;
+                this.scene.add(this._highlightMesh);
+
+                // Resize handler
+                window.addEventListener('resize', () => this._onResize());
+            },
+
+            _createSky() {
+                const skyGeo = new THREE.SphereGeometry(400, 32, 15);
+                const canvas = document.createElement('canvas');
+                canvas.width = 2;
+                canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 256);
+                gradient.addColorStop(0, '#1a237e');
+                gradient.addColorStop(0.3, '#42a5f5');
+                gradient.addColorStop(0.6, '#87CEEB');
+                gradient.addColorStop(1.0, '#B3E5FC');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, 2, 256);
+                const skyTex = new THREE.CanvasTexture(canvas);
+                const skyMat = new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false });
+                const skyMesh = new THREE.Mesh(skyGeo, skyMat);
+                this.scene.add(skyMesh);
+            },
+
+            _initWorld() {
+                // Initialize World with a dummy canvas so BlockRenderer works
+                World.init(document.getElementById('creator-canvas'));
+
+                // Set up World to use our creator scene/camera
+                World.scene = this.scene;
+                World.camera = this.camera;
+                World.renderer = this.renderer;
+
+                // Generate default terrain
+                World.generateTerrain('flat');
+
+                // Override renderer to use our canvas
+                window.addEventListener('resize', () => {
+                    const viewport = document.getElementById('creator-viewport');
+                    if (!viewport) return;
+                    this.renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+                    this.camera.aspect = viewport.clientWidth / viewport.clientHeight;
+                    this.camera.updateProjectionMatrix();
+                });
+            },
+
+            _initUI() {
+                this._buildViewportToolbar();
+                this._buildBlockTypeGrid();
+                this._buildPaintColors();
+                this._buildBottomPanel('blocks');
+                this._buildPanelTabs();
+                this._buildBottomTabs();
+                this._buildToolButtons();
+                this._buildModals();
+                this._buildScriptTemplates();
+                this._buildModeSwitch();
+            },
+
+            _initScripting() {
+                // Initialize the scripting engine
+                ScriptEngine.init();
+
+                // Set console element
+                const consoleEl = document.getElementById('script-console');
+                if (consoleEl) {
+                    ScriptEngine.setConsoleElement(consoleEl);
+                }
+
+                // Initialize Monaco editor
+                MonacoSetup.init('monaco-editor-wrapper');
+
+                // Load default script
+                const defaultCode = MonacoSetup._getDefaultScript();
+                ScriptEngine.loadScript('main', defaultCode, 'javascript');
+
+                // Script action buttons
+                document.getElementById('btn-run-script').addEventListener('click', () => {
+                    // Save current editor content to engine
+                    const code = MonacoSetup.getValue();
+                    ScriptEngine.loadScript('main', code, 'javascript');
+                    ScriptEngine.run();
+                });
+
+                document.getElementById('btn-stop-script').addEventListener('click', () => {
+                    ScriptEngine.stop();
+                });
+
+                document.getElementById('btn-clear-console').addEventListener('click', () => {
+                    ScriptEngine.clearConsole();
+                });
+
+                // Script editor events
+                window.addEventListener('script:save', () => {
+                    const code = MonacoSetup.getValue();
+                    ScriptEngine.updateActiveScript(code);
+                    if (typeof Utils !== 'undefined') {
+                        Utils.showToast('Script saved!', 'success', 2000);
+                    }
+                });
+
+                window.addEventListener('script:run', () => {
+                    const code = MonacoSetup.getValue();
+                    ScriptEngine.loadScript('main', code, 'javascript');
+                    ScriptEngine.run();
+                });
+
+                window.addEventListener('script:stop', () => {
+                    ScriptEngine.stop();
+                });
+            },
+
+            _initEventListeners() {
+                // Viewport mouse events (orbit camera)
+                const canvas = document.getElementById('creator-canvas');
+
+                canvas.addEventListener('mousedown', (e) => this._onCanvasMouseDown(e));
+                canvas.addEventListener('mousemove', (e) => this._onCanvasMouseMove(e));
+                canvas.addEventListener('mouseup', (e) => this._onCanvasMouseUp(e));
+                canvas.addEventListener('wheel', (e) => this._onCanvasWheel(e), { passive: false });
+                canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+                canvas.addEventListener('dblclick', (e) => this._onCanvasDoubleClick(e));
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => this._onKeyDown(e));
+            },
+
+            _initCameraHint() {
+                const hint = document.getElementById('camera-hint');
+                if (hint) {
+                    setTimeout(() => hint.classList.add('fade'), 5000);
+                }
+            },
+
+            // =============================================
+            // UI BUILDING
+            // =============================================
+
+            _buildViewportToolbar() {
+                const toolbar = document.getElementById('creator-viewport-toolbar');
+                if (!toolbar) return;
+                toolbar.innerHTML = '';
+
+                const defaultBlocks = BV.DEFAULT_TOOLBAR;
+                for (let i = 0; i < defaultBlocks.length; i++) {
+                    const type = defaultBlocks[i];
+                    const config = BV.BLOCK_TYPES[type];
+                    if (!config) continue;
+
+                    const slot = document.createElement('div');
+                    slot.className = 'cv-slot' + (type === this.currentBlockType ? ' active' : '');
+                    slot.dataset.type = type;
+                    slot.title = config.name;
+
+                    const preview = document.createElement('div');
+                    preview.className = 'cv-slot-content';
+                    preview.style.backgroundColor = config.color;
+                    if (config.transparent) preview.style.opacity = config.opacity || 0.5;
+
+                    const key = document.createElement('span');
+                    key.className = 'cv-slot-key';
+                    key.textContent = (i + 1).toString();
+
+                    slot.appendChild(preview);
+                    slot.appendChild(key);
+                    slot.addEventListener('click', () => this._selectBlockType(type));
+                    toolbar.appendChild(slot);
+                }
+            },
+
+            _buildBlockTypeGrid() {
+                const grid = document.getElementById('creator-block-type-grid');
+                if (!grid) return;
+                grid.innerHTML = '';
+
+                for (const [type, config] of Object.entries(BV.BLOCK_TYPES)) {
+                    const item = document.createElement('div');
+                    item.className = 'block-type-item' + (type === this.currentBlockType ? ' selected' : '');
+                    item.dataset.type = type;
+
+                    const swatch = document.createElement('div');
+                    swatch.className = 'bt-swatch';
+                    swatch.style.backgroundColor = config.color;
+                    if (config.transparent) swatch.style.opacity = config.opacity || 0.5;
+
+                    const label = document.createElement('span');
+                    label.textContent = config.name;
+
+                    item.appendChild(swatch);
+                    item.appendChild(label);
+                    item.addEventListener('click', () => this._selectBlockType(type));
+                    grid.appendChild(item);
+                }
+            },
+
+            _buildPaintColors() {
+                const row = document.getElementById('creator-paint-colors');
+                if (!row) return;
+                row.innerHTML = '';
+
+                const colors = [
+                    '#4CAF50', '#66BB6A', '#2E7D32', '#E74C3C', '#C0392B',
+                    '#FF5722', '#2196F3', '#1A237E', '#00BCD4', '#FFD700',
+                    '#FF9800', '#FFC107', '#9C27B0', '#673AB7', '#E91E63',
+                    '#9E9E9E', '#607D8B', '#000000', '#FFFFFF', '#FAFAFA', '#795548',
+                ];
+
+                for (const color of colors) {
+                    const swatch = document.createElement('div');
+                    swatch.className = 'paint-swatch' + (color === this.currentPaintColor ? ' selected' : '');
+                    swatch.style.backgroundColor = color;
+                    if (color === '#FFFFFF' || color === '#FAFAFA') {
+                        swatch.style.border = '2px solid #666';
+                    }
+                    swatch.addEventListener('click', () => {
+                        this.currentPaintColor = color;
+                        row.querySelectorAll('.paint-swatch').forEach(s => s.classList.remove('selected'));
+                        swatch.classList.add('selected');
+                    });
+                    row.appendChild(swatch);
+                }
+            },
+
+            _buildBottomPanel(section) {
+                const content = document.getElementById('bottom-content');
+                if (!content) return;
+                content.innerHTML = '';
+
+                if (section === 'blocks' || section === 'decorations') {
+                    const types = Object.entries(BV.BLOCK_TYPES);
+                    for (const [type, config] of types) {
+                        const item = document.createElement('div');
+                        item.className = 'asset-item' + (type === this.currentBlockType ? ' selected' : '');
+                        item.dataset.type = type;
+
+                        const preview = document.createElement('div');
+                        preview.className = 'asset-preview';
+                        preview.style.backgroundColor = config.color;
+                        if (config.transparent) preview.style.opacity = config.opacity || 0.5;
+
+                        const label = document.createElement('span');
+                        label.className = 'asset-label';
+                        label.textContent = config.name;
+
+                        item.appendChild(preview);
+                        item.appendChild(label);
+                        item.addEventListener('click', () => {
+                            this._selectBlockType(type);
+                            content.querySelectorAll('.asset-item').forEach(a => a.classList.remove('selected'));
+                            item.classList.add('selected');
+                        });
+                        content.appendChild(item);
+                    }
+                } else if (section === 'terrain') {
+                    const terrains = [
+                        { id: 'empty', name: 'Empty', icon: '⬜' },
+                        { id: 'flat', name: 'Flat World', icon: '🟩' },
+                        { id: 'hills', name: 'Rolling Hills', icon: '⛰️' },
+                        { id: 'obby', name: 'Obby Course', icon: '🏃' },
+                        { id: 'city', name: 'City Blocks', icon: '🏙️' },
+                        { id: 'arena', name: 'Battle Arena', icon: '🏟️' },
+                        { id: 'island', name: 'Sky Island', icon: '🏝️' },
+                        { id: 'village', name: 'Village', icon: '🏘️' },
+                        { id: 'castle', name: 'Castle', icon: '🏰' },
+                        { id: 'pirate', name: 'Pirate Ship', icon: '🏴‍☠️' },
+                    ];
+                    for (const t of terrains) {
+                        const item = document.createElement('div');
+                        item.className = 'asset-item';
+                        item.innerHTML = '<div class="asset-preview" style="background:var(--bg-hover);display:flex;align-items:center;justify-content:center;font-size:1.5rem;">' + t.icon + '</div><span class="asset-label">' + t.name + '</span>';
+                        item.addEventListener('click', () => {
+                            World.generateTerrain(t.id);
+                            this._updateBlockCount();
+                            if (typeof Utils !== 'undefined') Utils.showToast('Generated: ' + t.name, 'info');
+                        });
+                        content.appendChild(item);
+                    }
+                } else if (section === 'templates') {
+                    const templates = [
+                        { name: 'Spawn Platform', desc: '4x4 stone platform', blocks: [{x:0,y:0,z:0,type:'stone'},{x:1,y:0,z:0,type:'stone'},{x:0,y:0,z:1,type:'stone'},{x:1,y:0,z:1,type:'stone'}] },
+                        { name: 'Tower', desc: 'Simple stone tower', blocks: (function(){ var b=[]; for(var y=0;y<5;y++) for(var x=-1;x<=1;x++) for(var z=-1;z<=1;z++) if(x===-1||x===1||z===-1||z===1||y===4) b.push({x,y,z,type:'stone'}); return b; })() },
+                        { name: 'Bridge', desc: '10-block wooden bridge', blocks: (function(){ var b=[]; for(var i=0;i<10;i++) { b.push({x:i,y:0,z:0,type:'plank'}); b.push({x:i,y:-1,z:-1,type:'wood'}); b.push({x:i,y:-1,z:1,type:'wood'}); } return b; })() },
+                        { name: 'Parkour Row', desc: 'Stepping stone parkour', blocks: (function(){ var b=[]; for(var i=0;i<10;i++) { var y=Math.floor(Math.random()*3); b.push({x:i*2,y,z:0,type:i%3===0?'gold':'stone'}); } return b; })() },
+                    ];
+                    for (const t of templates) {
+                        const item = document.createElement('div');
+                        item.className = 'asset-item';
+                        item.style.minWidth = '80px';
+                        item.innerHTML = '<div class="asset-preview" style="background:var(--bg-hover);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">📦</div><span class="asset-label" style="max-width:70px;">' + t.name + '</span>';
+                        item.title = t.desc;
+                        item.addEventListener('click', () => {
+                            for (const bl of t.blocks) {
+                                World.addBlock(bl.x, bl.y, bl.z, bl.type, false);
+                            }
+                            this._updateBlockCount();
+                            if (typeof Utils !== 'undefined') Utils.showToast('Placed: ' + t.name, 'success');
+                        });
+                        content.appendChild(item);
+                    }
+                }
+            },
+
+            _buildPanelTabs() {
+                document.querySelectorAll('.creator-panel-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.creator-panel-tab').forEach(t => t.classList.remove('active'));
+                        document.querySelectorAll('.creator-panel-content').forEach(p => p.classList.remove('active'));
+                        tab.classList.add('active');
+                        const panel = document.getElementById('panel-' + tab.dataset.panel);
+                        if (panel) panel.classList.add('active');
+                        // Relayout Monaco when switching to scripting tab
+                        if (tab.dataset.panel === 'scripting') {
+                            setTimeout(() => MonacoSetup.layout(), 50);
+                        }
+                    });
+                });
+            },
+
+            _buildBottomTabs() {
+                document.querySelectorAll('.creator-bottom-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.creator-bottom-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        this._buildBottomPanel(tab.dataset.section);
+                    });
+                });
+            },
+
+            _buildToolButtons() {
+                document.querySelectorAll('.creator-tool-btn[data-tool]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.currentTool = btn.dataset.tool;
+                        document.querySelectorAll('.creator-tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+
+                        const toolBadge = document.getElementById('creator-tool-badge');
+                        if (toolBadge) {
+                            const icons = { build: '🔨', delete: '🗑️', paint: '🎨', grab: '✋', select: '🔘', move: '↕️', scale: '⤢', rotate: '🔄' };
+                            toolBadge.textContent = (icons[this.currentTool] || '🔨') + ' ' + this.currentTool.charAt(0).toUpperCase() + this.currentTool.slice(1);
+                        }
+
+                        // Show/hide paint section
+                        const paintSection = document.getElementById('paint-section');
+                        if (paintSection) {
+                            paintSection.classList.toggle('hidden', this.currentTool !== 'paint');
+                        }
+                    });
+                });
+
+                // Clear world
+                document.getElementById('btn-clear-world').addEventListener('click', () => {
+                    if (confirm('Clear all blocks? This cannot be undone.')) {
+                        this._pushUndo();
+                        World.clearAll();
+                        this._updateBlockCount();
+                        if (typeof Utils !== 'undefined') Utils.showToast('World cleared', 'info');
+                    }
+                });
+
+                // Generate terrain
+                document.getElementById('btn-generate').addEventListener('click', () => {
+                    const template = document.getElementById('prop-template').value;
+                    this._pushUndo();
+                    World.generateTerrain(template);
+                    this._updateBlockCount();
+                    if (typeof Utils !== 'undefined') Utils.showToast('Terrain generated: ' + template, 'success');
+                });
+
+                // Delete selected
+                document.getElementById('btn-delete-selected').addEventListener('click', () => {
+                    if (this._selectedBlock) {
+                        this._pushUndo();
+                        World.removeBlock(this._selectedBlock.x, this._selectedBlock.y, this._selectedBlock.z, true);
+                        this._selectedBlock = null;
+                        this._hideSelection();
+                        this._updateBlockCount();
+                    }
+                });
+
+                // Undo/Redo
+                document.getElementById('btn-undo').addEventListener('click', () => this._undo());
+                document.getElementById('btn-redo').addEventListener('click', () => this._redo());
+            },
+
+            _buildModals() {
+                // Settings modal
+                document.getElementById('btn-settings').addEventListener('click', () => {
+                    document.getElementById('settings-modal').classList.add('visible');
+                    document.getElementById('settings-name').value = document.getElementById('creator-game-name').value;
+                });
+
+                document.getElementById('btn-close-settings').addEventListener('click', () => {
+                    document.getElementById('settings-modal').classList.remove('visible');
+                });
+
+                document.getElementById('btn-cancel-settings').addEventListener('click', () => {
+                    document.getElementById('settings-modal').classList.remove('visible');
+                });
+
+                document.getElementById('btn-save-settings').addEventListener('click', () => {
+                    const name = document.getElementById('settings-name').value;
+                    document.getElementById('creator-game-name').value = name;
+                    document.getElementById('settings-modal').classList.remove('visible');
+                    if (typeof Utils !== 'undefined') Utils.showToast('Settings saved!', 'success');
+                });
+
+                // Publish modal
+                document.getElementById('btn-publish').addEventListener('click', () => {
+                    document.getElementById('pub-name').textContent = document.getElementById('creator-game-name').value || 'Untitled';
+                    document.getElementById('pub-blocks').textContent = World.blockCount;
+                    document.getElementById('pub-category').textContent = document.getElementById('settings-category').value;
+                    const code = MonacoSetup.getValue();
+                    document.getElementById('pub-script').textContent = code.length > 0 ? code.length + ' chars' : 'None';
+                    document.getElementById('pub-players').textContent = document.getElementById('settings-max-players').value;
+                    document.getElementById('publish-status').classList.add('hidden');
+                    document.getElementById('publish-modal').classList.add('visible');
+                });
+
+                document.getElementById('btn-close-publish').addEventListener('click', () => {
+                    document.getElementById('publish-modal').classList.remove('visible');
+                });
+
+                document.getElementById('btn-cancel-publish').addEventListener('click', () => {
+                    document.getElementById('publish-modal').classList.remove('visible');
+                });
+
+                document.getElementById('btn-confirm-publish').addEventListener('click', () => {
+                    this._publishGame();
+                });
+
+                // Play button
+                document.getElementById('btn-play').addEventListener('click', () => {
+                    // Save game state to localStorage and redirect to play
+                    this._saveGame();
+                    const gameId = 'creator_' + Date.now();
+                    localStorage.setItem('bv_play_game', JSON.stringify({
+                        id: gameId,
+                        name: document.getElementById('creator-game-name').value || 'Untitled',
+                        fromCreator: true,
+                    }));
+                    window.location.href = 'index.html';
+                });
+
+                // Game name sync
+                document.getElementById('creator-game-name').addEventListener('input', (e) => {
+                    document.title = 'BlockVerse - ' + (e.target.value || 'Creator Studio');
+                });
+            },
+
+            _buildScriptTemplates() {
+                const templates = {
+                    welcome: `// Welcome Message Script
+Events.on("gameStart", function() {
+  UI.showHint("Welcome to my game! 🎮", 4);
+  Sound.play("coin");
+});`,
+
+                    obby: `// Obby Scorer - awards points for touching gold
+let score = 0;
+
+Events.on("blockPlace", function(data) {
+  if (data.type === "gold") {
+    score += 10;
+    UI.showScore(score);
+    Sound.play("coin");
+    UI.showHint("+10 Points! 🌟", 2);
+  }
+  if (data.type === "diamond") {
+    score += 50;
+    UI.showScore(score);
+    Sound.play("win");
+    UI.showHint("+50 Points! 💎", 2);
+  }
+});`,
+
+                    timer: `// Countdown Timer
+Events.on("gameStart", function() {
+  let timeLeft = 60;
+  UI.showTimer(timeLeft);
+  UI.showHint("You have 60 seconds! ⏱️", 3);
+
+  Timer.every(1, function() {
+    timeLeft--;
+    UI.showTimer(timeLeft);
+    if (timeLeft <= 10) {
+      UI.showHint(timeLeft + " seconds left!", 1);
+      Sound.play("click");
+    }
+    if (timeLeft <= 0) {
+      Timer.stop(this);
+      UI.hideTimer();
+      UI.showHint("Time's up! ⏰", 5);
+      Sound.play("lose");
+    }
+  });
+});`,
+
+                    builder: `// Auto Builder - creates a pattern
+Events.on("gameStart", async function() {
+  UI.showHint("Building a pyramid... 🏗️", 3);
+
+  for (let y = 0; y < 5; y++) {
+    for (let x = -y; x <= y; x++) {
+      for (let z = -y; z <= y; z++) {
+        Block.place(x, y, z, "sand");
+      }
+    }
+    await Tween.wait(0.3);
+  }
+
+  Block.place(0, 5, 0, "gold");
+  UI.showHint("Pyramid complete! ✨", 3);
+  Sound.play("win");
+});`,
+                };
+
+                document.querySelectorAll('.script-template-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const template = btn.dataset.template;
+                        const code = templates[template];
+                        if (code) {
+                            MonacoSetup.setValue(code);
+                            ScriptEngine.loadScript('main', code, 'javascript');
+                            if (typeof Utils !== 'undefined') Utils.showToast('Template loaded: ' + btn.querySelector('.template-title').textContent, 'info');
+                        }
+                    });
+                });
+            },
+
+            _buildModeSwitch() {
+                const modeSwitch = document.getElementById('mode-switch');
+                const modeLabel = document.getElementById('mode-label');
+                const visualEditor = document.getElementById('visual-node-editor');
+                const advancedEditor = document.getElementById('advanced-editor');
+                const templatesSection = document.getElementById('script-templates');
+                const placeholder = document.getElementById('node-placeholder');
+                const nodeCanvas = document.getElementById('node-canvas');
+
+                if (!modeSwitch) return;
+
+                modeSwitch.addEventListener('click', () => {
+                    const isAdvanced = this.scriptMode === 'advanced';
+                    this.scriptMode = isAdvanced ? 'beginner' : 'advanced';
+
+                    modeSwitch.classList.toggle('active', !isAdvanced);
+                    modeLabel.textContent = this.scriptMode === 'advanced' ? 'Advanced' : 'Beginner';
+
+                    if (this.scriptMode === 'advanced') {
+                        visualEditor.classList.add('hidden');
+                        advancedEditor.classList.remove('hidden');
+                        templatesSection.classList.remove('hidden');
+                        setTimeout(() => MonacoSetup.layout(), 50);
+                        setTimeout(() => MonacoSetup.focus(), 100);
+                    } else {
+                        visualEditor.classList.remove('hidden');
+                        advancedEditor.classList.add('hidden');
+                        templatesSection.classList.remove('hidden');
+                    }
+                });
+            },
+
+            // =============================================
+            // BLOCK TYPE SELECTION
+            // =============================================
+
+            _selectBlockType(type) {
+                this.currentBlockType = type;
+
+                // Update viewport toolbar
+                document.querySelectorAll('#creator-viewport-toolbar .cv-slot').forEach(s => {
+                    s.classList.toggle('active', s.dataset.type === type);
+                });
+
+                // Update block type grid
+                document.querySelectorAll('.block-type-item').forEach(item => {
+                    item.classList.toggle('selected', item.dataset.type === type);
+                });
+
+                // Update bottom panel
+                document.querySelectorAll('#bottom-content .asset-item').forEach(item => {
+                    item.classList.toggle('selected', item.dataset.type === type);
+                });
+            },
+
+            // =============================================
+            // CAMERA ORBIT CONTROLS
+            // =============================================
+
+            _updateCameraPosition() {
+                const o = this._orbit;
+                this.camera.position.x = o.target.x + o.radius * Math.sin(o.phi) * Math.cos(o.theta);
+                this.camera.position.y = o.target.y + o.radius * Math.cos(o.phi);
+                this.camera.position.z = o.target.z + o.radius * Math.sin(o.phi) * Math.sin(o.theta);
+                this.camera.lookAt(o.target);
+            },
+
+            _onCanvasMouseDown(e) {
+                const canvas = document.getElementById('creator-canvas');
+
+                if (e.button === 2) {
+                    // Right click: orbit
+                    this._orbit.isDragging = true;
+                    this._orbit.lastMouse = { x: e.clientX, y: e.clientY };
+                } else if (e.button === 1) {
+                    // Middle click: pan
+                    this._orbit.isPanning = true;
+                    this._orbit.lastMouse = { x: e.clientX, y: e.clientY };
+                } else if (e.button === 0) {
+                    // Left click: tool action
+                    this._performToolAction(e);
+                }
+            },
+
+            _onCanvasMouseMove(e) {
+                const dx = e.clientX - this._orbit.lastMouse.x;
+                const dy = e.clientY - this._orbit.lastMouse.y;
+
+                if (this._orbit.isDragging) {
+                    this._orbit.theta -= dx * 0.005;
+                    this._orbit.phi -= dy * 0.005;
+                    this._orbit.phi = Math.max(0.1, Math.min(Math.PI - 0.1, this._orbit.phi));
+                    this._updateCameraPosition();
+                }
+
+                if (this._orbit.isPanning) {
+                    const panSpeed = 0.02 * this._orbit.radius;
+                    const right = new THREE.Vector3();
+                    const up = new THREE.Vector3();
+                    this.camera.getWorldDirection(new THREE.Vector3());
+                    right.crossVectors(this.camera.up, new THREE.Vector3().subVectors(this.camera.position, this._orbit.target)).normalize();
+                    up.copy(this.camera.up).normalize();
+                    this._orbit.target.add(right.multiplyScalar(-dx * panSpeed));
+                    this._orbit.target.add(up.multiplyScalar(dy * panSpeed));
+                    this._updateCameraPosition();
+                }
+
+                this._orbit.lastMouse = { x: e.clientX, y: e.clientY };
+
+                // Update highlight
+                this._updateHighlight(e);
+            },
+
+            _onCanvasMouseUp(e) {
+                this._orbit.isDragging = false;
+                this._orbit.isPanning = false;
+            },
+
+            _onCanvasWheel(e) {
+                e.preventDefault();
+                this._orbit.radius *= e.deltaY > 0 ? 1.08 : 0.92;
+                this._orbit.radius = Math.max(3, Math.min(100, this._orbit.radius));
+                this._updateCameraPosition();
+            },
+
+            _onCanvasDoubleClick(e) {
+                // Double click: select block
+                const hit = this._raycast(e);
+                if (hit) {
+                    this._selectedBlock = World.getBlock(hit.x, hit.y, hit.z);
+                    this._showSelection(hit);
+                } else {
+                    this._selectedBlock = null;
+                    this._hideSelection();
+                }
+            },
+
+            // =============================================
+            // RAYCASTING
+            // =============================================
+
+            _raycast(e) {
+                const viewport = document.getElementById('creator-viewport');
+                const rect = viewport.getBoundingClientRect();
+                const mouse = new THREE.Vector2(
+                    ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                    -((e.clientY - rect.top) / rect.height) * 2 + 1
+                );
+
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(mouse, this.camera);
+                raycaster.far = 50;
+
+                const hit = BlockRenderer.raycast(raycaster.ray.origin, raycaster.ray.direction, 50, World.blockMap);
+                return hit;
+            },
+
+            _updateHighlight(e) {
+                const hit = this._raycast(e);
+                if (!hit) {
+                    this._highlightMesh.visible = false;
+                    return;
+                }
+
+                const colors = { build: 0x00ff00, delete: 0xff0000, paint: 0x2196F3, grab: 0xFFD700, select: 0x6c5ce7 };
+                this._highlightMesh.material.color.setHex(colors[this.currentTool] || 0x00ff00);
+
+                if (this.currentTool === 'build') {
+                    this._highlightMesh.position.set(hit.x + hit.nx + 0.5, hit.y + hit.ny + 0.5, hit.z + hit.nz + 0.5);
+                } else {
+                    this._highlightMesh.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
+                }
+
+                this._highlightMesh.visible = true;
+            },
+
+            // =============================================
+            // TOOL ACTIONS
+            // =============================================
+
+            _performToolAction(e) {
+                const hit = this._raycast(e);
+                if (!hit) return;
+
+                this._pushUndo();
+
+                switch (this.currentTool) {
+                    case 'build': {
+                        const px = hit.x + hit.nx;
+                        const py = hit.y + hit.ny;
+                        const pz = hit.z + hit.nz;
+                        World.addBlock(px, py, pz, this.currentBlockType, true);
+                        if (typeof GameAPI !== 'undefined') GameAPI.Sound.play('place');
+                        break;
+                    }
+                    case 'delete': {
+                        World.removeBlock(hit.x, hit.y, hit.z, true);
+                        if (typeof GameAPI !== 'undefined') GameAPI.Sound.play('delete');
+                        break;
+                    }
+                    case 'paint': {
+                        const block = World.getBlock(hit.x, hit.y, hit.z);
+                        if (block) {
+                            BlockRenderer.removeBlock(hit.x, hit.y, hit.z, block.type);
+                            BlockRenderer.removeCustomMesh(hit.x, hit.y, hit.z);
+                            const mat = new THREE.MeshLambertMaterial({ color: this.currentPaintColor });
+                            BlockRenderer.addCustomMesh(hit.x, hit.y, hit.z, mat);
+                            block.customColor = this.currentPaintColor;
+                        }
+                        break;
+                    }
+                    case 'grab': {
+                        const block = World.getBlock(hit.x, hit.y, hit.z);
+                        if (block) {
+                            World.removeBlock(hit.x, hit.y, hit.z, false);
+                            // Store for placement on next click
+                            this._grabbedBlock = { type: block.type, customColor: block.customColor };
+                            if (typeof Utils !== 'undefined') Utils.showToast('Block grabbed! Click to place.', 'info');
+                        }
+                        break;
+                    }
+                    case 'select': {
+                        this._selectedBlock = World.getBlock(hit.x, hit.y, hit.z);
+                        this._showSelection(hit);
+                        break;
+                    }
+                }
+
+                this._updateBlockCount();
+            },
+
+            _grabbedBlock: null,
+            _selectedBlock: null,
+
+            _showSelection(hit) {
+                document.getElementById('selection-section').classList.remove('hidden');
+                document.getElementById('no-selection-hint').classList.add('hidden');
+                document.getElementById('sel-position').textContent = hit.x + ', ' + hit.y + ', ' + hit.z;
+                document.getElementById('sel-type').textContent = (BV.BLOCK_TYPES[hit.type] || {}).name || hit.type;
+                const config = BV.BLOCK_TYPES[hit.type] || {};
+                document.getElementById('sel-color-hex').textContent = config.color || '-';
+                document.getElementById('sel-color-swatch').style.backgroundColor = config.color || '#666';
+            },
+
+            _hideSelection() {
+                document.getElementById('selection-section').classList.add('hidden');
+                document.getElementById('no-selection-hint').classList.remove('hidden');
+            },
+
+            // =============================================
+            // UNDO / REDO
+            // =============================================
+
+            _pushUndo() {
+                const snapshot = World.getBlocksSnapshot();
+                this._undoStack.push(snapshot);
+                if (this._undoStack.length > this._maxUndoSteps) {
+                    this._undoStack.shift();
+                }
+                this._redoStack = [];
+            },
+
+            _undo() {
+                if (this._undoStack.length === 0) return;
+                const current = World.getBlocksSnapshot();
+                this._redoStack.push(current);
+                const prev = this._undoStack.pop();
+                World.loadBlocksSnapshot(prev);
+                this._updateBlockCount();
+            },
+
+            _redo() {
+                if (this._redoStack.length === 0) return;
+                const current = World.getBlocksSnapshot();
+                this._undoStack.push(current);
+                const next = this._redoStack.pop();
+                World.loadBlocksSnapshot(next);
+                this._updateBlockCount();
+            },
+
+            // =============================================
+            // KEYBOARD
+            // =============================================
+
+            _onKeyDown(e) {
+                const tag = e.target.tagName.toLowerCase();
+                if (tag === 'input' || tag === 'textarea') return;
+                // Don't capture when Monaco is focused
+                if (document.activeElement && document.activeElement.closest('#monaco-editor-wrapper')) return;
+
+                // Number keys for block selection
+                if (e.code >= 'Digit1' && e.code <= 'Digit9') {
+                    const idx = parseInt(e.code.charAt(5)) - 1;
+                    const blocks = BV.DEFAULT_TOOLBAR;
+                    if (idx < blocks.length) {
+                        this._selectBlockType(blocks[idx]);
+                    }
+                    return;
+                }
+
+                switch (e.code) {
+                    case 'KeyB': this.currentTool = 'build'; this._activateTool('build'); break;
+                    case 'KeyX': this.currentTool = 'delete'; this._activateTool('delete'); break;
+                    case 'KeyP': this.currentTool = 'paint'; this._activateTool('paint'); break;
+                    case 'KeyG': this.currentTool = 'grab'; this._activateTool('grab'); break;
+                    case 'KeyV': this.currentTool = 'select'; this._activateTool('select'); break;
+                    case 'KeyZ':
+                        if (e.ctrlKey || e.metaKey) { e.preventDefault(); this._undo(); }
+                        break;
+                    case 'KeyY':
+                        if (e.ctrlKey || e.metaKey) { e.preventDefault(); this._redo(); }
+                        break;
+                }
+            },
+
+            _activateTool(tool) {
+                document.querySelectorAll('.creator-tool-btn[data-tool]').forEach(b => {
+                    b.classList.toggle('active', b.dataset.tool === tool);
+                });
+
+                const paintSection = document.getElementById('paint-section');
+                if (paintSection) {
+                    paintSection.classList.toggle('hidden', tool !== 'paint');
+                }
+
+                const toolBadge = document.getElementById('creator-tool-badge');
+                if (toolBadge) {
+                    const icons = { build: '🔨', delete: '🗑️', paint: '🎨', grab: '✋', select: '🔘', move: '↕️', scale: '⤢', rotate: '🔄' };
+                    toolBadge.textContent = (icons[tool] || '🔨') + ' ' + tool.charAt(0).toUpperCase() + tool.slice(1);
+                }
+            },
+
+            // =============================================
+            // UPDATE BLOCK COUNT
+            // =============================================
+
+            _updateBlockCount() {
+                const count = World.blockCount;
+                const countEl = document.getElementById('creator-block-count');
+                const propCount = document.getElementById('prop-block-count');
+                if (countEl) countEl.textContent = count + ' blocks';
+                if (propCount) propCount.textContent = count;
+            },
+
+            // =============================================
+            // PUBLISH
+            // =============================================
+
+            _publishGame() {
+                const statusEl = document.getElementById('publish-status');
+                statusEl.classList.remove('hidden');
+                statusEl.textContent = 'Publishing...';
+                statusEl.style.color = 'var(--text-secondary)';
+
+                const gameData = {
+                    id: Utils.generateId(),
+                    name: document.getElementById('creator-game-name').value || 'Untitled',
+                    description: document.getElementById('settings-desc').value || '',
+                    category: document.getElementById('settings-category').value,
+                    maxPlayers: parseInt(document.getElementById('settings-max-players').value) || 8,
+                    template: document.getElementById('prop-template').value,
+                    blocks: World.getBlocksSnapshot(),
+                    script: MonacoSetup.getValue(),
+                    scriptType: 'javascript',
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    thumbnail: this._generateThumbnail(),
+                };
+
+                // Save to localStorage
+                try {
+                    const existing = JSON.parse(localStorage.getItem(BV.STORAGE_KEYS.CREATED_GAMES) || '[]');
+                    const idx = existing.findIndex(g => g.name === gameData.name);
+                    if (idx >= 0) {
+                        existing[idx] = gameData;
+                    } else {
+                        existing.push(gameData);
+                    }
+                    localStorage.setItem(BV.STORAGE_KEYS.CREATED_GAMES, JSON.stringify(existing));
+
+                    statusEl.textContent = '✅ Published successfully!';
+                    statusEl.style.color = 'var(--secondary)';
+
+                    setTimeout(() => {
+                        document.getElementById('publish-modal').classList.remove('visible');
+                    }, 1500);
+                } catch (err) {
+                    statusEl.textContent = '❌ Failed to publish: ' + err.message;
+                    statusEl.style.color = 'var(--danger)';
+                }
+            },
+
+            _saveGame() {
+                const gameData = {
+                    name: document.getElementById('creator-game-name').value || 'Untitled',
+                    blocks: World.getBlocksSnapshot(),
+                    script: MonacoSetup.getValue(),
+                    template: document.getElementById('prop-template').value,
+                    settings: {
+                        category: document.getElementById('settings-category').value,
+                        maxPlayers: document.getElementById('settings-max-players').value,
+                        desc: document.getElementById('settings-desc').value,
+                    },
+                };
+                localStorage.setItem('bv_creator_draft', JSON.stringify(gameData));
+            },
+
+            _generateThumbnail() {
+                // Simple color-based thumbnail
+                const categories = {
+                    sandbox: '#4CAF50', obby: '#E74C3C', tycoon: '#FFD700',
+                    racing: '#FF9800', adventure: '#9C27B0', roleplay: '#2196F3', minigame: '#00BCD4',
+                };
+                return categories[document.getElementById('settings-category').value] || '#6c5ce7';
+            },
+
+            // =============================================
+            // RENDER LOOP
+            // =============================================
+
+            _animate() {
+                requestAnimationFrame(() => this._animate());
+
+                const delta = this._animClock.getDelta();
+
+                // Update highlight pulse
+                if (this._highlightMesh && this._highlightMesh.visible) {
+                    const pulse = 0.5 + 0.3 * Math.sin(performance.now() * 0.006);
+                    this._highlightMesh.material.opacity = pulse;
+                }
+
+                // Update scripting engine (tweens)
+                ScriptEngine.update();
+
+                // Render
+                this.renderer.render(this.scene, this.camera);
+            },
+
+            _onResize() {
+                const viewport = document.getElementById('creator-viewport');
+                if (!viewport) return;
+                this.renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+                this.camera.aspect = viewport.clientWidth / viewport.clientHeight;
+                this.camera.updateProjectionMatrix();
+            },
+        };
+
+        // =============================================
+        // INIT ON LOAD
+        // =============================================
+
+        window.addEventListener('DOMContentLoaded', () => {
+            CreatorApp.init();
+        });
+
+    })();
+    </script>
+</body>
+</html>

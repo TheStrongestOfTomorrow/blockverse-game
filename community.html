@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockVerse - Community Hub</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/community.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>">
+</head>
+<body>
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- Community Hub Page -->
+    <div class="community-page">
+        <!-- Header -->
+        <header class="community-header">
+            <div class="community-header-left">
+                <a href="index.html" class="btn btn-ghost btn-sm community-back-btn" title="Back to Lobby">
+                    ← Back
+                </a>
+                <div class="community-brand">
+                    <h1 class="logo-text-sm">BLOCK<span class="logo-accent">VERSE</span></h1>
+                    <span class="community-header-divider">/</span>
+                    <h2 class="community-page-title">Community Hub</h2>
+                </div>
+            </div>
+            <div class="community-header-right">
+                <a href="https://github.com/TheStrongestOfTomorrow/blockverse-community" target="_blank" rel="noopener" class="btn btn-sm btn-ghost">
+                    🔗 Repository
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="community-main" id="community-hub-container">
+            <!-- CommunityUI renders here -->
+            <div class="community-loading-state" style="padding: 4rem; text-align: center;">
+                <div class="auth-spinner"></div>
+                <p>Loading Community Hub...</p>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="community-footer">
+            <p>BlockVerse Community Hub · Powered by <a href="https://github.com" target="_blank" rel="noopener">GitHub Issues</a> · Share, discover, and create together</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/community/hub.js"></script>
+    <script src="js/community/device-flow.js"></script>
+    <script src="js/community/ui.js"></script>
+    <script src="js/community/tutorials.js"></script>
+    <script>
+        // Initialize the Community Hub when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            CommunityUI.init('community-hub-container');
+        });
+    </script>
+</body>
+</html>
