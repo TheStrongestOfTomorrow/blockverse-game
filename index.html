@@ -351,14 +351,20 @@
         <!-- Game Canvas (Three.js) -->
         <canvas id="game-canvas"></canvas>
 
-        <!-- Crosshair -->
-        <div id="crosshair" class="crosshair">+</div>
+        <!-- Crosshair (dot for third-person) -->
+        <div id="crosshair" class="crosshair"></div>
+
+        <!-- Controls hint -->
+        <div id="controls-hint" class="controls-hint">
+            WASD Move · Right-Click Drag Orbit · I/O Zoom · Left-Click Build · ESC Menu
+        </div>
 
         <!-- HUD Top -->
         <div id="hud-top" class="hud-top">
             <div id="hud-game-name" class="hud-game-name"></div>
             <div id="hud-server-info" class="hud-server-info"></div>
             <div id="hud-players-count" class="hud-players-count"></div>
+            <div id="hud-block-count" class="hud-block-count"></div>
             <button id="hud-leave" class="btn btn-danger btn-sm">Leave</button>
         </div>
 

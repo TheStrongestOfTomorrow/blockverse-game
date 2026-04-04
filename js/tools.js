@@ -24,9 +24,7 @@ const Tools = {
     // --- Event handlers ---
     _onMouseDown: null,
     _onMouseUp: null,
-    _onMouseMove: null,
-    _onWheel: null,
-    _onContextMenu: null,
+    _onKeyDown: null,
 
     // --- UI references ---
     _toolbarEl: null,             // #toolbar container
@@ -61,19 +59,17 @@ const Tools = {
         this.buildToolButtons();
 
         // --- Event listeners ---
+        // Left-click on canvas = tool action, right-click is handled by Player for orbit
         this._onMouseDown = this.handleMouseDown.bind(this);
         this._onMouseUp = this.handleMouseUp.bind(this);
-        this._onMouseMove = this.handleMouseMove.bind(this);
-        this._onWheel = this.handleScroll.bind(this);
-        this._onContextMenu = (e) => e.preventDefault();
 
-        document.addEventListener('mousedown', this._onMouseDown);
+        const canvas = document.getElementById('game-canvas');
+        if (canvas) {
+            canvas.addEventListener('mousedown', this._onMouseDown);
+        }
         document.addEventListener('mouseup', this._onMouseUp);
-        document.addEventListener('mousemove', this._onMouseMove);
-        document.addEventListener('wheel', this._onWheel, { passive: false });
-        document.addEventListener('contextmenu', this._onContextMenu);
 
-        // Keyboard shortcuts for toolbar slots (1-9)
+        // Keyboard shortcuts for toolbar slots (1-9) and tool switching
         this._onKeyDown = this._handleKeyDown.bind(this);
         document.addEventListener('keydown', this._onKeyDown);
     },
@@ -82,11 +78,11 @@ const Tools = {
      * Clean up event listeners.
      */
     destroy() {
-        document.removeEventListener('mousedown', this._onMouseDown);
+        const canvas = document.getElementById('game-canvas');
+        if (canvas) {
+            canvas.removeEventListener('mousedown', this._onMouseDown);
+        }
         document.removeEventListener('mouseup', this._onMouseUp);
-        document.removeEventListener('mousemove', this._onMouseMove);
-        document.removeEventListener('wheel', this._onWheel);
-        document.removeEventListener('contextmenu', this._onContextMenu);
         document.removeEventListener('keydown', this._onKeyDown);
     },
 
@@ -216,8 +212,12 @@ const Tools = {
      * @param {KeyboardEvent} e
      */
     _handleKeyDown(e) {
-        // Only respond when pointer is locked (in-game)
-        if (!Player.isLocked()) return;
+        // Only respond when game is active
+        if (!Player.isActive()) return;
+
+        const tag = e.target.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'textarea') return;
+        if (typeof Chat !== 'undefined' && Chat.isVisible()) return;
 
         // Number keys 1-9 for toolbar slots
         if (e.code >= 'Digit1' && e.code <= 'Digit9') {
@@ -254,13 +254,11 @@ const Tools = {
      * @param {MouseEvent} event
      */
     handleMouseDown(event) {
-        // Only process when pointer is locked (in-game)
-        if (!Player.isLocked()) return;
+        // Only left-click for tool actions in third-person
+        if (!Player.isActive()) return;
+        if (event.button !== 0) return;
 
-        // Left click (button 0) = primary action
-        if (event.button === 0) {
-            this._performPrimaryAction();
-        }
+        this._performPrimaryAction();
     },
 
     /**
@@ -271,57 +269,6 @@ const Tools = {
         if (event.button === 0 && this._isGrabbing) {
             this._releaseGrabbedBlock();
         }
-    },
-
-    /**
-     * Handle mouse movement for grab tool.
-     * @param {MouseEvent} event
-     */
-    handleMouseMove(event) {
-        if (!Player.isLocked() || !this._isGrabbing || !this._grabbedBlock) return;
-
-        // Calculate ray from camera
-        const origin = new THREE.Vector3();
-        const direction = new THREE.Vector3();
-        World.camera.getWorldPosition(origin);
-        World.camera.getWorldDirection(direction);
-
-        // Cast ray and place the grabbed block at a short distance
-        const hit = World.getRaycastTarget(origin, direction, 6);
-        if (hit) {
-            const targetX = hit.position.x + hit.normal.nx;
-            const targetY = hit.position.y + hit.normal.ny;
-            const targetZ = hit.position.z + hit.normal.nz;
-
-            // Update the grabbed block mesh position
-            this._grabbedBlock.mesh.position.set(
-                targetX + 0.5,
-                targetY + 0.5,
-                targetZ + 0.5
-            );
-
-            // Update highlight
-            this.updateHighlight(origin, direction);
-        }
-    },
-
-    /**
-     * Handle scroll wheel to cycle toolbar slots.
-     * @param {WheelEvent} event
-     */
-    handleScroll(event) {
-        if (!Player.isLocked()) return;
-        event.preventDefault();
-
-        let newSlot;
-        if (event.deltaY > 0) {
-            // Scroll down: next slot
-            newSlot = (this._activeSlot + 1) % BV.TOOLBAR_SIZE;
-        } else {
-            // Scroll up: previous slot
-            newSlot = (this._activeSlot - 1 + BV.TOOLBAR_SIZE) % BV.TOOLBAR_SIZE;
-        }
-        this.setToolbarSlot(newSlot);
     },
 
     // =============================================
@@ -536,12 +483,22 @@ const Tools = {
      * @param {THREE.Vector3} rayDir - Normalized camera direction
      */
     updateHighlight(rayOrigin, rayDir) {
-        if (!Player.isLocked()) {
+        if (!Player.isActive()) {
             World.removeHighlight();
             return;
         }
 
-        const hit = World.getRaycastTarget(rayOrigin, rayDir, 8);
+        // In third-person, cast from camera toward where it's looking
+        if (!rayOrigin || !rayDir) {
+            const origin = new THREE.Vector3();
+            const direction = new THREE.Vector3();
+            World.camera.getWorldPosition(origin);
+            World.camera.getWorldDirection(direction);
+            rayOrigin = origin;
+            rayDir = direction;
+        }
+
+        const hit = World.getRaycastTarget(rayOrigin, rayDir, 10);
 
         if (!hit) {
             World.removeHighlight();
@@ -613,9 +570,7 @@ const Tools = {
 
             // Click to select slot
             slot.addEventListener('click', () => {
-                if (!Player.isLocked()) {
-                    this.setToolbarSlot(i);
-                }
+                this.setToolbarSlot(i);
             });
 
             this._toolbarEl.appendChild(slot);

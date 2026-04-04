@@ -15,6 +15,10 @@ const World = {
 
     // --- Block storage ---
     blockMap: {},           // key "${x},${y},${z}" -> { x, y, z, type, mesh }
+    blockCount: 0,          // Total block count for stats
+
+    // --- Shared geometry (optimization) ---
+    _sharedBoxGeo: null,    // Reused BoxGeometry for all blocks
 
     // --- Internal state ---
     _blockGroup: null,      // THREE.Group holding all block meshes
@@ -25,6 +29,10 @@ const World = {
     _highlightMode: null,   // 'place' | 'delete' | 'paint' | 'grab'
     _animClock: null,       // Clock for delta-time tracking
     _lastTime: 0,           // Last frame timestamp
+
+    // --- Cached mesh array for raycasting ---
+    _blockMeshArray: null,  // Flat array of meshes for raycaster
+    _blockMeshDirty: true,  // Flag to rebuild _blockMeshArray
 
     // Player group for remote avatars
     playerGroup: null,
@@ -101,6 +109,9 @@ const World = {
         this._gridHelper.material.transparent = true;
         this._gridHelper.material.opacity = 0.3;
         this.scene.add(this._gridHelper);
+
+        // --- Shared geometry (all blocks use the same box) ---
+        this._sharedBoxGeo = new THREE.BoxGeometry(1, 1, 1);
 
         // --- Groups for organized management ---
         this._blockGroup = new THREE.Group();
@@ -219,6 +230,11 @@ const World = {
     clearWorld() {
         this.clearAll();
         this.stop();
+        if (this._sharedBoxGeo) {
+            this._sharedBoxGeo.dispose();
+            this._sharedBoxGeo = null;
+        }
+        this._blockMeshArray = null;
     },
 
     // =============================================
@@ -545,8 +561,8 @@ const World = {
             return false;
         }
 
-        // --- Create mesh ---
-        const geo = new THREE.BoxGeometry(1, 1, 1);
+        // --- Create mesh (using shared geometry) ---
+        const geo = this._sharedBoxGeo;
         const matOpts = {
             color: config.color,
         };
@@ -573,6 +589,8 @@ const World = {
         // Store in block map
         const blockData = { x, y, z, type: blockType, mesh };
         this.blockMap[key] = blockData;
+        this.blockCount++;
+        this._blockMeshDirty = true; // Mark mesh array as needing rebuild
 
         // Dispatch event for multiplayer sync
         if (emitEvent) {
@@ -604,12 +622,13 @@ const World = {
 
         // Remove mesh from scene
         this._blockGroup.remove(block.mesh);
-        // Dispose geometry and material to free GPU memory
-        block.mesh.geometry.dispose();
+        // Dispose material only (geometry is shared)
         if (block.mesh.material.dispose) block.mesh.material.dispose();
 
         // Delete from map
         delete this.blockMap[key];
+        this.blockCount--;
+        this._blockMeshDirty = true;
 
         // Dispatch event
         if (emitEvent) {
@@ -668,11 +687,14 @@ const World = {
             const b = this.blockMap[key];
             if (b.mesh) {
                 this._blockGroup.remove(b.mesh);
-                b.mesh.geometry.dispose();
+                // Only dispose material, not shared geometry
                 if (b.mesh.material.dispose) b.mesh.material.dispose();
             }
         }
         this.blockMap = {};
+        this.blockCount = 0;
+        this._blockMeshArray = null;
+        this._blockMeshDirty = true;
 
         // Clear ground group
         while (this._groundGroup.children.length > 0) {
@@ -703,19 +725,19 @@ const World = {
     getRaycastTarget(origin, direction, maxDist = 8) {
         if (!origin || !direction) return null;
 
+        // Rebuild mesh array if dirty
+        if (this._blockMeshDirty || !this._blockMeshArray) {
+            this._blockMeshArray = Object.values(this.blockMap).map(b => b.mesh);
+            this._blockMeshDirty = false;
+        }
+
+        if (this._blockMeshArray.length === 0) return null;
+
         const raycaster = new THREE.Raycaster();
         raycaster.set(origin, direction.normalize());
         raycaster.far = maxDist;
 
-        // Collect all block meshes for intersection test
-        const meshes = [];
-        for (const key of Object.keys(this.blockMap)) {
-            meshes.push(this.blockMap[key].mesh);
-        }
-
-        if (meshes.length === 0) return null;
-
-        const intersections = raycaster.intersectObjects(meshes, false);
+        const intersections = raycaster.intersectObjects(this._blockMeshArray, false);
         if (intersections.length === 0) return null;
 
         const hit = intersections[0];

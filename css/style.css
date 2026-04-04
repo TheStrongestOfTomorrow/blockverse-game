@@ -1343,7 +1343,7 @@ img {
   display: block;
 }
 
-/* Crosshair */
+/* Crosshair - small dot for third-person */
 .crosshair {
   position: fixed;
   top: 50%;
@@ -1351,13 +1351,11 @@ img {
   transform: translate(-50%, -50%);
   z-index: 100;
   pointer-events: none;
-  color: var(--text-primary);
-  font-size: 1.2rem;
-  font-weight: 100;
-  opacity: 0.7;
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
-  font-family: var(--font-mono);
-  line-height: 1;
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5), 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
 /* HUD Top */
@@ -2494,4 +2492,78 @@ textarea:focus-visible {
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
+}
+
+/* Controls hint (third-person) */
+.controls-hint {
+  position: fixed;
+  bottom: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.35);
+  z-index: 90;
+  pointer-events: none;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  font-family: var(--font-main);
+  transition: opacity 0.5s ease;
+}
+
+/* Block count in HUD */
+.hud-block-count {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+/* Category pill */
+.category-pill {
+  padding: 0.4rem 0.9rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1.5px solid var(--border-color);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: var(--font-main);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.category-pill:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.category-pill.active {
+  background: rgba(var(--primary-rgb), 0.2);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Text utility classes */
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+
+/* Loading animation */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes menuSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes chatFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
