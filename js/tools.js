@@ -4,6 +4,10 @@
 // Handles tool selection, block placement/deletion,
 // painting, the grab tool, toolbar UI, block picker,
 // paint color picker, and block highlight rendering.
+//
+// KEY FIX: All raycasting now uses mouse cursor position
+// (not screen center), making block highlight and placement
+// truly cursor-based like Roblox.
 // ============================================
 
 const Tools = {
@@ -21,6 +25,7 @@ const Tools = {
     _onMouseDown: null,
     _onMouseUp: null,
     _onKeyDown: null,
+    _onMouseMove: null,
 
     _toolbarEl: null,
     _slotElements: [],
@@ -58,6 +63,10 @@ const Tools = {
 
         this._onKeyDown = this._handleKeyDown.bind(this);
         document.addEventListener('keydown', this._onKeyDown);
+
+        // Track mouse move for continuous highlight updates
+        this._onMouseMove = this._handleMouseMove.bind(this);
+        document.addEventListener('mousemove', this._onMouseMove);
     },
 
     destroy() {
@@ -67,6 +76,7 @@ const Tools = {
         }
         document.removeEventListener('mouseup', this._onMouseUp);
         document.removeEventListener('keydown', this._onKeyDown);
+        document.removeEventListener('mousemove', this._onMouseMove);
     },
 
     // =============================================
@@ -78,7 +88,6 @@ const Tools = {
         if (!valid.includes(toolName)) return;
         this._currentTool = toolName;
 
-        // Update both btn-tool and tool-btn class elements
         document.querySelectorAll('.btn-tool, .tool-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tool === toolName);
         });
@@ -157,6 +166,68 @@ const Tools = {
     },
 
     // =============================================
+    // CURSOR-BASED RAYCASTING
+    // =============================================
+
+    /**
+     * Get a raycaster from the camera through the mouse cursor position.
+     * This is the KEY Roblox-like behavior: you point at blocks with your cursor.
+     */
+    _getCursorRaycaster() {
+        if (typeof World === 'undefined' || !World.camera) return null;
+
+        const ndc = (typeof Player !== 'undefined' && Player.isActive())
+            ? Player.getMouseNDC()
+            : { x: 0, y: 0 };
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(ndc.x, ndc.y), World.camera);
+        raycaster.far = 10;
+        return raycaster;
+    },
+
+    /**
+     * Perform a raycast from the cursor into the world.
+     * @returns {object|null} Hit result with position, normal, mesh, distance.
+     */
+    _cursorRaycast() {
+        const raycaster = this._getCursorRaycaster();
+        if (!raycaster) return null;
+
+        // Get block mesh array (cached)
+        if (typeof World === 'undefined') return null;
+
+        if (World._blockMeshDirty || !World._blockMeshArray) {
+            World._blockMeshArray = Object.values(World.blockMap).map(b => b.mesh);
+            World._blockMeshDirty = false;
+        }
+
+        if (!World._blockMeshArray || World._blockMeshArray.length === 0) return null;
+
+        const intersections = raycaster.intersectObjects(World._blockMeshArray, false);
+        if (intersections.length === 0) return null;
+
+        const hit = intersections[0];
+        const mesh = hit.object;
+        const bx = Math.round(mesh.position.x - 0.5);
+        const by = Math.round(mesh.position.y - 0.5);
+        const bz = Math.round(mesh.position.z - 0.5);
+
+        const normal = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 1, 0);
+
+        return {
+            position: { x: bx, y: by, z: bz },
+            normal: { nx: Math.round(normal.x), ny: Math.round(normal.y), nz: Math.round(normal.z) },
+            mesh: mesh,
+            distance: hit.distance,
+        };
+    },
+
+    _handleMouseMove(e) {
+        // Update highlight on mouse move (handled in updateHighlight from game loop)
+    },
+
+    // =============================================
     // MOUSE INPUT HANDLERS
     // =============================================
 
@@ -173,18 +244,14 @@ const Tools = {
     },
 
     // =============================================
-    // TOOL ACTIONS
+    // TOOL ACTIONS (cursor-based)
     // =============================================
 
     _performPrimaryAction() {
         if (typeof World === 'undefined' || !World.camera) return;
 
-        const origin = new THREE.Vector3();
-        const direction = new THREE.Vector3();
-        World.camera.getWorldPosition(origin);
-        World.camera.getWorldDirection(direction);
-
-        const hit = World.getRaycastTarget(origin, direction, 10);
+        // Use cursor-based raycasting
+        const hit = this._cursorRaycast();
         if (!hit) return;
 
         switch (this._currentTool) {
@@ -291,32 +358,28 @@ const Tools = {
     },
 
     // =============================================
-    // BLOCK HIGHLIGHT
+    // BLOCK HIGHLIGHT (cursor-based)
     // =============================================
 
-    updateHighlight(rayOrigin, rayDir) {
+    /**
+     * Update block highlight using cursor position.
+     * Called from the game loop every frame.
+     */
+    updateHighlight() {
         if (typeof Player !== 'undefined' && !Player.isActive()) {
             if (typeof World !== 'undefined') World.removeHighlight();
             return;
         }
 
-        if (!rayOrigin || !rayDir) {
-            if (typeof World !== 'undefined' && World.camera) {
-                const origin = new THREE.Vector3();
-                const direction = new THREE.Vector3();
-                World.camera.getWorldPosition(origin);
-                World.camera.getWorldDirection(direction);
-                rayOrigin = origin;
-                rayDir = direction;
-            } else return;
-        }
-
-        const hit = World.getRaycastTarget(rayOrigin, rayDir, 10);
+        // Use cursor-based raycast
+        const hit = this._cursorRaycast();
 
         if (!hit) {
-            World.removeHighlight();
+            if (typeof World !== 'undefined') World.removeHighlight();
             return;
         }
+
+        if (typeof World === 'undefined') return;
 
         switch (this._currentTool) {
             case 'build': World.highlightBlock(hit.position, hit.normal, 'place'); break;
@@ -385,7 +448,6 @@ const Tools = {
     },
 
     buildBlockPickerUI() {
-        // Try both possible element IDs
         const container = document.getElementById('block-type-picker') || document.getElementById('block-picker');
         if (!container) return;
 
@@ -419,7 +481,6 @@ const Tools = {
     },
 
     buildPaintColorPicker() {
-        // Try both possible element IDs
         const container = document.getElementById('paint-colors') || document.getElementById('paint-picker');
         if (!container) return;
 
@@ -454,7 +515,6 @@ const Tools = {
     },
 
     buildToolButtons() {
-        // Wire up .btn-tool buttons in the game menu (matching HTML class)
         const toolButtons = document.querySelectorAll('.btn-tool');
         toolButtons.forEach(btn => {
             const tool = btn.dataset.tool;

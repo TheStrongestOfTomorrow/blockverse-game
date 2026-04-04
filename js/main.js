@@ -50,9 +50,8 @@ const App = (() => {
             if (typeof World !== 'undefined') World.update(dt);
             if (typeof Player !== 'undefined') Player.update(dt, World.blockMap);
             if (typeof Tools !== 'undefined' && Player.camera) {
-                const raycaster = new THREE.Raycaster();
-                raycaster.setFromCamera(new THREE.Vector2(0, 0), Player.camera);
-                Tools.updateHighlight(raycaster.ray.origin, raycaster.ray.direction);
+                // Cursor-based highlight: follows mouse position, not screen center
+                Tools.updateHighlight();
             }
 
             if (typeof RemotePlayers !== 'undefined') {

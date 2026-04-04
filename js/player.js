@@ -1,10 +1,14 @@
 // ============================================
 // BLOCKVERSE - Player Engine (Third-Person)
 // ============================================
-// Third-person player with visible blocky avatar,
-// orbit camera (right-click drag), zoom (I/O keys + scroll),
-// WASD movement, jump, collision detection.
-// No pointer lock required.
+// Roblox-style third-person player:
+// - Orbit camera: right-click drag to rotate
+// - Zoom: I/O keys + scroll wheel
+// - WASD movement relative to camera direction
+// - Body ONLY rotates when moving (faces movement dir)
+// - When stationary, body keeps last movement facing
+// - Jump: Space bar with gravity
+// - No pointer lock required
 // ============================================
 
 const Player = {
@@ -21,14 +25,21 @@ const Player = {
     _keys: {},
     _isGrounded: false,
     _sprinting: false,
+    _lastMovementYaw: 0,    // Body remembers last movement direction
+    _hasMovedOnce: false,    // Track if player has ever moved
+
+    // --- Mouse tracking for cursor-based raycasting ---
+    _mouseNDC: { x: 0, y: 0 },  // Normalized device coords (-1 to 1)
+    _mouseScreenX: 0,
+    _mouseScreenY: 0,
 
     // --- Camera orbit ---
-    _cameraDistance: 5,
-    _cameraMinDistance: 1.5,
+    _cameraDistance: 6,
+    _cameraMinDistance: 2,
     _cameraMaxDistance: 25,
     _cameraHeightOffset: 2.5,
-    _cameraPitch: 0.35,       // Radians: slight downward angle (0 = horizontal, PI/2 = straight down)
-    _cameraYaw: 0,             // Orbit yaw around player
+    _cameraPitch: 0.35,       // Radians: slight downward angle
+    _cameraYaw: 0,            // Orbit yaw around player
     _rightMouseDown: false,
     _lastMouseX: 0,
     _lastMouseY: 0,
@@ -79,10 +90,13 @@ const Player = {
         this.rotation = { yaw: 0, pitch: 0 };
         this._cameraYaw = 0;
         this._cameraPitch = 0.35;
-        this._cameraDistance = 5;
+        this._cameraDistance = 6;
         this._isGrounded = false;
         this._isActive = true;
         this._keys = {};
+        this._lastMovementYaw = 0;
+        this._hasMovedOnce = false;
+        this._mouseNDC = { x: 0, y: 0 };
 
         // Build avatar mesh
         this._buildAvatar();
@@ -160,21 +174,21 @@ const Player = {
         const headMat = new THREE.MeshLambertMaterial({ color: headColor });
         const legMat = new THREE.MeshLambertMaterial({ color: legColor });
 
-        // --- HEAD ---
+        // --- HEAD (eyes face -Z direction = into the screen when yaw=0) ---
         const headGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const headMesh = new THREE.Mesh(headGeo, headMat);
         headMesh.position.set(0, 1.65, 0);
         headMesh.castShadow = true;
         this._avatarGroup.add(headMesh);
 
-        // --- EYES ---
+        // --- EYES (facing -Z = forward direction) ---
         const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const eyeGeo = new THREE.BoxGeometry(0.08, 0.08, 0.02);
         const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-        leftEye.position.set(-0.1, 1.7, 0.26);
+        leftEye.position.set(-0.1, 1.7, -0.26);  // -Z = forward
         this._avatarGroup.add(leftEye);
         const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-        rightEye.position.set(0.1, 1.7, 0.26);
+        rightEye.position.set(0.1, 1.7, -0.26);   // -Z = forward
         this._avatarGroup.add(rightEye);
 
         // --- BODY ---
@@ -247,7 +261,19 @@ const Player = {
     },
 
     _handleMouseMove(e) {
-        if (!this._isActive || !this._rightMouseDown) return;
+        if (!this._isActive) return;
+
+        // Always track mouse position for cursor-based raycasting
+        this._mouseScreenX = e.clientX;
+        this._mouseScreenY = e.clientY;
+
+        // Calculate NDC (normalized device coordinates) relative to the canvas
+        const rect = this._domElement.getBoundingClientRect();
+        this._mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        this._mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        // Only orbit camera when right mouse button is held
+        if (!this._rightMouseDown) return;
 
         const sensitivity = BV.MOUSE_SENSITIVITY;
         const dx = e.clientX - this._lastMouseX;
@@ -258,7 +284,6 @@ const Player = {
         this._cameraPitch -= dy * sensitivity * 0.6;
 
         // Clamp pitch: allow from below-horizontal to nearly top-down
-        // -0.5 = slightly below horizontal, 1.4 = almost straight down
         this._cameraPitch = Utils.clamp(this._cameraPitch, -0.5, 1.4);
 
         this._lastMouseX = e.clientX;
@@ -319,6 +344,14 @@ const Player = {
     },
 
     // =============================================
+    // MOUSE NDC (for Tools raycasting)
+    // =============================================
+
+    getMouseNDC() {
+        return { x: this._mouseNDC.x, y: this._mouseNDC.y };
+    },
+
+    // =============================================
     // PER-FRAME UPDATE
     // =============================================
 
@@ -330,9 +363,6 @@ const Player = {
         // --- Sprint ---
         this._sprinting = !!(this._keys['ShiftLeft'] || this._keys['ShiftRight']);
         const speed = this._sprinting ? BV.PLAYER_SPRINT_SPEED : BV.PLAYER_SPEED;
-
-        // --- Player faces camera direction (yaw only) ---
-        this.rotation.yaw = this._cameraYaw;
 
         // --- Calculate movement direction from camera yaw ---
         const forward = new THREE.Vector3(
@@ -360,6 +390,20 @@ const Player = {
         if (isMoving) {
             inputX = (inputX / inputLen) * speed;
             inputZ = (inputZ / inputLen) * speed;
+
+            // === KEY FIX: Body ONLY faces movement direction when actually moving ===
+            // Calculate the angle the player is moving in
+            this._lastMovementYaw = Math.atan2(inputX, inputZ);
+            this._hasMovedOnce = true;
+        }
+
+        // Body rotation: use last movement direction (NOT camera yaw)
+        // When stationary, body stays facing last movement direction
+        if (this._hasMovedOnce) {
+            this.rotation.yaw = this._lastMovementYaw;
+        } else {
+            // Before first movement, face away from camera (into the screen)
+            this.rotation.yaw = this._cameraYaw;
         }
 
         // --- Gravity ---
@@ -385,7 +429,6 @@ const Player = {
         if (blockMap && !this._isGrounded) {
             const hw = this._playerWidth / 2;
             const feetY = this.position.y;
-            // Check if there's anything below within 2 blocks
             let hasGroundBelow = false;
             for (let by = Math.floor(feetY) - 1; by >= Math.floor(feetY) - 3; by--) {
                 for (let cx = Math.floor(this.position.x - hw); cx <= Math.floor(this.position.x + hw); cx++) {
@@ -399,7 +442,6 @@ const Player = {
                 }
                 if (hasGroundBelow) break;
             }
-            // If nothing below and we're below y=0.5, snap to y=0.5 (ground level)
             if (!hasGroundBelow && feetY < 0.5) {
                 this.position.y = 0.5;
                 this.velocity.y = 0;
@@ -457,6 +499,8 @@ const Player = {
     _syncAvatar() {
         if (!this._avatarGroup) return;
         this._avatarGroup.position.set(this.position.x, this.position.y, this.position.z);
+        // Avatar faces the movement direction (already stored in this.rotation.yaw)
+        // No PI offset needed since the model faces -Z and atan2 gives the correct angle
         this._avatarGroup.rotation.y = this.rotation.yaw;
     },
 
@@ -479,7 +523,7 @@ const Player = {
     },
 
     // =============================================
-    // COLLISION DETECTION (fixed)
+    // COLLISION DETECTION
     // =============================================
 
     _moveAxis(axis, delta, blockMap) {
@@ -529,7 +573,6 @@ const Player = {
                 for (let bz = minBZ; bz <= maxBZ; bz++) {
                     const key = `${bx},${by},${bz}`;
                     if (blockMap[key]) {
-                        // AABB overlap test (with small epsilon for boundary precision)
                         const eps = 0.001;
                         if (
                             pos.x - hw < bx + 1 - eps &&
@@ -556,10 +599,8 @@ const Player = {
 
         let highestY = null;
 
-        // Check from the player's foot position down to 3 blocks below
         for (const cx of checkX) {
             for (const cz of checkZ) {
-                // Also check the block at the player's exact foot Y
                 const startY = Math.floor(pos.y + 0.5);
                 for (let by = startY; by >= startY - 3; by--) {
                     const key = `${cx},${by},${cz}`;
@@ -681,14 +722,14 @@ const RemotePlayers = {
         headMesh.castShadow = true;
         group.add(headMesh);
 
-        // EYES
+        // EYES (facing -Z = forward)
         const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const eyeGeo = new THREE.BoxGeometry(0.08, 0.08, 0.02);
         const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-        leftEye.position.set(-0.1, 1.7, 0.26);
+        leftEye.position.set(-0.1, 1.7, -0.26);
         group.add(leftEye);
         const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-        rightEye.position.set(0.1, 1.7, 0.26);
+        rightEye.position.set(0.1, 1.7, -0.26);
         group.add(rightEye);
 
         // BODY
@@ -808,7 +849,6 @@ const RemotePlayers = {
         }
     },
 
-    // Alias for compatibility
     updatePosition(id, position, rotation) {
         const data = this.players.get(id);
         if (!data) return;
@@ -839,7 +879,6 @@ const RemotePlayers = {
             );
             data.group.rotation.y = data.state.rotation;
 
-            // Determine animation based on movement
             const dx = Math.abs(data.targetState.position.x - data.state.position.x);
             const dz = Math.abs(data.targetState.position.z - data.state.position.z);
             if (dx > 0.05 || dz > 0.05) {

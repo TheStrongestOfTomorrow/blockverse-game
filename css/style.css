@@ -1341,21 +1341,12 @@ img {
   width: 100vw;
   height: 100vh;
   display: block;
+  cursor: crosshair;
 }
 
-/* Crosshair - small dot for third-person */
+/* Crosshair - hidden since we use cursor-based raycasting (crosshair cursor on canvas) */
 .crosshair {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 100;
-  pointer-events: none;
-  width: 6px;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5), 0 0 8px rgba(255, 255, 255, 0.3);
+  display: none;
 }
 
 /* HUD Top */
