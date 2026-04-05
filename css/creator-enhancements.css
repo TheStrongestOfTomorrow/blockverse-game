@@ -1,0 +1,436 @@
+/* ============================================
+   BLOCKVERSE - Creator Studio Enhanced Styles
+   ============================================ */
+
+/* ===== HIERARCHY PANEL ===== */
+
+.hierarchy-panel {
+    background: #2b2b2b;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 12px;
+    border-right: 1px solid #3f3f3f;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.hierarchy-header {
+    padding: 12px;
+    border-bottom: 1px solid #3f3f3f;
+    background: #242424;
+}
+
+.hierarchy-header h3 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.hierarchy-search {
+    width: 100%;
+    padding: 6px 8px;
+    background: #3f3f3f;
+    border: 1px solid #555;
+    border-radius: 3px;
+    color: #e0e0e0;
+    font-size: 12px;
+}
+
+.hierarchy-search:focus {
+    outline: none;
+    border-color: #0e639c;
+    box-shadow: 0 0 0 2px rgba(14, 99, 156, 0.2);
+}
+
+.hierarchy-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.hierarchy-node {
+    user-select: none;
+}
+
+.hierarchy-node .node-content {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    cursor: pointer;
+    gap: 6px;
+    border-radius: 3px;
+    transition: background 0.15s;
+    position: relative;
+}
+
+.hierarchy-node .node-content:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.hierarchy-node.selected .node-content {
+    background: #0e639c;
+    color: #fff;
+}
+
+.expand-icon {
+    width: 16px;
+    display: inline-block;
+    text-align: center;
+    font-size: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s;
+}
+
+.expand-icon.empty {
+    cursor: default;
+    opacity: 0.3;
+}
+
+.hierarchy-node.expanded .expand-icon {
+    transform: rotate(90deg);
+}
+
+.node-icon {
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.node-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.node-buttons {
+    display: none;
+    gap: 4px;
+    opacity: 0.6;
+}
+
+.hierarchy-node .node-content:hover .node-buttons {
+    display: flex;
+}
+
+.node-buttons button {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 10px;
+    border-radius: 2px;
+    transition: background 0.1s;
+}
+
+.node-buttons button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.hierarchy-children {
+    margin-left: 8px;
+    border-left: 1px solid #3f3f3f;
+}
+
+/* ===== CONTEXT MENU ===== */
+
+.context-menu {
+    position: fixed;
+    background: #3f3f3f;
+    border: 1px solid #555;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+    min-width: 140px;
+}
+
+.context-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.1s;
+    font-size: 12px;
+    color: #e0e0e0;
+}
+
+.context-item:hover {
+    background: #0e639c;
+}
+
+.context-divider {
+    height: 1px;
+    background: #555;
+    margin: 2px 0;
+}
+
+/* ===== PROPERTIES PANEL ===== */
+
+.properties-panel {
+    background: #2b2b2b;
+    color: #e0e0e0;
+    border-left: 1px solid #3f3f3f;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+.properties-header {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #3f3f3f;
+}
+
+.properties-header h3 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.property-section {
+    margin-bottom: 12px;
+}
+
+.property-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    padding: 6px 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.property-section-title:hover {
+    color: #ccc;
+}
+
+.property-item {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.property-label {
+    font-size: 11px;
+    color: #999;
+}
+
+.property-input {
+    background: #3f3f3f;
+    border: 1px solid #555;
+    color: #e0e0e0;
+    padding: 4px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: monospace;
+}
+
+.property-input:focus {
+    outline: none;
+    border-color: #0e639c;
+    box-shadow: 0 0 0 2px rgba(14, 99, 156, 0.2);
+}
+
+/* Vector3 inputs */
+.property-vector {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px;
+}
+
+.property-vector input {
+    font-size: 10px;
+    padding: 3px 4px;
+}
+
+/* Color picker */
+.property-color {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.color-preview {
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    border: 1px solid #555;
+    cursor: pointer;
+}
+
+/* Slider */
+.property-slider {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.property-slider input[type="range"] {
+    flex: 1;
+    height: 4px;
+    cursor: pointer;
+}
+
+.property-slider-value {
+    font-size: 11px;
+    color: #999;
+    min-width: 35px;
+    text-align: right;
+}
+
+/* Dropdown */
+.property-select {
+    background: #3f3f3f;
+    border: 1px solid #555;
+    color: #e0e0e0;
+    padding: 4px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+/* ===== TEMPLATE THUMBNAILS ===== */
+
+.template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    padding: 12px;
+}
+
+.template-card {
+    background: #3f3f3f;
+    border: 1px solid #555;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.template-card:hover {
+    border-color: #0e639c;
+    box-shadow: 0 2px 8px rgba(14, 99, 156, 0.3);
+    transform: translateY(-2px);
+}
+
+.template-thumbnail {
+    width: 100%;
+    height: 90px;
+    background: linear-gradient(135deg, #444, #2a2a2a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+}
+
+.template-info {
+    padding: 8px;
+}
+
+.template-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e0e0e0;
+    margin-bottom: 4px;
+}
+
+.template-difficulty {
+    font-size: 10px;
+    color: #999;
+}
+
+/* ===== GAME TEMPLATES ===== */
+
+.game-templates-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    padding: 24px;
+}
+
+.template-item {
+    background: #2b2b2b;
+    border: 1px solid #3f3f3f;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.template-item:hover {
+    border-color: #0e639c;
+    box-shadow: 0 4px 12px rgba(14, 99, 156, 0.2);
+}
+
+.template-preview {
+    width: 100%;
+    height: 150px;
+    background: linear-gradient(135deg, #0e639c, #1f1f1f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+}
+
+.template-details {
+    padding: 12px;
+}
+
+.template-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.template-desc {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 8px;
+}
+
+.template-diff {
+    font-size: 11px;
+    padding: 4px 8px;
+    background: #3f3f3f;
+    border-radius: 3px;
+    color: #0e639c;
+    display: inline-block;
+}
+
+/* ===== SCROLLBAR STYLING ===== */
+
+.hierarchy-tree::-webkit-scrollbar,
+.properties-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.hierarchy-tree::-webkit-scrollbar-track,
+.properties-panel::-webkit-scrollbar-track {
+    background: #2b2b2b;
+}
+
+.hierarchy-tree::-webkit-scrollbar-thumb,
+.properties-panel::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+.hierarchy-tree::-webkit-scrollbar-thumb:hover,
+.properties-panel::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* ===== LEVEL INDENTATION ===== */
+
+.level-1 { padding-left: 0px; }
+.level-2 { padding-left: 16px; }
+.level-3 { padding-left: 32px; }
+.level-4 { padding-left: 48px; }
+.level-5 { padding-left: 64px; }

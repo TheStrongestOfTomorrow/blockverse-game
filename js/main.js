@@ -48,8 +48,8 @@ const App = (() => {
             _lastTime = now;
 
             if (typeof World !== 'undefined') World.update(dt);
-            if (typeof Player !== 'undefined') Player.update(dt, World.blockMap);
-            if (typeof Tools !== 'undefined' && Player.camera) {
+            if (typeof Player !== 'undefined' && Player.camera) Player.update(dt, World.blockMap);
+            if (typeof Tools !== 'undefined' && Player && Player.camera) {
                 // Cursor-based highlight: follows mouse position, not screen center
                 Tools.updateHighlight();
             }
@@ -319,11 +319,11 @@ const App = (() => {
             if (document.hidden) {
                 if (_gameRunning) {
                     stopGameLoop();
-                    _gameRunning = true;
+                    // Don't modify _gameRunning — stopGameLoop() already handles it
                 }
             } else {
                 if (typeof UI !== 'undefined' && UI.getCurrentScreen() === 'screen-game') {
-                    if (_gameRunning) {
+                    if (!_gameRunning) {
                         startGameLoop();
                     }
                 }

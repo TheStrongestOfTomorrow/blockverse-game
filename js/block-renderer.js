@@ -367,13 +367,46 @@ const BlockRenderer = (() => {
     function dispose() {
         clearAll();
 
+        // Dispose all InstancedMesh instances and their materials
         for (const type in _instances) {
-            if (_instances[type].mesh) {
-                _instances[type].mesh.dispose();
+            const inst = _instances[type];
+            if (inst.mesh) {
+                // Dispose geometry and materials
+                if (inst.mesh.geometry) inst.mesh.geometry.dispose();
+                if (inst.mesh.material) {
+                    if (Array.isArray(inst.mesh.material)) {
+                        inst.mesh.material.forEach(mat => mat.dispose());
+                    } else {
+                        inst.mesh.material.dispose();
+                    }
+                }
+                inst.mesh.dispose();
             }
         }
+
+        // Dispose cached materials
+        for (const type in _materials) {
+            if (_materials[type]) {
+                _materials[type].dispose();
+            }
+        }
+
+        // Dispose custom painted blocks
+        for (const key in _customMeshes) {
+            const mesh = _customMeshes[key];
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) {
+                if (Array.isArray(mesh.material)) {
+                    mesh.material.forEach(mat => mat.dispose());
+                } else {
+                    mesh.material.dispose();
+                }
+            }
+        }
+
         _instances = {};
         _materials = {};
+        _customMeshes = {};
 
         if (_geo) { _geo.dispose(); _geo = null; }
         if (_customGroup && _customGroup.parent) {

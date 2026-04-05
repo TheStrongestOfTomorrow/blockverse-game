@@ -128,6 +128,10 @@ const World = {
         this._animClock = new THREE.Clock();
 
         // --- Resize ---
+        // Remove any existing listener first to prevent double-binding on re-init
+        if (this._onResize) {
+            window.removeEventListener('resize', this._onResize);
+        }
         this._onResize = this.resize.bind(this);
         window.addEventListener('resize', this._onResize);
 
