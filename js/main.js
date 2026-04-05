@@ -13,6 +13,7 @@ const App = (() => {
     let _playerInitialised = false;
     let _toolsInitialised = false;
     let _chatInitialised = false;
+    let _enteringGame = false;  // Guard against showScreen → _onGameScreen → enterGame recursion
 
     // ---- Multi-tab session lock ----
     // Prevents the same user from having an active game in multiple tabs.
@@ -97,6 +98,12 @@ const App = (() => {
     }
 
     function enterGame() {
+        // Guard against infinite recursion:
+        // UI.showScreen('screen-game') → _onGameScreen() → enterGame() → loop
+        if (_enteringGame) return;
+        _enteringGame = true;
+
+        try {
         // ---- Multi-tab lock check ----
         const existingSession = _getActiveSession();
         if (existingSession && existingSession.tabId !== _TAB_ID && existingSession.username === Auth.getCurrentUser()) {
@@ -165,6 +172,10 @@ const App = (() => {
         const hint = document.getElementById('controls-hint');
         if (hint) {
             setTimeout(() => { hint.classList.add('fade-out'); }, 6000);
+        }
+
+        } finally {
+            _enteringGame = false;
         }
     }
 
