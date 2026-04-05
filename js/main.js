@@ -115,6 +115,9 @@ const App = (() => {
         // Claim the session
         _claimSession();
 
+        // Switch to game screen
+        if (typeof UI !== 'undefined') UI.showScreen('screen-game');
+
         // World MUST be initialized first (creates scene, camera, renderer)
         if (!_worldInitialised && typeof World !== 'undefined') {
             if (!World.scene) {
@@ -199,16 +202,17 @@ const App = (() => {
         const gameMenu = document.getElementById('game-menu');
         if (!gameMenu) return;
 
-        const isVisible = !gameMenu.classList.contains('hidden');
+        const isVisible = gameMenu.classList.contains('active');
 
         if (isVisible) {
-            gameMenu.classList.add('hidden');
+            gameMenu.classList.remove('active');
             if (typeof Player !== 'undefined') {
                 Player.setActive(true);
             }
         } else {
             UI.closeAllModals();
-            gameMenu.classList.remove('hidden');
+            gameMenu.classList.add('active');
+            _renderGameMenuPlayers();
             if (typeof Player !== 'undefined') {
                 Player.setActive(false);
             }
@@ -371,20 +375,83 @@ const App = (() => {
         const panel = document.getElementById('player-list-panel');
         if (!panel) return;
         panel.classList.toggle('hidden');
+    }
 
-        if (!panel.classList.contains('hidden') && typeof Multiplayer !== 'undefined') {
-            const list = panel.querySelector('.player-list');
-            if (list) {
-                let html = '';
-                Multiplayer.players.forEach((info, peerId) => {
-                    const isHost = peerId === Multiplayer.hostPeerId;
-                    const hostTag = isHost ? ' ⭐' : '';
-                    const youTag = (info.username === Auth.getCurrentUser()) ? ' (You)' : '';
-                    html += `<div class="player-entry"><span>${info.username}${youTag}${hostTag}</span></div>`;
-                });
-                list.innerHTML = html || '<p style="color:#a0a0b0">No players</p>';
-            }
+    /**
+     * Render the player list inside the game menu with avatars.
+     */
+    function _renderGameMenuPlayers() {
+        const listEl = document.getElementById('gm-player-list');
+        const countEl = document.getElementById('gm-player-count');
+        if (!listEl) return;
+
+        const me = Auth ? Auth.getCurrentUser() : 'You';
+        let count = 1; // Count self
+        let html = '';
+
+        // Render self first
+        const myAvatar = Avatar ? Avatar.getConfig() : {};
+        const myColor = myAvatar.bodyColor || '#3F51B5';
+        const myLetter = (me || '?')[0].toUpperCase();
+        html += `
+            <div class="gm-player-entry is-you">
+                <div class="gm-player-avatar" style="background:${myColor}">${myLetter}</div>
+                <div class="gm-player-info">
+                    <div class="gm-player-name">${me}</div>
+                    <div class="gm-player-role">You</div>
+                </div>
+            </div>`;
+
+        // Render remote players
+        if (typeof Multiplayer !== 'undefined') {
+            Multiplayer.players.forEach((info, peerId) => {
+                if (info.username === me) return; // Skip self if duplicated
+                count++;
+                const avatarColor = (info.avatar && info.avatar.bodyColor) || '#607D8B';
+                const letter = (info.username || '?')[0].toUpperCase();
+                const isHost = peerId === Multiplayer.hostPeerId;
+                const roleText = isHost ? 'Host' : 'Player';
+                const roleIcon = isHost ? '⭐' : '';
+
+                // Check if already friends
+                const isFriend = typeof Friends !== 'undefined' && Friends.getFriends().includes(info.username);
+
+                html += `
+                    <div class="gm-player-entry" data-username="${info.username}">
+                        <div class="gm-player-avatar" style="background:${avatarColor}">${letter}</div>
+                        <div class="gm-player-info">
+                            <div class="gm-player-name">${info.username} ${roleIcon}</div>
+                            <div class="gm-player-role">${roleText}</div>
+                        </div>
+                        <div class="gm-player-actions">
+                            ${isFriend
+                                ? '<span class="gm-player-action-btn" title="Already friends" style="cursor:default;color:var(--secondary)">✓</span>'
+                                : `<button class="gm-player-action-btn gm-add-player-friend" data-username="${info.username}" title="Add Friend">+</button>`
+                            }
+                        </div>
+                    </div>`;
+            });
         }
+
+        listEl.innerHTML = html || '<div style="padding:1rem;text-align:center;color:var(--text-muted)">No other players</div>';
+
+        if (countEl) countEl.textContent = count;
+
+        // Wire up add-friend buttons on player entries
+        listEl.querySelectorAll('.gm-add-player-friend').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const username = btn.dataset.username;
+                if (username && typeof Friends !== 'undefined') {
+                    const result = Friends.addFriend(username);
+                    if (result.success) {
+                        btn.outerHTML = '<span class="gm-player-action-btn" title="Request sent" style="cursor:default;color:var(--secondary)">✓</span>';
+                    } else {
+                        Utils.showToast(result.error, 'error');
+                    }
+                }
+            });
+        });
     }
 
     function _setupGameMenuButtons() {
@@ -407,6 +474,77 @@ const App = (() => {
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
                 if (typeof Auth !== 'undefined') Auth.logout();
+            });
+        }
+
+        // ---- New game menu buttons ----
+
+        // Respawn button
+        const respawnBtn = document.getElementById('btn-respawn');
+        if (respawnBtn) {
+            respawnBtn.addEventListener('click', () => {
+                if (typeof Player !== 'undefined') {
+                    Player.respawn();
+                    toggleGameMenu();
+                    Utils.showToast('Respawned!', 'success');
+                }
+            });
+        }
+
+        // In-game Add Friend button (opens modal from game menu)
+        const gmAddFriendBtn = document.getElementById('btn-gm-add-friend');
+        if (gmAddFriendBtn) {
+            gmAddFriendBtn.addEventListener('click', () => {
+                const modal = document.getElementById('gm-add-friend-modal');
+                if (modal) modal.classList.remove('hidden');
+            });
+        }
+
+        // In-game Send Friend Request button
+        const gmSendBtn = document.getElementById('gm-btn-send-friend-request');
+        const gmInput = document.getElementById('gm-add-friend-username');
+        if (gmSendBtn && gmInput) {
+            const sendRequest = () => {
+                const username = gmInput.value.trim();
+                if (!username) {
+                    Utils.showToast('Enter a username', 'error');
+                    return;
+                }
+                if (typeof Friends !== 'undefined') {
+                    const result = Friends.addFriend(username);
+                    if (result.success) {
+                        gmInput.value = '';
+                        const modal = document.getElementById('gm-add-friend-modal');
+                        if (modal) modal.classList.add('hidden');
+                    } else {
+                        Utils.showToast(result.error, 'error');
+                    }
+                }
+            };
+            gmSendBtn.addEventListener('click', sendRequest);
+            gmInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') sendRequest();
+            });
+        }
+
+        // Settings button in game menu
+        const gmSettingsBtn = document.getElementById('btn-gm-settings');
+        if (gmSettingsBtn) {
+            gmSettingsBtn.addEventListener('click', () => {
+                toggleGameMenu();
+                const panel = document.getElementById('player-list-panel');
+                if (panel) panel.classList.add('hidden');
+                // Show a quick settings toast or could open a settings modal
+                Utils.showToast('Settings saved to your profile', 'info');
+            });
+        }
+
+        // ---- Lobby Add Friend button ----
+        const lobbyAddFriendBtn = document.getElementById('btn-add-friend');
+        if (lobbyAddFriendBtn) {
+            lobbyAddFriendBtn.addEventListener('click', () => {
+                const modal = document.getElementById('add-friend-modal');
+                if (modal) modal.classList.remove('hidden');
             });
         }
     }

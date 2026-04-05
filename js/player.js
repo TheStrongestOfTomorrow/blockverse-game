@@ -671,6 +671,22 @@ const Player = {
         this._camera.updateProjectionMatrix();
     },
 
+    /**
+     * Respawn the player at the spawn point.
+     * Resets position, velocity, and camera to defaults.
+     */
+    respawn() {
+        this.position = { x: 0, y: 5, z: 0 };
+        this.velocity = { x: 0, y: 0, z: 0 };
+        this.rotation = { yaw: 0, pitch: 0 };
+        this._cameraYaw = 0;
+        this._cameraPitch = 0.3;
+        this._cameraDistance = 8;
+        this._isGrounded = false;
+        this._syncCamera();
+        this._syncAvatar();
+    },
+
     getForwardDirection() {
         return new THREE.Vector3(
             -Math.sin(this._cameraYaw),

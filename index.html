@@ -451,32 +451,68 @@
             </div>
         </div>
 
-        <!-- Game Menu (ESC) -->
-        <div id="game-menu" class="game-menu hidden">
+        <!-- Game Menu (ESC) — Roblox-style pause menu -->
+        <div id="game-menu" class="game-menu">
             <div class="game-menu-content">
-                <h2>Game Paused</h2>
-                <div id="game-menu-tools" class="menu-section">
-                    <h3>Tools</h3>
-                    <div class="tool-buttons">
-                        <button class="btn btn-tool active" data-tool="build">🔨 Build</button>
-                        <button class="btn btn-tool" data-tool="delete">🗑️ Delete</button>
-                        <button class="btn btn-tool" data-tool="paint">🎨 Paint</button>
-                        <button class="btn btn-tool" data-tool="grab">✋ Grab</button>
+                <h2 class="game-menu-title">Game Menu</h2>
+
+                <div class="game-menu-layout">
+                    <!-- LEFT: Player List -->
+                    <div class="gm-players-panel">
+                        <div class="gm-panel-header">
+                            <span>Players (<span id="gm-player-count">1</span>)</span>
+                        </div>
+                        <div id="gm-player-list" class="gm-player-list">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- CENTER: Tools & Actions -->
+                    <div class="gm-center">
+                        <div class="gm-section">
+                            <h3>Tools</h3>
+                            <div id="game-menu-tools" class="tool-buttons">
+                                <button class="btn btn-tool active" data-tool="build">🔨 Build</button>
+                                <button class="btn btn-tool" data-tool="delete">🗑️ Delete</button>
+                                <button class="btn btn-tool" data-tool="paint">🎨 Paint</button>
+                                <button class="btn btn-tool" data-tool="grab">✋ Grab</button>
+                            </div>
+                        </div>
+                        <div class="gm-section" id="gm-paint-section">
+                            <h3>Color Picker (Paint Tool)</h3>
+                            <div id="paint-colors" class="color-picker-row"></div>
+                        </div>
+                        <div class="gm-section" id="gm-block-section">
+                            <h3>Block Type (Build Tool)</h3>
+                            <div id="block-type-picker" class="block-picker-grid"></div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: Actions -->
+                    <div class="gm-actions-panel">
+                        <button id="btn-resume" class="gm-btn gm-btn-resume">▶ Resume</button>
+                        <button id="btn-respawn" class="gm-btn gm-btn-secondary">🔄 Respawn</button>
+                        <button id="btn-gm-add-friend" class="gm-btn gm-btn-secondary">👤 Add Friend</button>
+                        <button id="btn-gm-settings" class="gm-btn gm-btn-secondary">⚙️ Settings</button>
+                        <button id="btn-leave-game" class="gm-btn gm-btn-danger">✕ Leave Game</button>
                     </div>
                 </div>
-                <div class="menu-section">
-                    <h3>Color Picker (Paint Tool)</h3>
-                    <div id="paint-colors" class="color-picker-row"></div>
+            </div>
+        </div>
+
+        <!-- In-Game Add Friend Modal (opened from game menu) -->
+        <div id="gm-add-friend-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Add Friend</h2>
+                    <button class="modal-close">&times;</button>
                 </div>
-                <div class="menu-section">
-                    <h3>Block Type (Build Tool)</h3>
-                    <div id="block-type-picker" class="block-picker-grid"></div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="gm-add-friend-username" placeholder="Enter their username" maxlength="20">
                 </div>
-                <div class="menu-actions">
-                    <button id="btn-toggle-players" class="btn btn-secondary">👥 Players</button>
-                    <button id="btn-resume" class="btn btn-primary">Resume</button>
-                    <button id="btn-leave-game" class="btn btn-danger">Leave Game</button>
-                </div>
+                <div id="gm-add-friend-error" class="form-error"></div>
+                <button id="gm-btn-send-friend-request" class="btn btn-primary btn-full">Send Friend Request</button>
             </div>
         </div>
 
@@ -533,10 +569,13 @@
                     <h2>🎮 Game Invitation</h2>
                     <button class="modal-close">&times;</button>
                 </div>
-                <div id="invite-details" class="invite-details"></div>
+                <div id="invite-details" class="invite-details">
+                    <p><strong class="invite-from"></strong> invited you to play!</p>
+                    <p class="invite-code-label">Game Code: <strong class="invite-code"></strong></p>
+                </div>
                 <div class="invite-actions">
-                    <button id="btn-accept-invite" class="btn btn-primary">Accept</button>
-                    <button id="btn-decline-invite" class="btn btn-ghost">Decline</button>
+                    <button id="btn-accept-invite" class="btn btn-primary invite-accept">Accept</button>
+                    <button id="btn-decline-invite" class="btn btn-ghost invite-decline">Decline</button>
                 </div>
             </div>
         </div>
