@@ -31,7 +31,10 @@
                     🗑️ Clear
                 </button>
                 <button class="creator-btn creator-btn-primary" id="btn-play">
-                    ▶ Play
+                    ▶ Play Test
+                </button>
+                <button class="creator-btn creator-btn-danger hidden" id="btn-stop-play">
+                    ■ Stop Test
                 </button>
                 <button class="creator-btn creator-btn-accent" id="btn-publish">
                     🚀 Publish
@@ -104,6 +107,24 @@
                 <!-- Viewport toolbar (block type picker) -->
                 <div class="creator-viewport-toolbar" id="creator-viewport-toolbar">
                     <!-- Filled dynamically -->
+                </div>
+
+                <!-- Play Mode Overlay (hidden by default) -->
+                <div class="play-mode-overlay hidden" id="play-mode-overlay">
+                    <div class="play-mode-crosshair">+</div>
+                    <div class="play-mode-hud">
+                        <div class="play-mode-badge" id="play-mode-badge">🎮 TESTING</div>
+                        <div class="play-mode-controls-hint">
+                            WASD: Move · Space: Jump · Mouse: Look · Escape: Stop
+                        </div>
+                    </div>
+                    <div class="play-mode-click-to-start hidden" id="play-click-prompt">
+                        <div class="play-click-inner">
+                            <span class="play-click-icon">🖱️</span>
+                            <p>Click to start playing</p>
+                            <p class="play-click-sub">Mouse will be locked for look control</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -428,6 +449,21 @@
             currentPaintColor: '#4CAF50',
             scriptMode: 'beginner', // 'beginner' or 'advanced'
 
+            // Play test mode state
+            _isPlayMode: false,
+            _player: {
+                position: new THREE.Vector3(0, 3, 0),
+                velocity: new THREE.Vector3(0, 0, 0),
+                yaw: 0,        // Horizontal rotation
+                pitch: 0,       // Vertical rotation  
+                onGround: false,
+                height: 1.7,    // Eye height
+                speed: 6,       // Walk speed
+                jumpForce: 8,
+                gravity: 20,
+            },
+            _keys: {},
+
             // Camera orbit state
             _orbit: {
                 enabled: false,
@@ -659,6 +695,19 @@
 
                 // Keyboard shortcuts
                 document.addEventListener('keydown', (e) => this._onKeyDown(e));
+                document.addEventListener('keyup', (e) => this._onKeyUp(e));
+
+                // Pointer lock for play mode
+                document.addEventListener('pointerlockchange', () => this._onPointerLockChange());
+
+                // Play mode click prompt
+                const clickPrompt = document.getElementById('play-click-prompt');
+                if (clickPrompt) {
+                    clickPrompt.addEventListener('click', () => {
+                        const canvas = document.getElementById('creator-canvas');
+                        if (canvas) canvas.requestPointerLock();
+                    });
+                }
             },
 
             _initCameraHint() {
@@ -964,17 +1013,14 @@
                     this._publishGame();
                 });
 
-                // Play button
+                // Play button — enters in-creator play test mode
                 document.getElementById('btn-play').addEventListener('click', () => {
-                    // Save game state to localStorage and redirect to play
-                    this._saveGame();
-                    const gameId = 'creator_' + Date.now();
-                    localStorage.setItem('bv_play_game', JSON.stringify({
-                        id: gameId,
-                        name: document.getElementById('creator-game-name').value || 'Untitled',
-                        fromCreator: true,
-                    }));
-                    window.location.href = 'index.html';
+                    this._enterPlayMode();
+                });
+
+                // Stop button — exits play test mode
+                document.getElementById('btn-stop-play').addEventListener('click', () => {
+                    this._exitPlayMode();
                 });
 
                 // Game name sync
@@ -1131,6 +1177,15 @@ Events.on("gameStart", async function() {
             },
 
             _onCanvasMouseDown(e) {
+                // In play mode, clicking requests pointer lock
+                if (this._isPlayMode) {
+                    const canvas = document.getElementById('creator-canvas');
+                    if (canvas && !document.pointerLockElement) {
+                        canvas.requestPointerLock();
+                    }
+                    return;
+                }
+
                 const canvas = document.getElementById('creator-canvas');
 
                 if (e.button === 2) {
@@ -1148,6 +1203,15 @@ Events.on("gameStart", async function() {
             },
 
             _onCanvasMouseMove(e) {
+                // In play mode, track mouse for look control
+                if (this._isPlayMode) {
+                    if (document.pointerLockElement) {
+                        this._playMouseDX += e.movementX || 0;
+                        this._playMouseDY += e.movementY || 0;
+                    }
+                    return;
+                }
+
                 const dx = e.clientX - this._orbit.lastMouse.x;
                 const dy = e.clientY - this._orbit.lastMouse.y;
 
@@ -1348,6 +1412,29 @@ Events.on("gameStart", async function() {
             // =============================================
 
             _onKeyDown(e) {
+                // In play mode, handle player controls
+                if (this._isPlayMode) {
+                    this._keys[e.code] = true;
+
+                    // Escape stops play mode
+                    if (e.code === 'Escape') {
+                        this._exitPlayMode();
+                        return;
+                    }
+
+                    // Space to jump
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        if (this._player.onGround) {
+                            this._player.velocity.y = this._player.jumpForce;
+                            this._player.onGround = false;
+                        }
+                    }
+
+                    // Block editor shortcuts while in play mode
+                    return;
+                }
+
                 const tag = e.target.tagName.toLowerCase();
                 if (tag === 'input' || tag === 'textarea') return;
                 // Don't capture when Monaco is focused
@@ -1378,6 +1465,10 @@ Events.on("gameStart", async function() {
                 }
             },
 
+            _onKeyUp(e) {
+                this._keys[e.code] = false;
+            },
+
             _activateTool(tool) {
                 document.querySelectorAll('.creator-tool-btn[data-tool]').forEach(b => {
                     b.classList.toggle('active', b.dataset.tool === tool);
@@ -1394,6 +1485,207 @@ Events.on("gameStart", async function() {
                     toolBadge.textContent = (icons[tool] || '🔨') + ' ' + tool.charAt(0).toUpperCase() + tool.slice(1);
                 }
             },
+
+            // =============================================
+            // PLAY TEST MODE (Roblox Studio-style)
+            // =============================================
+
+            _enterPlayMode() {
+                this._isPlayMode = true;
+                this._keys = {};
+
+                // Save orbit camera state
+                this._savedOrbit = {
+                    theta: this._orbit.theta,
+                    phi: this._orbit.phi,
+                    radius: this._orbit.radius,
+                    target: this._orbit.target.clone(),
+                };
+
+                // Set player spawn position (find highest block at 0,0 or default to 0,3,0)
+                const p = this._player;
+                p.position.set(0, 3, 0);
+                p.velocity.set(0, 0, 0);
+                p.yaw = 0;
+                p.pitch = 0;
+                p.onGround = false;
+
+                // Find a safe spawn (highest block near origin)
+                let highestY = 0;
+                for (let y = 30; y >= 0; y--) {
+                    const key = blockKey(0, y, 0);
+                    if (World.blockMap.has(key)) {
+                        highestY = y + 1;
+                        break;
+                    }
+                }
+                p.position.y = Math.max(highestY + 0.5, 2);
+
+                // Switch to play mode UI
+                document.querySelector('.creator-root').classList.add('play-mode');
+                document.getElementById('btn-play').classList.add('hidden');
+                document.getElementById('btn-stop-play').classList.remove('hidden');
+                document.getElementById('play-mode-overlay').classList.remove('hidden');
+                document.getElementById('play-click-prompt').classList.remove('hidden');
+
+                // Hide editor highlight
+                this._highlightMesh.visible = false;
+
+                // Switch camera to first-person
+                this.camera.fov = 75;
+                this.camera.updateProjectionMatrix();
+
+                // Run the user's script
+                try {
+                    const code = MonacoSetup.getValue();
+                    ScriptEngine.loadScript('main', code, 'javascript');
+                    ScriptEngine.run();
+                } catch (e) {
+                    console.warn('[Creator] Play mode script error:', e);
+                }
+            },
+
+            _exitPlayMode() {
+                this._isPlayMode = false;
+                this._keys = {};
+
+                // Release pointer lock
+                if (document.pointerLockElement) {
+                    document.exitPointerLock();
+                }
+
+                // Restore orbit camera state
+                if (this._savedOrbit) {
+                    this._orbit.theta = this._savedOrbit.theta;
+                    this._orbit.phi = this._savedOrbit.phi;
+                    this._orbit.radius = this._savedOrbit.radius;
+                    this._orbit.target.copy(this._savedOrbit.target);
+                    this._updateCameraPosition();
+                }
+
+                // Switch back to editor UI
+                document.querySelector('.creator-root').classList.remove('play-mode');
+                document.getElementById('btn-play').classList.remove('hidden');
+                document.getElementById('btn-stop-play').classList.add('hidden');
+                document.getElementById('play-mode-overlay').classList.add('hidden');
+
+                // Restore camera FOV
+                this.camera.fov = 60;
+                this.camera.updateProjectionMatrix();
+
+                // Stop scripts
+                try {
+                    ScriptEngine.stop();
+                } catch (e) {
+                    // ignore
+                }
+            },
+
+            _onPointerLockChange() {
+                if (!this._isPlayMode) return;
+
+                const clickPrompt = document.getElementById('play-click-prompt');
+                if (document.pointerLockElement) {
+                    // Mouse is locked — player is in control
+                    if (clickPrompt) clickPrompt.classList.add('hidden');
+                } else {
+                    // Mouse unlocked — show click prompt again
+                    if (clickPrompt && this._isPlayMode) {
+                        clickPrompt.classList.remove('hidden');
+                    }
+                }
+            },
+
+            _updatePlayMode(delta) {
+                if (!this._isPlayMode) return;
+
+                const p = this._player;
+
+                // Mouse look (only when pointer is locked)
+                if (document.pointerLockElement) {
+                    p.yaw -= this._playMouseDX * 0.002;
+                    p.pitch -= this._playMouseDY * 0.002;
+                    p.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, p.pitch));
+                }
+                this._playMouseDX = 0;
+                this._playMouseDY = 0;
+
+                // Movement direction
+                const forward = new THREE.Vector3(-Math.sin(p.yaw), 0, -Math.cos(p.yaw));
+                const right = new THREE.Vector3(Math.cos(p.yaw), 0, -Math.sin(p.yaw));
+                const moveDir = new THREE.Vector3(0, 0, 0);
+
+                if (this._keys['KeyW']) moveDir.add(forward);
+                if (this._keys['KeyS']) moveDir.sub(forward);
+                if (this._keys['KeyA']) moveDir.sub(right);
+                if (this._keys['KeyD']) moveDir.add(right);
+
+                if (moveDir.lengthSq() > 0) {
+                    moveDir.normalize().multiplyScalar(p.speed * delta);
+                }
+
+                // Apply gravity
+                p.velocity.y -= p.gravity * delta;
+
+                // Apply horizontal movement
+                p.position.x += moveDir.x;
+                p.position.z += moveDir.z;
+                p.position.y += p.velocity.y * delta;
+
+                // Ground collision
+                const feetY = Math.floor(p.position.y - 0.1);
+                const feetKey = blockKey(Math.round(p.position.x), feetY, Math.round(p.position.z));
+                if (World.blockMap.has(feetKey)) {
+                    p.position.y = feetY + 1 + 0.001;
+                    p.velocity.y = 0;
+                    p.onGround = true;
+                } else {
+                    // Check block below feet (more forgiving)
+                    const belowKey = blockKey(Math.round(p.position.x), feetY - 1, Math.round(p.position.z));
+                    if (World.blockMap.has(belowKey) && p.position.y - feetY < 0.5) {
+                        p.position.y = (feetY) + 1 + 0.001;
+                        p.velocity.y = 0;
+                        p.onGround = true;
+                    } else {
+                        p.onGround = false;
+                    }
+                }
+
+                // Head collision (prevent walking through blocks)
+                const headY = Math.floor(p.position.y + p.height);
+                const headKey = blockKey(Math.round(p.position.x), headY, Math.round(p.position.z));
+                if (World.blockMap.has(headKey) && p.velocity.y > 0) {
+                    p.velocity.y = 0;
+                }
+
+                // Fall reset (if fell below world)
+                if (p.position.y < -20) {
+                    p.position.set(0, 10, 0);
+                    p.velocity.set(0, 0, 0);
+                }
+
+                // Update camera
+                this.camera.position.set(
+                    p.position.x,
+                    p.position.y + p.height,
+                    p.position.z
+                );
+
+                // Look direction from yaw and pitch
+                const lookDir = new THREE.Vector3(
+                    -Math.sin(p.yaw) * Math.cos(p.pitch),
+                    Math.sin(p.pitch),
+                    -Math.cos(p.yaw) * Math.cos(p.pitch)
+                );
+                this.camera.lookAt(
+                    p.position.x + lookDir.x,
+                    p.position.y + p.height + lookDir.y,
+                    p.position.z + lookDir.z
+                );
+            },
+
+            _playMouseDX: 0,
+            _playMouseDY: 0,
 
             // =============================================
             // UPDATE BLOCK COUNT
@@ -1487,9 +1779,13 @@ Events.on("gameStart", async function() {
                 requestAnimationFrame(() => this._animate());
 
                 const delta = this._animClock.getDelta();
+                const clampedDelta = Math.min(delta, 0.05); // Clamp to prevent physics explosions
 
-                // Update highlight pulse
-                if (this._highlightMesh && this._highlightMesh.visible) {
+                // Update play mode (first-person player movement)
+                this._updatePlayMode(clampedDelta);
+
+                // Update highlight pulse (only in editor mode)
+                if (!this._isPlayMode && this._highlightMesh && this._highlightMesh.visible) {
                     const pulse = 0.5 + 0.3 * Math.sin(performance.now() * 0.006);
                     this._highlightMesh.material.opacity = pulse;
                 }
