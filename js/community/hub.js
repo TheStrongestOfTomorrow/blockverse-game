@@ -40,10 +40,12 @@ const CommunityHub = {
      */
     async authWithPAT(token) {
         try {
+            // Set token FIRST so _fetch includes the Authorization header
+            this._token = token;
+
             // Validate token by fetching user info
             const user = await this._fetch('/user');
             if (user.login) {
-                this._token = token;
                 this._username = user.login;
                 sessionStorage.setItem('bv_community_token', token);
                 sessionStorage.setItem('bv_community_username', user.login);
@@ -55,8 +57,11 @@ const CommunityHub = {
                 }));
                 return { success: true, user: { login: user.login, avatar_url: user.avatar_url, name: user.name } };
             }
+            // Token sent but user fetch failed — clear the token
+            this._token = null;
             return { success: false, error: 'Token is invalid or has insufficient permissions.' };
         } catch (err) {
+            this._token = null;
             return { success: false, error: err.message || 'Authentication failed.' };
         }
     },

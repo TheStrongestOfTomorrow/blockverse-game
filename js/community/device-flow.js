@@ -70,16 +70,17 @@ const DeviceFlow = {
         }
 
         try {
+            // Use URL-encoded form data to avoid CORS preflight issues
+            const params = new URLSearchParams({
+                client_id: this._clientId,
+                scope: 'public_repo',
+            });
             const response = await fetch(`${this._apiBase}/login/device/code`, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    client_id: this._clientId,
-                    scope: 'public_repo',
-                }),
+                body: params.toString(),
             });
 
             const data = await response.json();
@@ -126,16 +127,17 @@ const DeviceFlow = {
                 if (onPolling) onPolling(pollCount, maxPolls);
 
                 try {
+                    // Use URL-encoded form data to avoid CORS preflight issues
+                    const params = new URLSearchParams({
+                        client_id: this._clientId,
+                        device_code: deviceCode,
+                    });
                     const response = await fetch(`${this._apiBase}/login/device/token`, {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
-                            'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            client_id: this._clientId,
-                            device_code: deviceCode,
-                        }),
+                        body: params.toString(),
                     });
 
                     const data = await response.json();

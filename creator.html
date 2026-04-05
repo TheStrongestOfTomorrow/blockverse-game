@@ -36,6 +36,12 @@
                 <button class="creator-btn creator-btn-danger hidden" id="btn-stop-play">
                     ■ Stop Test
                 </button>
+                <button class="creator-btn creator-btn-outline" id="btn-save-game" data-tooltip="Save Game (Ctrl+S)" style="border-color:rgba(0,184,148,0.4);color:var(--secondary);">
+                    💾 Save
+                </button>
+                <button class="creator-btn creator-btn-outline" id="btn-load-game" data-tooltip="Load Game">
+                    📂 Load
+                </button>
                 <button class="creator-btn creator-btn-accent" id="btn-publish">
                     🚀 Publish
                 </button>
@@ -1027,6 +1033,27 @@
                 document.getElementById('creator-game-name').addEventListener('input', (e) => {
                     document.title = 'BlockVerse - ' + (e.target.value || 'Creator Studio');
                 });
+
+                // ── SAVE GAME ──
+                document.getElementById('btn-save-game').addEventListener('click', () => {
+                    this._saveGame();
+                });
+
+                // ── LOAD GAME ──
+                document.getElementById('btn-load-game').addEventListener('click', () => {
+                    this._loadGame();
+                });
+
+                // Ctrl+S shortcut to save
+                document.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        this._saveGame();
+                    }
+                });
+
+                // Check for auto-save on startup
+                this._checkAutoSave();
             },
 
             _buildScriptTemplates() {
@@ -1690,6 +1717,184 @@ Events.on("gameStart", async function() {
             // =============================================
             // UPDATE BLOCK COUNT
             // =============================================
+
+            // =============================================
+            // SAVE / LOAD (localStorage — no publishing needed)
+            // =============================================
+
+            _getGameSaveKey() {
+                const name = document.getElementById('creator-game-name').value.trim() || 'untitled';
+                return 'bv_creator_save_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+            },
+
+            _getAutoSaveKey() {
+                return 'bv_creator_autosave';
+            },
+
+            _saveGame() {
+                const gameData = {
+                    name: document.getElementById('creator-game-name').value || 'Untitled',
+                    description: document.getElementById('settings-desc').value || '',
+                    category: document.getElementById('settings-category').value,
+                    maxPlayers: parseInt(document.getElementById('settings-max-players').value) || 8,
+                    template: document.getElementById('prop-template').value,
+                    blocks: World.getBlocksSnapshot(),
+                    script: typeof MonacoSetup !== 'undefined' ? MonacoSetup.getValue() : '',
+                    blockCount: World.blockCount,
+                    savedAt: Date.now(),
+                };
+
+                try {
+                    localStorage.setItem(this._getGameSaveKey(), JSON.stringify(gameData));
+                    // Also update auto-save
+                    localStorage.setItem(this._getAutoSaveKey(), JSON.stringify(gameData));
+                    if (typeof Utils !== 'undefined') Utils.showToast('Game saved! (' + gameData.blocks.length + ' blocks)', 'success');
+                } catch (e) {
+                    if (typeof Utils !== 'undefined') Utils.showToast('Save failed: storage full', 'error');
+                }
+            },
+
+            _loadGame() {
+                // Try to load by current game name first
+                let savedData = null;
+                const key = this._getGameSaveKey();
+                try {
+                    savedData = JSON.parse(localStorage.getItem(key));
+                } catch (e) {}
+
+                // If no named save, try auto-save
+                if (!savedData) {
+                    try {
+                        savedData = JSON.parse(localStorage.getItem(this._getAutoSaveKey()));
+                    } catch (e) {}
+                }
+
+                if (!savedData) {
+                    // Show a prompt with list of saved games
+                    this._showLoadDialog();
+                    return;
+                }
+
+                this._applySaveData(savedData);
+            },
+
+            _showLoadDialog() {
+                // Find all saved games
+                const saves = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.startsWith('bv_creator_save_')) {
+                        try {
+                            const data = JSON.parse(localStorage.getItem(k));
+                            if (data && data.name) {
+                                saves.push({ key: k, data });
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                if (saves.length === 0) {
+                    if (typeof Utils !== 'undefined') Utils.showToast('No saved games found', 'info');
+                    return;
+                }
+
+                // Build a simple dialog
+                const overlay = document.createElement('div');
+                overlay.className = 'creator-modal-overlay visible';
+                overlay.style.zIndex = '10000';
+                overlay.innerHTML = `
+                    <div class="creator-modal" style="max-width:420px;">
+                        <div class="creator-modal-header">
+                            <h2>📂 Load Game</h2>
+                            <button class="creator-modal-close" id="load-dialog-close">&times;</button>
+                        </div>
+                        <div class="creator-modal-body" style="max-height:400px;overflow-y:auto;">
+                            ${saves.map((s, i) => `
+                                <div class="asset-item" style="cursor:pointer;margin-bottom:0.5rem;padding:0.6rem;border:1px solid var(--border);border-radius:var(--radius-sm);" data-save-idx="${i}">
+                                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                                        <span style="font-size:1.2rem;">🎮</span>
+                                        <div>
+                                            <div style="font-weight:600;font-size:0.9rem;">${this._escapeHtml(s.data.name)}</div>
+                                            <div style="font-size:0.75rem;color:var(--text-muted);">${s.data.blocks ? s.data.blocks.length : 0} blocks · ${s.data.category || 'sandbox'} · ${s.data.savedAt ? new Date(s.data.savedAt).toLocaleDateString() : 'unknown'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="creator-modal-footer">
+                            <button class="creator-btn creator-btn-ghost" id="load-dialog-cancel">Cancel</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+
+                overlay.querySelector('#load-dialog-close').addEventListener('click', () => overlay.remove());
+                overlay.querySelector('#load-dialog-cancel').addEventListener('click', () => overlay.remove());
+                overlay.querySelector('.creator-modal-backdrop, .creator-modal-overlay').addEventListener('click', (e) => {
+                    if (e.target === overlay) overlay.remove();
+                });
+
+                overlay.querySelectorAll('[data-save-idx]').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const idx = parseInt(item.dataset.saveIdx);
+                        this._applySaveData(saves[idx].data);
+                        overlay.remove();
+                    });
+                });
+            },
+
+            _applySaveData(savedData) {
+                if (!savedData) return;
+
+                // Restore game name
+                if (savedData.name) {
+                    document.getElementById('creator-game-name').value = savedData.name;
+                    document.title = 'BlockVerse - ' + savedData.name;
+                }
+                if (savedData.description) document.getElementById('settings-desc').value = savedData.description;
+                if (savedData.category) document.getElementById('settings-category').value = savedData.category;
+                if (savedData.maxPlayers) document.getElementById('settings-max-players').value = savedData.maxPlayers;
+
+                // Restore blocks
+                if (savedData.blocks && Array.isArray(savedData.blocks)) {
+                    World.clearAll();
+                    for (const b of savedData.blocks) {
+                        World.addBlock(b.x, b.y, b.z, b.type, false);
+                    }
+                    this._updateBlockCount();
+                }
+
+                // Restore script
+                if (savedData.script && typeof MonacoSetup !== 'undefined') {
+                    MonacoSetup.setValue(savedData.script);
+                }
+
+                if (typeof Utils !== 'undefined') Utils.showToast('Game loaded! (' + (savedData.blocks ? savedData.blocks.length : 0) + ' blocks)', 'success');
+            },
+
+            _checkAutoSave() {
+                try {
+                    const autoSave = JSON.parse(localStorage.getItem(this._getAutoSaveKey()));
+                    if (autoSave && autoSave.name && autoSave.blocks && autoSave.blocks.length > 0) {
+                        // Show a subtle indicator that a save exists
+                        const loadBtn = document.getElementById('btn-load-game');
+                        if (loadBtn) {
+                            loadBtn.style.position = 'relative';
+                            const dot = document.createElement('span');
+                            dot.style.cssText = 'position:absolute;top:-2px;right:-2px;width:8px;height:8px;background:var(--secondary);border-radius:50%;';
+                            dot.title = 'Auto-save available';
+                            loadBtn.appendChild(dot);
+                        }
+                    }
+                } catch (e) {}
+            },
+
+            _escapeHtml(str) {
+                if (!str) return '';
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            },
 
             _updateBlockCount() {
                 const count = World.blockCount;

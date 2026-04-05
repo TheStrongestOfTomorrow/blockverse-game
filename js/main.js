@@ -65,6 +65,9 @@ const App = (() => {
                 );
             }
 
+            // RENDER — this was missing, causing the black screen!
+            if (typeof World !== 'undefined') World.render();
+
             _animFrameId = requestAnimationFrame(loop);
         }
 
