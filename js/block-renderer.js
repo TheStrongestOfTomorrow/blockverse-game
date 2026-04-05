@@ -55,7 +55,8 @@ const BlockRenderer = (() => {
             _instances[type] = {
                 mesh: mesh,
                 count: 0,
-                data: new Array(MAX_INSTANCES).fill(null),
+                data: new Uint32Array(MAX_INSTANCES), // Store only the numeric blockKey
+                keyToIndex: new Map(), // O(1) lookup: key -> index
             };
         }
 
@@ -93,11 +94,13 @@ const BlockRenderer = (() => {
         }
 
         const idx = inst.count;
+        const key = blockKey(x, y, z);
 
         _tempMatrix.makeTranslation(x + 0.5, y + 0.5, z + 0.5);
         inst.mesh.setMatrixAt(idx, _tempMatrix);
 
-        inst.data[idx] = { x, y, z, key: blockKey(x, y, z) };
+        inst.data[idx] = key;
+        inst.keyToIndex.set(key, idx);
         inst.count++;
 
         // Try to set render count (works in most Three.js versions)
@@ -113,14 +116,7 @@ const BlockRenderer = (() => {
         if (!inst || inst.count === 0) return false;
 
         const key = blockKey(x, y, z);
-        let idx = -1;
-
-        for (let i = 0; i < inst.count; i++) {
-            if (inst.data[i] && inst.data[i].key === key) {
-                idx = i;
-                break;
-            }
-        }
+        const idx = inst.keyToIndex.has(key) ? inst.keyToIndex.get(key) : -1;
 
         if (idx === -1) return false;
 
@@ -130,8 +126,10 @@ const BlockRenderer = (() => {
 
     function _removeAtIndex(inst, idx) {
         const lastIdx = inst.count - 1;
+        const keyToRemove = inst.data[idx];
 
         if (idx !== lastIdx) {
+            const lastKey = inst.data[lastIdx];
             // Swap with last instance — copy matrix from Float32Array
             const arr = inst.mesh.instanceMatrix.array;
             const srcOff = lastIdx * 16;
@@ -139,10 +137,12 @@ const BlockRenderer = (() => {
             for (let i = 0; i < 16; i++) {
                 arr[dstOff + i] = arr[srcOff + i];
             }
-            inst.data[idx] = inst.data[lastIdx];
+            inst.data[idx] = lastKey;
+            inst.keyToIndex.set(lastKey, idx);
         }
 
-        inst.data[lastIdx] = null;
+        inst.keyToIndex.delete(keyToRemove);
+        inst.data[lastIdx] = 0;
         inst.count--;
 
         try { inst.mesh.count = inst.count; } catch (e) {}
@@ -293,7 +293,8 @@ const BlockRenderer = (() => {
         for (const type in _instances) {
             const inst = _instances[type];
             inst.count = 0;
-            inst.data.fill(null);
+            inst.data.fill(0);
+            inst.keyToIndex.clear();
         }
 
         // Step 2: For each block, check visibility and add to InstancedMesh if visible
@@ -345,7 +346,8 @@ const BlockRenderer = (() => {
             const inst = _instances[type];
             inst.count = 0;
             try { inst.mesh.count = 0; } catch (e) {}
-            inst.data.fill(null);
+            inst.data.fill(0);
+            inst.keyToIndex.clear();
             inst.mesh.instanceMatrix.needsUpdate = true;
         }
 
