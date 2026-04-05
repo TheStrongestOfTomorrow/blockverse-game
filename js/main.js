@@ -472,11 +472,10 @@ const App = (() => {
         const leaveBtn = document.getElementById('btn-leave-game');
         if (leaveBtn) leaveBtn.addEventListener('click', () => leaveGame());
 
-        const hudLeave = document.getElementById('hud-leave');
-        if (hudLeave) hudLeave.addEventListener('click', () => leaveGame());
 
-        const cornerLeaveBtn = document.getElementById('btn-leave-game-corner');
-        if (cornerLeaveBtn) cornerLeaveBtn.addEventListener('click', () => leaveGame());
+        const hudMenu = document.getElementById('hud-menu');
+        if (hudMenu) hudMenu.addEventListener('click', () => toggleGameMenu());
+
 
         const togglePlayersBtn = document.getElementById('btn-toggle-players');
         if (togglePlayersBtn) togglePlayersBtn.addEventListener('click', () => _togglePlayerList());

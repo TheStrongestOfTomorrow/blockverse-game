@@ -417,6 +417,14 @@
         <!-- Crosshair (dot for third-person) -->
         <div id="crosshair" class="crosshair"></div>
 
+        <!-- Mobile Controls -->
+        <div id="mobile-controls" class="mobile-controls hidden">
+            <div id="joystick-base" class="joystick-base">
+                <div id="joystick-thumb" class="joystick-thumb"></div>
+            </div>
+            <div id="mobile-jump-btn" class="mobile-jump-btn">JUMP</div>
+        </div>
+
         <!-- Controls hint -->
         <div id="controls-hint" class="controls-hint">
             WASD Move · Right-Click Drag Orbit · I/O Zoom · Left-Click Place/Remove · ESC Menu
@@ -428,7 +436,9 @@
             <div id="hud-server-info" class="hud-server-info"></div>
             <div id="hud-players-count" class="hud-players-count"></div>
             <div id="hud-block-count" class="hud-block-count"></div>
-            <button id="hud-leave" class="btn btn-danger btn-sm">Leave</button>
+            <div class="hud-actions">
+                <button id="hud-menu" class="btn btn-primary btn-sm" style="font-weight:800;letter-spacing:1px;">MENU</button>
+            </div>
         </div>
 
         <!-- Toolbar -->
@@ -580,8 +590,7 @@
             </div>
         </div>
 
-        <!-- Leave Button (always visible, right corner) -->
-        <button id="btn-leave-game-corner" class="leave-corner-btn" title="Leave Game"></button>
+        <!-- Redundant corner button removed - accessible via Menu -->
 
         <!-- Loading Screen -->
         <div id="loading-screen" class="loading-screen hidden">
