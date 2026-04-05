@@ -14,13 +14,25 @@ const App = (() => {
     let _toolsInitialised = false;
     let _chatInitialised = false;
 
+    // ---- Multi-tab session lock ----
+    // Prevents the same user from having an active game in multiple tabs.
+    // Uses BroadcastChannel for real-time tab-to-tab communication and
+    // localStorage heartbeat for crash recovery (tab closed without cleanup).
+    const _TAB_ID = 'tab_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    let _heartbeatInterval = null;
+    let _bcChannel = null;
+    const SESSION_KEY = 'bv_active_session';
+    const HEARTBEAT_INTERVAL_MS = 2000;
+    const SESSION_TIMEOUT_MS = 6000;
+
     // ========================================
     //  Public API
     // ========================================
 
     function init() {
-        console.log(`[App] ${BV.NAME} v${BV.VERSION} starting...`);
+        console.log(`[App] ${BV.NAME} v${BV.VERSION} starting... (tab: ${_TAB_ID})`);
 
+        _initTabLock();
         UI.init();
         _setupGlobalEvents();
         _setupKeyboardShortcuts();
@@ -85,6 +97,24 @@ const App = (() => {
     }
 
     function enterGame() {
+        // ---- Multi-tab lock check ----
+        const existingSession = _getActiveSession();
+        if (existingSession && existingSession.tabId !== _TAB_ID && existingSession.username === Auth.getCurrentUser()) {
+            const elapsed = Date.now() - existingSession.lastHeartbeat;
+            if (elapsed < SESSION_TIMEOUT_MS) {
+                // Another tab has an active session for this user
+                Utils.showToast('You already have an active game in another tab! Close it first.', 'error', 5000);
+                // Notify the other tab to bring itself to focus
+                _broadcastToTab(existingSession.tabId, { type: 'focus_request' });
+                return;
+            }
+            // Session is stale — the other tab probably crashed. Take over.
+            console.log(`[App] Stale session from tab ${existingSession.tabId} detected, taking over`);
+        }
+
+        // Claim the session
+        _claimSession();
+
         // World MUST be initialized first (creates scene, camera, renderer)
         if (!_worldInitialised && typeof World !== 'undefined') {
             if (!World.scene) {
@@ -150,6 +180,9 @@ const App = (() => {
         if (typeof World !== 'undefined') {
             World.clearWorld();
         }
+
+        // Release session lock
+        _releaseSession();
 
         if (typeof UI !== 'undefined') {
             UI.closeAllModals();
@@ -307,6 +340,9 @@ const App = (() => {
 
     function _setupWindowEvents() {
         window.addEventListener('beforeunload', () => {
+            // Release session lock before unloading
+            _releaseSession();
+
             if (typeof Multiplayer !== 'undefined') {
                 Multiplayer.leaveGame();
             }
@@ -373,6 +409,145 @@ const App = (() => {
                 if (typeof Auth !== 'undefined') Auth.logout();
             });
         }
+    }
+
+    // ========================================
+    //  Multi-Tab Session Lock (private)
+    // ========================================
+
+    /**
+     * Initialize the BroadcastChannel for cross-tab communication
+     * and set up the heartbeat interval.
+     */
+    function _initTabLock() {
+        try {
+            _bcChannel = new BroadcastChannel('bv_session_lock');
+            _bcChannel.onmessage = (event) => {
+                const msg = event.data;
+                if (!msg || msg.type === undefined) return;
+
+                if (msg.tabId === _TAB_ID) return; // Ignore our own messages
+
+                switch (msg.type) {
+                    case 'session_claimed':
+                        // Another tab claimed a session — if we're in a game with the same user, kick ourselves
+                        if (_gameRunning && msg.username === Auth.getCurrentUser()) {
+                            console.warn(`[App] Another tab (${msg.tabId}) claimed the session, leaving game`);
+                            Utils.showToast('Your game was opened in another tab. This tab will return to lobby.', 'error', 5000);
+                            leaveGame();
+                        }
+                        break;
+
+                    case 'session_released':
+                        // Another tab released — no action needed
+                        break;
+
+                    case 'focus_request':
+                        // Another tab wants us to focus
+                        if (_gameRunning) {
+                            window.focus();
+                        }
+                        break;
+                }
+            };
+        } catch (err) {
+            // BroadcastChannel not supported (very old browsers)
+            console.warn('[App] BroadcastChannel not available, multi-tab lock disabled');
+        }
+
+        // Listen for storage changes from other tabs (heartbeat updates)
+        window.addEventListener('storage', (e) => {
+            if (e.key !== SESSION_KEY) return;
+            // If another tab cleared the session and we're in-game, that's fine
+            // If another tab wrote a session with a different tabId, check if we need to yield
+        });
+
+        // Clean up any stale session on init
+        const existing = _getActiveSession();
+        if (existing) {
+            const elapsed = Date.now() - existing.lastHeartbeat;
+            if (elapsed > SESSION_TIMEOUT_MS) {
+                console.log(`[App] Cleaning stale session from tab ${existing.tabId}`);
+                localStorage.removeItem(SESSION_KEY);
+            }
+        }
+    }
+
+    /**
+     * Get the current active session from localStorage.
+     * @returns {object|null}
+     */
+    function _getActiveSession() {
+        try {
+            const raw = localStorage.getItem(SESSION_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * Claim the game session for this tab.
+     * Starts the heartbeat and broadcasts to other tabs.
+     */
+    function _claimSession() {
+        const session = {
+            tabId: _TAB_ID,
+            username: Auth.getCurrentUser(),
+            lastHeartbeat: Date.now(),
+        };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
+        // Start heartbeat
+        if (_heartbeatInterval) clearInterval(_heartbeatInterval);
+        _heartbeatInterval = setInterval(() => {
+            session.lastHeartbeat = Date.now();
+            try {
+                localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+            } catch (_) {}
+        }, HEARTBEAT_INTERVAL_MS);
+
+        // Broadcast to other tabs
+        _broadcastToAll({ type: 'session_claimed', tabId: _TAB_ID, username: Auth.getCurrentUser() });
+
+        console.log(`[App] Session claimed by tab ${_TAB_ID}`);
+    }
+
+    /**
+     * Release the game session lock.
+     */
+    function _releaseSession() {
+        if (_heartbeatInterval) {
+            clearInterval(_heartbeatInterval);
+            _heartbeatInterval = null;
+        }
+
+        const existing = _getActiveSession();
+        if (existing && existing.tabId === _TAB_ID) {
+            localStorage.removeItem(SESSION_KEY);
+            _broadcastToAll({ type: 'session_released', tabId: _TAB_ID });
+            console.log(`[App] Session released by tab ${_TAB_ID}`);
+        }
+    }
+
+    /**
+     * Send a message to all other tabs via BroadcastChannel.
+     * @param {object} msg
+     */
+    function _broadcastToAll(msg) {
+        if (_bcChannel) {
+            try { _bcChannel.postMessage(msg); } catch (_) {}
+        }
+    }
+
+    /**
+     * Send a message to a specific tab.
+     * @param {string} tabId
+     * @param {object} msg
+     */
+    function _broadcastToTab(tabId, msg) {
+        msg.targetTabId = tabId;
+        _broadcastToAll(msg);
     }
 
     if (document.readyState === 'loading') {

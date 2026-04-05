@@ -272,7 +272,7 @@ const Lobby = (() => {
                                 UI.updateLoadingBar(100, 'Done!');
                                 setTimeout(() => {
                                     UI.hideLoading();
-                                    UI.showScreen('screen-game');
+                                    if (typeof App !== 'undefined') App.enterGame();
                                     UI.showGameCodeModal(code);
                                 }, 300);
                             }
@@ -285,7 +285,7 @@ const Lobby = (() => {
                                 UI.updateLoadingBar(100, 'Done!');
                                 setTimeout(() => {
                                     UI.hideLoading();
-                                    UI.showScreen('screen-game');
+                                    if (typeof App !== 'undefined') App.enterGame();
                                     UI.showGameCodeModal(code);
                                 }, 300);
                             }
@@ -297,7 +297,7 @@ const Lobby = (() => {
                             UI.updateLoadingBar(100, 'Done!');
                             setTimeout(() => {
                                 UI.hideLoading();
-                                UI.showScreen('screen-game');
+                                if (typeof App !== 'undefined') App.enterGame();
                                 UI.showGameCodeModal(code);
                             }, 300);
                         }
@@ -338,7 +338,7 @@ const Lobby = (() => {
                         setTimeout(() => {
                             if (typeof UI !== 'undefined') {
                                 UI.hideLoading();
-                                UI.showScreen('screen-game');
+                                if (typeof App !== 'undefined') App.enterGame();
                                 UI.showGameCodeModal(gameCode);
                             }
                             resolve();
@@ -350,7 +350,7 @@ const Lobby = (() => {
                                 UI.updateLoadingBar(100, 'Ready!');
                                 setTimeout(() => {
                                     UI.hideLoading();
-                                    UI.showScreen('screen-game');
+                                    if (typeof App !== 'undefined') App.enterGame();
                                     UI.showGameCodeModal(gameCode);
                                 }, 400);
                             }
@@ -363,7 +363,7 @@ const Lobby = (() => {
                             UI.updateLoadingBar(100, 'Ready!');
                             setTimeout(() => {
                                 UI.hideLoading();
-                                UI.showScreen('screen-game');
+                                if (typeof App !== 'undefined') App.enterGame();
                                 UI.showGameCodeModal(gameCode);
                             }, 400);
                         }
@@ -417,7 +417,7 @@ const Lobby = (() => {
                         UI.updateLoadingBar(100, 'Done!');
                         setTimeout(() => {
                             UI.hideLoading();
-                            UI.showScreen('screen-game');
+                            if (typeof App !== 'undefined') App.enterGame();
                             Utils.showToast(`Playing ${gameConfig.name || code}`, 'success');
                         }, 200);
                     }
@@ -436,7 +436,7 @@ const Lobby = (() => {
                 setTimeout(() => {
                     if (typeof UI !== 'undefined') {
                         UI.hideLoading();
-                        UI.showScreen('screen-game');
+                        if (typeof App !== 'undefined') App.enterGame();
                     }
                 }, 400);
             }).catch(() => {
@@ -450,7 +450,7 @@ const Lobby = (() => {
                     UI.updateLoadingBar(100, 'Solo mode');
                     setTimeout(() => {
                         UI.hideLoading();
-                        UI.showScreen('screen-game');
+                        if (typeof App !== 'undefined') App.enterGame();
                         Utils.showToast('Joined in solo mode (host offline)', 'info');
                     }, 400);
                 }

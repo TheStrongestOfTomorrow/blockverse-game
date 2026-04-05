@@ -74,41 +74,41 @@ const Friends = (() => {
         // Already pending?
         if (pendingSent.includes(username)) return { success: false, error: 'Request already sent' };
 
-        // Does user exist?
-        if (!localStorage.getItem(`bv_user_${username}`)) {
-            return { success: false, error: 'User not found' };
+        // Username format check (basic sanity)
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+            return { success: false, error: 'Invalid username format (3-20 chars, letters/numbers/_)' };
         }
 
-        // Try to reach their identity peer and send the request
-        const targetPeerId = `BV-Peer-${username}`;
-        try {
-            const conn = new Peer(me, {
-                host: BV.PEERJS_HOST,
-                port: BV.PEERJS_PORT,
-                secure: BV.PEERJS_SECURE,
-            });
-            // We actually use the identity peer to connect
-        } catch (err) {
-            // Non-critical – we still store the pending request
-        }
+        // NOTE: We can't check localStorage for user existence because
+        // each browser has its own localStorage. Instead, we skip the
+        // local check and rely on the PeerJS identity peer probe:
+        // if their peer is online, they clearly exist. If offline,
+        // we still send the request — they'll see it next time they log in.
 
-        // Connect via identity peer
+        // Try to connect to their identity peer to send the request
+        let requestSentViaPeer = false;
         _connectToIdentity(username, (conn) => {
             if (conn && conn.open) {
                 conn.send({
                     type: BV.MSG.FRIEND_REQUEST,
                     payload: { from: me, username: me },
                 });
+                requestSentViaPeer = true;
+                console.log(`[Friends] Friend request sent to ${username} via PeerJS`);
                 // Close probe after sending
-                setTimeout(() => conn.close(), 2000);
+                setTimeout(() => { try { conn.close(); } catch(_) {} }, 2000);
             }
         });
 
-        // Persist
+        // Persist the pending request
         pendingSent.push(username);
         _saveToStorage();
 
-        Utils.showToast(`Friend request sent to ${username}`, 'success');
+        if (requestSentViaPeer) {
+            Utils.showToast(`Friend request sent to ${username}!`, 'success');
+        } else {
+            Utils.showToast(`Friend request queued for ${username} (they'll see it when online)`, 'info');
+        }
         return { success: true };
     }
 
