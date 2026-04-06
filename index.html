@@ -106,6 +106,9 @@
                     <button class="sidebar-btn" data-section="friends">
                         <span class="sidebar-icon">👥</span> Friends
                     </button>
+                    <button class="sidebar-btn" data-section="join-friends">
+                        <span class="sidebar-icon">🤝</span> Join Friends
+                    </button>
                     <button class="sidebar-btn" data-section="avatar">
                         <span class="sidebar-icon">👤</span> Avatar
                     </button>
@@ -316,6 +319,22 @@
                     </div>
                 </section>
 
+                <!-- Join Friends -->
+                <section id="section-join-friends" class="lobby-section">
+                    <div class="section-header">
+                        <h2>🤝 Join Friends</h2>
+                        <button id="btn-refresh-join" class="btn btn-sm btn-ghost">🔄 Refresh</button>
+                    </div>
+                    <div id="join-friends-grid" class="games-grid">
+                        <!-- Friend games list -->
+                    </div>
+                    <div id="no-friend-games" class="empty-state">
+                        <div class="empty-icon">🤝</div>
+                        <h3>No friends online</h3>
+                        <p>When your friends are in a game, they'll appear here!</p>
+                    </div>
+                </section>
+
                 <!-- Friends -->
                 <section id="section-friends" class="lobby-section">
                     <div class="section-header">
@@ -358,6 +377,14 @@
                             <div class="form-group">
                                 <label>Body Shape</label>
                                 <div id="avatar-body-options" class="option-row"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Arms</label>
+                                <div id="avatar-arms-options" class="option-row"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Legs</label>
+                                <div id="avatar-legs-options" class="option-row"></div>
                             </div>
                             <div class="form-group">
                                 <label>Accessory</label>
@@ -562,45 +589,65 @@
 
         <!-- Game Detail Modal -->
         <div id="game-detail-modal" class="modal hidden">
-            <div class="modal-content modal-lg">
-                <div class="modal-header">
-                    <h2 id="gd-name">Game Name</h2>
-                    <button class="modal-close">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="gd-layout">
-                        <div class="gd-left">
-                            <div id="gd-thumb" class="gd-thumb">🎮</div>
-                            <div class="gd-stats">
-                                <span id="gd-category" class="pill">Category</span>
-                                <span id="gd-players" class="pill pill-green">👤 0/12</span>
-                            </div>
-                            <button id="gd-btn-play" class="btn btn-primary btn-full btn-lg mt-md">PLAY</button>
-                        </div>
-                        <div class="gd-right">
-                            <div class="gd-section">
-                                <h3>Description</h3>
-                                <p id="gd-desc">Game description goes here...</p>
-                            </div>
-                            <div class="gd-section">
-                                <h3>Gamepasses</h3>
-                                <div class="gd-placeholder-list">
-                                    <div class="gd-placeholder-item">
-                                        <span>🚀 VIP Access</span>
-                                        <button class="btn btn-sm btn-accent">100 B$</button>
-                                    </div>
-                                    <div class="gd-placeholder-item">
-                                        <span>💎 Double Gems</span>
-                                        <button class="btn btn-sm btn-accent">250 B$</button>
-                                    </div>
+            <div class="modal-content modal-xl">
+                <div class="modal-body gd-modal-body">
+                    <button class="modal-close gd-modal-close">&times;</button>
+
+                    <div class="gd-layout-v2">
+                        <!-- Left: Large Thumbnail & Stats -->
+                        <div class="gd-sidebar">
+                            <div id="gd-thumb" class="gd-hero-thumb">
+                                <div class="gd-thumb-overlay">
+                                    <span id="gd-hero-icon">🎮</span>
                                 </div>
                             </div>
-                            <div class="gd-section">
-                                <h3>Active Servers</h3>
-                                <div id="gd-server-list" class="gd-server-list">
-                                    <div class="empty-state" style="padding:1rem;">
-                                        <p>No active servers. Be the first to host!</p>
-                                    </div>
+
+                            <div class="gd-quick-stats">
+                                <div class="gd-stat-box">
+                                    <span class="gd-stat-label">Active</span>
+                                    <span id="gd-players" class="gd-stat-value">0</span>
+                                </div>
+                                <div class="gd-stat-box">
+                                    <span class="gd-stat-label">Visits</span>
+                                    <span class="gd-stat-value">1.2K+</span>
+                                </div>
+                                <div class="gd-stat-box">
+                                    <span class="gd-stat-label">Rating</span>
+                                    <span class="gd-stat-value">88%</span>
+                                </div>
+                            </div>
+
+                            <div class="gd-rating-actions">
+                                <button class="btn-rate" title="Like">👍 142</button>
+                                <button class="btn-rate" title="Dislike">👎 12</button>
+                                <button class="btn-rate" title="Favorite">⭐</button>
+                            </div>
+                        </div>
+
+                        <!-- Right: Info, Play & Servers -->
+                        <div class="gd-main">
+                            <div class="gd-header-v2">
+                                <h1 id="gd-name">Game Name</h1>
+                                <p id="gd-category-v2" class="gd-author">By @BlockVerse · <span id="gd-category" style="color:var(--primary);font-weight:700;">SANDBOX</span></p>
+                            </div>
+
+                            <div class="gd-description-box">
+                                <p id="gd-desc">Explore this amazing world built by the community. Join now to build, play, and connect with friends!</p>
+                            </div>
+
+                            <div class="gd-play-section">
+                                <button id="gd-btn-play" class="btn-play-massive">
+                                    <span class="play-icon">▶</span> PLAY
+                                </button>
+                            </div>
+
+                            <div class="gd-servers-section">
+                                <div class="gd-section-header">
+                                    <h3>🌐 Servers</h3>
+                                    <button class="btn-refresh-sm" id="gd-refresh-servers">🔄</button>
+                                </div>
+                                <div id="gd-server-list" class="gd-server-list-v2">
+                                    <!-- Servers filled here -->
                                 </div>
                             </div>
                         </div>

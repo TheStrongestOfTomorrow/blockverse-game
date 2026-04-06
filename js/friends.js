@@ -216,6 +216,7 @@ const Friends = (() => {
                 checked++;
                 if (checked === total) {
                     renderUI();
+                    renderJoinFriendsUI();
                     _startRefreshCooldown();
                 }
             }, 3000);
@@ -242,6 +243,7 @@ const Friends = (() => {
                     checked++;
                     if (checked === total) {
                         renderUI();
+                        renderJoinFriendsUI();
                         _startRefreshCooldown();
                     }
                 }, 2000);
@@ -253,6 +255,7 @@ const Friends = (() => {
                 checked++;
                 if (checked === total) {
                     renderUI();
+                    renderJoinFriendsUI();
                     _startRefreshCooldown();
                 }
             });
@@ -366,21 +369,52 @@ const Friends = (() => {
         if (pendingReceived.length > 0) {
             const section = document.createElement('div');
             section.className = 'friends-section';
-            section.innerHTML = `<h4 class="section-title">Pending Requests (${pendingReceived.length})</h4>`;
+
+            const title = document.createElement('h4');
+            title.className = 'section-title';
+            title.textContent = `Pending Requests (${pendingReceived.length})`;
+            section.appendChild(title);
 
             pendingReceived.forEach((username) => {
                 const item = document.createElement('div');
                 item.className = 'friend-item friend-pending';
-                item.innerHTML = `
-                    ${Avatar.getAvatarHTML(username, 'small')}
-                    <div class="friend-info">
-                        <span class="friend-name">${username}</span>
-                        <span class="friend-status-text">Wants to be friends</span>
-                    </div>
-                    <div class="friend-actions">
-                        <button class="btn btn-sm btn-success accept-friend-btn" data-username="${username}">Accept</button>
-                        <button class="btn btn-sm btn-danger decline-friend-btn" data-username="${username}">Decline</button>
-                    </div>`;
+
+                const avatar = document.createElement('div');
+                avatar.innerHTML = Avatar.getAvatarHTML(username, 'small');
+
+                const info = document.createElement('div');
+                info.className = 'friend-info';
+
+                const name = document.createElement('span');
+                name.className = 'friend-name';
+                name.textContent = username;
+
+                const statusT = document.createElement('span');
+                statusT.className = 'friend-status-text';
+                statusT.textContent = 'Wants to be friends';
+
+                info.appendChild(name);
+                info.appendChild(statusT);
+
+                const actions = document.createElement('div');
+                actions.className = 'friend-actions';
+
+                const acc = document.createElement('button');
+                acc.className = 'btn btn-sm btn-success accept-friend-btn';
+                acc.dataset.username = username;
+                acc.textContent = 'Accept';
+
+                const dec = document.createElement('button');
+                dec.className = 'btn btn-sm btn-danger decline-friend-btn';
+                dec.dataset.username = username;
+                dec.textContent = 'Decline';
+
+                actions.appendChild(acc);
+                actions.appendChild(dec);
+
+                item.appendChild(avatar);
+                item.appendChild(info);
+                item.appendChild(actions);
                 section.appendChild(item);
             });
 
@@ -391,7 +425,11 @@ const Friends = (() => {
         if (friendsList.length > 0) {
             const section = document.createElement('div');
             section.className = 'friends-section';
-            section.innerHTML = `<h4 class="section-title">Friends (${friendsList.length})</h4>`;
+
+            const title = document.createElement('h4');
+            title.className = 'section-title';
+            title.textContent = `Friends (${friendsList.length})`;
+            section.appendChild(title);
 
             // Sort: online first
             const sorted = [...friendsList].sort((a, b) => {
@@ -405,32 +443,60 @@ const Friends = (() => {
                 const item = document.createElement('div');
                 item.className = 'friend-item';
 
-                const statusDot = status.online ? 'status-online' : 'status-offline';
-                let statusText = 'Offline';
-                let actionHTML = '';
+                const avatar = document.createElement('div');
+                avatar.innerHTML = Avatar.getAvatarHTML(username, 'small');
+
+                const info = document.createElement('div');
+                info.className = 'friend-info';
+
+                const name = document.createElement('span');
+                name.className = 'friend-name';
+                name.textContent = username;
+
+                const statusTextEl = document.createElement('span');
+                statusTextEl.className = 'friend-status-text';
+
+                const meta = document.createElement('div');
+                meta.className = 'friend-meta';
+                const statusDot = document.createElement('span');
+                statusDot.className = `status-dot ${status.online ? 'status-online' : 'status-offline'}`;
+                meta.appendChild(statusDot);
+
+                const actions = document.createElement('div');
+                actions.className = 'friend-actions';
 
                 if (status.online && status.gameInfo) {
-                    statusText = `Playing: ${status.gameInfo.name || 'a game'}`;
-                    actionHTML = `<button class="btn btn-sm btn-primary join-game-btn" data-code="${status.gameInfo.code || ''}">Join Game</button>`;
+                    statusTextEl.textContent = `Playing: ${status.gameInfo.name || 'a game'}`;
+                    const joinBtn = document.createElement('button');
+                    joinBtn.className = 'btn btn-sm btn-primary join-game-btn';
+                    joinBtn.dataset.code = status.gameInfo.serverId || status.gameInfo.code || '';
+                    joinBtn.textContent = 'Join Game';
+                    actions.appendChild(joinBtn);
                 } else if (status.online) {
-                    statusText = 'In Lobby';
-                    actionHTML = `<button class="btn btn-sm btn-secondary invite-friend-btn" data-username="${username}">Invite</button>`;
+                    statusTextEl.textContent = 'In Lobby';
+                    const inviteBtn = document.createElement('button');
+                    inviteBtn.className = 'btn btn-sm btn-secondary invite-friend-btn';
+                    inviteBtn.dataset.username = username;
+                    inviteBtn.textContent = 'Invite';
+                    actions.appendChild(inviteBtn);
+                } else {
+                    statusTextEl.textContent = 'Offline';
                 }
 
-                item.innerHTML = `
-                    ${Avatar.getAvatarHTML(username, 'small')}
-                    <div class="friend-info">
-                        <span class="friend-name">${username}</span>
-                        <span class="friend-status-text">${statusText}</span>
-                    </div>
-                    <div class="friend-meta">
-                        <span class="status-dot ${statusDot}"></span>
-                    </div>
-                    <div class="friend-actions">
-                        ${actionHTML}
-                        <button class="btn btn-sm btn-ghost remove-friend-btn" data-username="${username}" title="Remove friend">✕</button>
-                    </div>`;
+                info.appendChild(name);
+                info.appendChild(statusTextEl);
 
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn btn-sm btn-ghost remove-friend-btn';
+                removeBtn.dataset.username = username;
+                removeBtn.title = 'Remove friend';
+                removeBtn.textContent = '✕';
+                actions.appendChild(removeBtn);
+
+                item.appendChild(avatar);
+                item.appendChild(info);
+                item.appendChild(meta);
+                item.appendChild(actions);
                 section.appendChild(item);
             });
 
@@ -564,7 +630,79 @@ const Friends = (() => {
     //  UI Handlers
     // ========================================
 
+    function renderJoinFriendsUI() {
+        const grid = document.getElementById('join-friends-grid');
+        const empty = document.getElementById('no-friend-games');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+        let foundAny = false;
+
+        friendsList.forEach((username) => {
+            const status = friendStatuses.get(username);
+            if (status && status.online && status.gameInfo) {
+                foundAny = true;
+                const game = status.gameInfo;
+                const targetCode = game.serverId || game.code;
+
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.dataset.code = targetCode;
+
+                const thumb = document.createElement('div');
+                thumb.className = 'game-card-thumb';
+                thumb.style.background = 'var(--primary)';
+                thumb.style.height = '120px';
+                thumb.style.display = 'flex';
+                thumb.style.alignItems = 'center';
+                thumb.style.justifyContent = 'center';
+                thumb.innerHTML = `<div style="transform:scale(1.5)">${Avatar.getAvatarHTML(username, 'medium')}</div>`;
+
+                const info = document.createElement('div');
+                info.className = 'game-card-info';
+
+                const title = document.createElement('div');
+                title.className = 'game-card-title';
+                title.textContent = `${username}'s Server`;
+
+                const desc = document.createElement('div');
+                desc.className = 'game-card-desc';
+                desc.textContent = `Playing: ${game.name || 'BlockVerse'}`;
+
+                const meta = document.createElement('div');
+                meta.className = 'game-card-meta';
+                meta.innerHTML = '<span>🤝 Join Friend</span>';
+
+                info.appendChild(title);
+                info.appendChild(desc);
+                info.appendChild(meta);
+
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-primary game-card-play-btn';
+                btn.textContent = 'JOIN';
+                btn.onclick = () => {
+                    if (typeof Lobby !== 'undefined') Lobby.joinGameByCode(targetCode);
+                };
+
+                card.appendChild(thumb);
+                card.appendChild(info);
+                card.appendChild(btn);
+                grid.appendChild(card);
+            }
+        });
+
+        if (empty) empty.style.display = foundAny ? 'none' : 'flex';
+    }
+
     function _setupUIHandlers() {
+        // Refresh join friends
+        const refreshJoinBtn = document.getElementById('btn-refresh-join');
+        if (refreshJoinBtn) {
+            refreshJoinBtn.addEventListener('click', () => {
+                refreshFriendStatuses();
+            });
+        }
+
         // Add friend form
         const addInput = document.getElementById('add-friend-username');
         const addBtn = document.getElementById('btn-send-friend-request');
@@ -703,6 +841,7 @@ const Friends = (() => {
         sendInvite,
         handleInvite,
         renderUI,
+        renderJoinFriendsUI,
         identityPeer: null,
     };
 })();

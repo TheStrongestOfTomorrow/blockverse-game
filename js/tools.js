@@ -228,6 +228,18 @@ const Tools = {
     _performPrimaryAction() {
         if (typeof World === 'undefined' || !World.camera) return;
 
+        // Tool Restrictions: Only allow building/deleting in sandbox games
+        if (typeof Multiplayer !== 'undefined' && Multiplayer.gameCode) {
+            const isSandbox = Multiplayer.gameCode.includes('BLDW') || Multiplayer.gameCode.includes('SPDB') || Multiplayer.gameCode.includes('SAND');
+            const amIHost = Multiplayer.getAmIHost();
+
+            // Non-hosts can't modify non-sandbox games
+            if (!isSandbox && !amIHost) {
+                Utils.showToast('Building is disabled in this game mode.', 'info');
+                return;
+            }
+        }
+
         // If holding a grabbed block, place it
         if (this._isGrabbing) {
             this._placeGrabbedBlock();

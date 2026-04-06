@@ -81,12 +81,22 @@ const BlockRenderer = (() => {
     // BLOCK RENDERING (InstancedMesh)
     // =============================================
 
-    function addBlock(x, y, z, type) {
+    /**
+     * Add a block to the InstancedMesh system.
+     * @param {number} x, y, z
+     * @param {string} type
+     * @param {boolean} [skipUpdate=false] If true, skip setting needsUpdate (use for batching)
+     */
+    function addBlock(x, y, z, type, skipUpdate = false) {
         const inst = _instances[type];
         if (!inst) {
             console.warn('[BlockRenderer] Unknown block type:', type);
             return false;
         }
+
+        const key = blockKey(x, y, z);
+        // Already rendered?
+        if (inst.keyToIndex.has(key)) return false;
 
         if (inst.count >= MAX_INSTANCES) {
             console.warn('[BlockRenderer] Max instances reached for type:', type);
@@ -94,8 +104,6 @@ const BlockRenderer = (() => {
         }
 
         const idx = inst.count;
-        const key = blockKey(x, y, z);
-
         _tempMatrix.makeTranslation(x + 0.5, y + 0.5, z + 0.5);
         inst.mesh.setMatrixAt(idx, _tempMatrix);
 
@@ -106,12 +114,17 @@ const BlockRenderer = (() => {
         // Try to set render count (works in most Three.js versions)
         try { inst.mesh.count = inst.count; } catch (e) { /* graceful fallback */ }
 
-        inst.mesh.instanceMatrix.needsUpdate = true;
+        if (!skipUpdate) {
+            inst.mesh.instanceMatrix.needsUpdate = true;
+        }
 
         return true;
     }
 
-    function removeBlock(x, y, z, type) {
+    /**
+     * Remove a block from the InstancedMesh system.
+     */
+    function removeBlock(x, y, z, type, skipUpdate = false) {
         const inst = _instances[type];
         if (!inst || inst.count === 0) return false;
 
@@ -120,11 +133,11 @@ const BlockRenderer = (() => {
 
         if (idx === -1) return false;
 
-        _removeAtIndex(inst, idx);
+        _removeAtIndex(inst, idx, skipUpdate);
         return true;
     }
 
-    function _removeAtIndex(inst, idx) {
+    function _removeAtIndex(inst, idx, skipUpdate = false) {
         const lastIdx = inst.count - 1;
         const keyToRemove = inst.data[idx];
 
@@ -146,7 +159,16 @@ const BlockRenderer = (() => {
         inst.count--;
 
         try { inst.mesh.count = inst.count; } catch (e) {}
-        inst.mesh.instanceMatrix.needsUpdate = true;
+
+        if (!skipUpdate) {
+            inst.mesh.instanceMatrix.needsUpdate = true;
+        }
+    }
+
+    function isBlockRendered(x, y, z, type) {
+        const inst = _instances[type];
+        if (!inst) return false;
+        return inst.keyToIndex.has(blockKey(x, y, z));
     }
 
     // =============================================
@@ -280,6 +302,10 @@ const BlockRenderer = (() => {
      * Transparent blocks are always visible.
      * Call after terrain generation and after every block add/remove.
      */
+    /**
+     * Rebuild visibility for all blocks using occlusion culling.
+     * Batch process: clears all and re-adds only visible blocks.
+     */
     function rebuildVisibility(blockMap) {
         if (!blockMap) return;
 
@@ -289,54 +315,43 @@ const BlockRenderer = (() => {
             [0, 0, 1], [0, 0, -1],
         ];
 
-        // Step 1: Clear all InstancedMesh instances back to zero scale
+        // Step 1: Reset all instance counts (O(types) — fast)
         for (const type in _instances) {
             const inst = _instances[type];
             inst.count = 0;
-            inst.data.fill(0);
             inst.keyToIndex.clear();
         }
 
-        // Step 2: For each block, check visibility and add to InstancedMesh if visible
-        // Batch the Map lookups for performance
-        const mapHas = blockMap.has.bind(blockMap);
+        // Step 2: Occlusion check (O(N) — only rendered blocks added)
         const mapGet = blockMap.get.bind(blockMap);
 
         blockMap.forEach((block) => {
             const { x, y, z, type } = block;
 
-            // Transparent blocks are always visible (no occlusion)
+            // Non-opaque (glass, water, leaf) never occlude neighbors and are always visible
             if (!isOpaque(type)) {
-                addBlock(x, y, z, type);
+                addBlock(x, y, z, type, true);
                 return;
             }
 
-            // Check all 6 neighbors
-            let allOpaqueNeighbors = true;
+            // Check 6 faces for opaque neighbors
+            let visibleFaces = 0;
             for (let i = 0; i < 6; i++) {
-                const [dx, dy, dz] = neighbors[i];
-                const nKey = blockKey(x + dx, y + dy, z + dz);
+                const nKey = blockKey(x + neighbors[i][0], y + neighbors[i][1], z + neighbors[i][2]);
                 const neighbor = mapGet(nKey);
                 if (!neighbor || !isOpaque(neighbor.type)) {
-                    allOpaqueNeighbors = false;
-                    break;
+                    visibleFaces++;
                 }
             }
 
-            // If NOT fully surrounded by opaque neighbors, render it
-            if (!allOpaqueNeighbors) {
-                addBlock(x, y, z, type);
+            if (visibleFaces > 0) {
+                addBlock(x, y, z, type, true);
             }
         });
 
-        // Step 3: Finalize — set zero-scale matrices for unused slots, update GPU
-        _tempMatrix.makeScale(0, 0, 0);
+        // Step 3: Single GPU upload per type (O(types) — very fast)
         for (const type in _instances) {
             const inst = _instances[type];
-            // Zero-scale remaining slots beyond count
-            for (let i = inst.count; i < MAX_INSTANCES; i++) {
-                inst.mesh.setMatrixAt(i, _tempMatrix);
-            }
             try { inst.mesh.count = inst.count; } catch (e) {}
             inst.mesh.instanceMatrix.needsUpdate = true;
         }
@@ -447,6 +462,7 @@ const BlockRenderer = (() => {
         init,
         addBlock,
         removeBlock,
+        isBlockRendered,
         addCustomMesh,
         removeCustomMesh,
         getCustomMesh,

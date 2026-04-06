@@ -9,6 +9,11 @@
 const Multiplayer = (() => {
     'use strict';
 
+    // ---- Hybrid Networking (WebSocket + WebRTC) ----
+    const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:3000' : null;
+    let socket = null;
+    let useWebSocket = false;
+
     // ---- PeerJS instances ----
     let gamePeer = null;       // Peer used for game connections (created per game session)
     let identityPeer = null;   // Shared with Friends module if already created
@@ -17,7 +22,8 @@ const Multiplayer = (() => {
     let connections = new Map();   // Map<peerId, DataConnection>
     let amIHost = false;
     let hostPeerId = null;
-    let serverId = null;
+    let serverId = null; // Can be PeerID or UUID from WebSocket
+    let gameCode = null;
     let gameSettings = {};
 
     // ---- Player roster ----
@@ -45,10 +51,68 @@ const Multiplayer = (() => {
             identityPeer = Friends.identityPeer;
         }
 
+        // Attempt WebSocket connection
+        if (WS_URL) {
+            _connectWebSocket();
+        }
+
         // Listen for auth:logout to tear down
         document.addEventListener('auth:logout', () => {
             leaveGame();
         });
+    }
+
+    function _connectWebSocket() {
+        try {
+            socket = new WebSocket(WS_URL);
+            socket.onopen = () => {
+                console.log('[Multiplayer] WebSocket connected');
+                useWebSocket = true;
+            };
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    _handleSocketMessage(data);
+                } catch (e) {
+                    console.error('[Multiplayer] Socket parse error:', e);
+                }
+            };
+            socket.onclose = () => {
+                console.warn('[Multiplayer] WebSocket disconnected');
+                useWebSocket = false;
+                socket = null;
+            };
+            socket.onerror = () => {
+                useWebSocket = false;
+            };
+        } catch (e) {
+            console.error('[Multiplayer] WebSocket init error:', e);
+        }
+    }
+
+    function _handleSocketMessage(data) {
+        switch (data.type) {
+            case 'hosted':
+                serverId = data.payload.serverId;
+                break;
+            case 'discovery_results':
+                document.dispatchEvent(new CustomEvent('multiplayer:discovery', { detail: data.payload }));
+                break;
+            case 'player_join':
+                _onPlayerJoin(data.payload.id, { username: data.payload.username });
+                break;
+            case 'player_leave':
+                _onPlayerLeave(data.payload.id);
+                break;
+            case 'room_closed':
+                leaveGame();
+                Utils.showToast('The host closed the room.', 'info');
+                break;
+            default:
+                // Pass through for generic game messages (chat, pos, block)
+                handleMessage(data.senderId || 'socket', data);
+                break;
+        }
     }
 
     // ---- Accessors ----
@@ -76,16 +140,31 @@ const Multiplayer = (() => {
      * @param {object} [settings={}]
      * @returns {Promise<string>} The server peer ID.
      */
-    function hostGame(gameCode, settings = {}) {
-        return new Promise((resolve, reject) => {
-            serverId = `${gameCode}-S1`;
-            amIHost = true;
-            hostPeerId = null; // I am the host
-            gameSettings = settings;
-            players.clear();
-            connections.clear();
+    function hostGame(pGameCode, settings = {}) {
+        gameCode = pGameCode;
+        gameSettings = settings;
+        amIHost = true;
+        players.clear();
+        connections.clear();
 
-            // Destroy any previous game peer
+        // 1. WebSocket Host
+        if (useWebSocket && socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'host',
+                payload: {
+                    gameCode: pGameCode,
+                    username: Auth.getCurrentUser(),
+                    settings: settings,
+                    webRtcEnabled: true // Always allow WebRTC bridge
+                }
+            }));
+        }
+
+        // 2. WebRTC Host (PeerJS) - always start for hybrid support
+        return new Promise((resolve, reject) => {
+            serverId = `${pGameCode}-S1`;
+            hostPeerId = null;
+
             if (gamePeer && !gamePeer.destroyed) {
                 gamePeer.destroy();
             }
@@ -97,7 +176,7 @@ const Multiplayer = (() => {
             });
 
             gamePeer.on('open', (id) => {
-                console.log(`[Multiplayer] Hosting on ${id}`);
+                console.log(`[Multiplayer] WebRTC Host started on ${id}`);
                 resolve(id);
             });
 
@@ -106,13 +185,12 @@ const Multiplayer = (() => {
             });
 
             gamePeer.on('error', (err) => {
-                console.error('[Multiplayer] Host peer error:', err);
+                console.error('[Multiplayer] WebRTC Host error:', err);
                 if (err.type === 'unavailable-id') {
-                    // Server ID taken – try S2
-                    console.warn(`[Multiplayer] ${serverId} taken, trying next`);
-                    createServer(gameCode).then((newId) => {
-                        serverId = newId;
-                        resolve(newId);
+                    console.warn(`[Multiplayer] ${serverId} taken, trying S2`);
+                    createServer(pGameCode, 2).then(id => {
+                        serverId = id;
+                        resolve(id);
                     });
                 } else {
                     reject(err);
@@ -175,11 +253,23 @@ const Multiplayer = (() => {
      * @param {string} hostPeerIdToJoin  The full PeerJS ID of the host (e.g. "BV-ABCD-S1").
      * @returns {Promise<void>}
      */
-    function joinGame(hostPeerIdToJoin) {
+    function joinGame(targetId) {
+        // WebSocket Join
+        if (useWebSocket && socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'join',
+                payload: {
+                    gameCode: targetId.includes('-') ? targetId.split('-')[0] : targetId,
+                    serverId: targetId,
+                    username: Auth.getCurrentUser()
+                }
+            }));
+        }
+
         return new Promise((resolve, reject) => {
             serverId = null;
             amIHost = false;
-            hostPeerId = hostPeerIdToJoin;
+            hostPeerId = targetId;
             players.clear();
             connections.clear();
 
@@ -197,12 +287,12 @@ const Multiplayer = (() => {
             });
 
             gamePeer.on('open', () => {
-                // Connect to the host
-                const conn = gamePeer.connect(hostPeerIdToJoin, { reliable: true });
+                // Connect to the host (WebRTC fallback)
+                const conn = gamePeer.connect(targetId, { reliable: true });
 
                 conn.on('open', () => {
-                    connections.set(hostPeerIdToJoin, conn);
-                    serverId = hostPeerIdToJoin;
+                    connections.set(targetId, conn);
+                    serverId = targetId;
 
                     // Send our info to the host
                     const myUsername = Auth.getCurrentUser();
@@ -217,37 +307,44 @@ const Multiplayer = (() => {
                     });
 
                     // Set up data handler
-                    _setupConnectionHandlers(conn, hostPeerIdToJoin);
+                    _setupConnectionHandlers(conn, targetId);
                 });
 
                 conn.on('data', (data) => {
-                    handleMessage(hostPeerIdToJoin, data);
+                    handleMessage(targetId, data);
                 });
 
                 conn.on('error', (err) => {
-                    console.error('[Multiplayer] Connection to host error:', err);
-                    reject(err);
+                    console.warn('[Multiplayer] WebRTC connection failed, continuing with WebSocket:', err);
+                    // Don't reject yet, we might be on WebSocket
+                    if (!useWebSocket) reject(err);
+                    else resolve(); // Proceed with WebSocket only
                 });
 
                 conn.on('close', () => {
-                    connections.delete(hostPeerIdToJoin);
+                    connections.delete(targetId);
                 });
             });
 
             gamePeer.on('error', (err) => {
-                console.error('[Multiplayer] Game peer error:', err);
-                reject(err);
+                console.warn('[Multiplayer] Game peer error:', err);
+                if (!useWebSocket) reject(err);
+                else resolve();
             });
 
             // Listen for other players wanting to connect to us (mesh)
             gamePeer.on('connection', (conn) => {
-                // Verify this is from a known player (host will provide peer list)
                 _setupConnectionHandlers(conn, conn.peer);
                 connections.set(conn.peer, conn);
             });
 
             // Mark game as joined once we receive world state
             _joinResolve = resolve;
+
+            // Timeout for join if neither works
+            setTimeout(() => {
+                if (!serverId && !useWebSocket) reject(new Error('Join timeout'));
+            }, 5000);
         });
     }
 
@@ -416,6 +513,12 @@ const Multiplayer = (() => {
      * @param {string} [excludePeer]  Optional peer to skip.
      */
     function broadcast(data, excludePeer) {
+        // Send via WebSocket
+        if (useWebSocket && socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(data));
+        }
+
+        // Send via WebRTC
         connections.forEach((conn, peerId) => {
             if (peerId !== excludePeer && conn.open) {
                 try {
@@ -589,23 +692,40 @@ const Multiplayer = (() => {
      * @param {string} gameCode
      * @returns {Promise<Array<{serverId, playerCount, maxPlayers}>>}
      */
-    async function findServers(gameCode) {
+    async function findServers(pGameCode) {
         const results = [];
-        const maxServers = 5;
 
-        const checks = [];
-        for (let i = 1; i <= maxServers; i++) {
-            checks.push(_probeServer(`${gameCode}-S${i}`));
+        const probePromise = (async () => {
+            const maxServers = 5;
+            const checks = [];
+            for (let i = 1; i <= maxServers; i++) {
+                checks.push(_probeServer(`${pGameCode}-S${i}`));
+            }
+            const outcomes = await Promise.allSettled(checks);
+            return outcomes
+                .filter(o => o.status === 'fulfilled' && o.value)
+                .map(o => ({ ...o.value, type: 'webrtc' }));
+        })();
+
+        if (useWebSocket && socket && socket.readyState === WebSocket.OPEN) {
+            const socketPromise = new Promise((resolve) => {
+                const handler = (e) => {
+                    document.removeEventListener('multiplayer:discovery', handler);
+                    resolve(e.detail.map(s => ({ ...s, type: 'websocket' })));
+                };
+                document.addEventListener('multiplayer:discovery', handler);
+                socket.send(JSON.stringify({ type: 'discovery', payload: { gameCode: pGameCode } }));
+                setTimeout(() => {
+                    document.removeEventListener('multiplayer:discovery', handler);
+                    resolve([]);
+                }, 2000);
+            });
+
+            const [webrtc, ws] = await Promise.all([probePromise, socketPromise]);
+            return [...ws, ...webrtc];
         }
 
-        const outcomes = await Promise.allSettled(checks);
-        outcomes.forEach((outcome, i) => {
-            if (outcome.status === 'fulfilled' && outcome.value) {
-                results.push(outcome.value);
-            }
-        });
-
-        return results;
+        return await probePromise;
     }
 
     /**
@@ -957,6 +1077,7 @@ const Multiplayer = (() => {
         set amIHost(v) { amIHost = v; },
         get hostPeerId() { return hostPeerId; },
         get serverId() { return serverId; },
+        get gameCode() { return gameCode; },
         get players() { return players; },
 
         // Hosting

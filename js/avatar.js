@@ -13,6 +13,8 @@ const Avatar = (() => {
         bodyColor: '#3F51B5',
         headShape: 'default',
         bodyShape: 'default',
+        armShape: 'default',
+        legShape: 'default',
         accessory: 'none',
     };
 
@@ -79,17 +81,30 @@ const Avatar = (() => {
         let armW = 16, armH = 50;
         let legW = 20, legH = 40;
 
-        // Head shape tweaks
-        switch (_config.bodyShape) {
-            case 'pointy': headR = 4; break;
-            case 'round': headR = 28; break;
-            case 'square': headR = 2; break;
-            default: headR = 12;
+        // Arm shape tweaks
+        switch (_config.armShape) {
+            case 'short': armH = 30; break;
+            case 'long': armH = 65; break;
+            case 'thick': armW = 24; break;
+            case 'mechanical': armW = 12; break;
+            case 'ghostly': armH = 40; break;
         }
+
+        // Leg shape tweaks
+        switch (_config.legShape) {
+            case 'short': legH = 20; break;
+            case 'long': legH = 60; break;
+            case 'hover': legH = 0; break;
+            case 'quad': legW = 30; break;
+        }
+
+        // Head shape tweaks
         switch (_config.headShape) {
             case 'round': headR = 28; break;
             case 'square': headR = 2; headW = 60; headH = 60; break;
             case 'pointy': headR = 4; headH = 64; break;
+            case 'cylindrical': headR = 6; headW = 44; headH = 70; break;
+            case 'flat': headR = 2; headW = 70; headH = 30; break;
             default: headR = 12;
         }
 
@@ -97,7 +112,9 @@ const Avatar = (() => {
         switch (_config.bodyShape) {
             case 'slim': bodyW = 36; break;
             case 'wide': bodyW = 64; break;
-            case 'tall': bodyH = 76; break;
+            case 'tall': bodyH = 80; break;
+            case 'blocky': bodyW = 70; bodyH = 70; break;
+            case 'curved': bodyW = 56; headR = 20; break;
             default: break;
         }
 
@@ -122,6 +139,51 @@ const Avatar = (() => {
             ctx.lineTo(cx + bodyW / 2 + 6, bodyTop - 4);
             ctx.closePath();
             ctx.fill();
+            ctx.restore();
+        }
+
+        if (_config.accessory === 'scarf') {
+            ctx.save();
+            ctx.fillStyle = '#E74C3C';
+            _roundRect(ctx, cx - headW / 2, headBottom - 4, headW, 12, 4, '#E74C3C');
+            // Scarf tail
+            ctx.beginPath();
+            ctx.moveTo(cx + headW / 2 - 12, headBottom + 8);
+            ctx.lineTo(cx + headW / 2 - 4, headBottom + 28);
+            ctx.lineTo(cx + headW / 2 + 8, headBottom + 24);
+            ctx.lineTo(cx + headW / 2, headBottom + 4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        if (_config.accessory === 'halo') {
+            ctx.save();
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 4;
+            ctx.shadowColor = '#FFD700';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.ellipse(cx, headTop - 15, headW * 0.4, 8, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Ghostly effect
+        if (_config.armShape === 'ghostly') {
+            ctx.globalAlpha = 0.5;
+        }
+
+        if (_config.accessory === 'aura') {
+            ctx.save();
+            ctx.strokeStyle = lighterColor;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = lighterColor;
+            ctx.beginPath();
+            ctx.arc(cx, headTop + headH / 2, headW * 1.2, 0, Math.PI * 2);
+            ctx.stroke();
             ctx.restore();
         }
 
@@ -160,12 +222,26 @@ const Avatar = (() => {
         ctx.restore();
 
         // ---- Legs ----
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.15)';
-        ctx.shadowBlur = 4;
-        _roundRect(ctx, cx - legW - 2, legTop, legW, legH, 4, darkerColor);
-        _roundRect(ctx, cx + 2, legTop, legW, legH, 4, darkerColor);
-        ctx.restore();
+        if (_config.legShape !== 'hover') {
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.15)';
+            ctx.shadowBlur = 4;
+            _roundRect(ctx, cx - legW - 2, legTop, legW, legH, 4, darkerColor);
+            _roundRect(ctx, cx + 2, legTop, legW, legH, 4, darkerColor);
+            ctx.restore();
+        } else {
+            // Hover trail
+            ctx.save();
+            ctx.fillStyle = lighterColor;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(cx - 10, legTop + 5);
+            ctx.lineTo(cx + 10, legTop + 5);
+            ctx.lineTo(cx, legTop + 25);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
 
         // ---- Body ----
         ctx.save();
@@ -356,6 +432,8 @@ const Avatar = (() => {
     function _populateSelectors() {
         _populateOptionRow('avatar-head-options', BV.AVATAR_PARTS.head, 'headShape');
         _populateOptionRow('avatar-body-options', BV.AVATAR_PARTS.body, 'bodyShape');
+        _populateOptionRow('avatar-arms-options', BV.AVATAR_PARTS.arms, 'armShape');
+        _populateOptionRow('avatar-legs-options', BV.AVATAR_PARTS.legs, 'legShape');
         _populateOptionRow('avatar-accessory-options', BV.AVATAR_PARTS.accessory, 'accessory');
     }
 

@@ -340,98 +340,148 @@ const World = {
     },
 
     _generateObby() {
-        for (let x = -2; x <= 2; x++) {
-            for (let z = 0; z <= 4; z++) {
+        // Start Platform
+        for (let x = -3; x <= 3; x++) {
+            for (let z = -3; z <= 3; z++) {
                 this.addBlock(x, 0, z, 'stone', false);
             }
         }
         this.addBlock(0, 1, 0, 'gold', false);
 
         const stages = [
-            { blocks: [[5,0,2,'stone'],[7,0,2,'stone'],[9,0,2,'stone'],[11,0,2,'stone']], checkpoint: [12, 1, 2, 'gold'] },
-            { blocks: [[14,1,2,'brick'],[14,2,2,'brick'],[14,3,2,'brick'],[15,3,3,'brick'],[16,3,4,'brick'],[17,4,4,'brick'],[17,5,4,'brick']], checkpoint: [17, 6, 4, 'gold'] },
-            { blocks: [[18,5,5,'plank'],[18,5,6,'plank'],[18,5,7,'plank'],[18,5,8,'plank'],[18,5,9,'plank'],[18,5,10,'plank']], checkpoint: [18, 6, 11, 'gold'] },
-            { blocks: [[16,4,12,'stone'],[14,3,14,'stone'],[12,2,12,'stone'],[10,1,14,'stone'],[8,0,12,'stone']], checkpoint: [8, 1, 12, 'gold'] },
-            { blocks: [[6,0,14,'stone'],[6,0,15,'stone'],[6,0,16,'stone'],[7,0,14,'stone'],[7,0,15,'stone'],[7,0,16,'stone']], checkpoint: [6, 1, 15, 'diamond'] },
+            // Stage 1: Basic Jumps
+            {
+                blocks: [
+                    [6,0,0,'stone'],[9,1,0,'stone'],[12,2,0,'stone'],[15,1,0,'stone']
+                ],
+                checkpoint: [18, 1, 0, 'gold']
+            },
+            // Stage 2: Climbing Walls
+            {
+                blocks: [
+                    [18,2,3,'brick'],[18,3,3,'brick'],[18,4,3,'brick'],
+                    [18,5,6,'brick'],[18,6,6,'brick'],[18,7,6,'brick'],
+                    [18,8,9,'brick'],[18,9,9,'brick'],[18,10,9,'brick']
+                ],
+                checkpoint: [18, 11, 12, 'gold']
+            },
+            // Stage 3: Zig Zag Planks
+            {
+                blocks: [
+                    [15,11,15,'plank'],[12,11,12,'plank'],[9,11,15,'plank'],[6,11,12,'plank'],[3,11,15,'plank']
+                ],
+                checkpoint: [0, 11, 12, 'gold']
+            },
+            // Stage 4: Floating Islands
+            {
+                blocks: [
+                    [-4,10,12,'grass'],[-8,9,12,'grass'],[-12,10,15,'grass'],[-16,11,12,'grass'],[-20,10,15,'grass']
+                ],
+                checkpoint: [-25, 11, 12, 'gold']
+            },
+            // Stage 5: Final Spiral Ascent
+            {
+                blocks: [
+                    [-25,12,8,'stone'],[-22,13,5,'stone'],[-25,14,2,'stone'],[-28,15,5,'stone'],[-25,16,8,'stone'],
+                    [-25,17,8,'diamond']
+                ],
+                checkpoint: [-25, 17, 8, 'diamond']
+            },
         ];
 
         for (const stage of stages) {
             for (const [bx, by, bz, type] of stage.blocks) {
                 this.addBlock(bx, by, bz, type, false);
+                // Support blocks for visuals
+                if (type === 'grass') {
+                    this.addBlock(bx, by-1, bz, 'dirt', false);
+                    this.addBlock(bx, by-2, bz, 'stone', false);
+                }
             }
             if (stage.checkpoint) {
                 const [cx, cy, cz, ctype] = stage.checkpoint;
                 this.addBlock(cx, cy, cz, ctype, false);
+                // Platform for checkpoint
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dz = -1; dz <= 1; dz++) {
+                        if (dx === 0 && dz === 0) continue;
+                        this.addBlock(cx+dx, cy-1, cz+dz, 'stone', false);
+                    }
+                }
             }
         }
-        for (let x = -5; x <= 25; x++) {
-            for (let z = -2; z <= 20; z++) {
-                this.addBlock(x, -5, z, 'lava', false);
+        // Lava Floor
+        for (let x = -40; x <= 10; x++) {
+            for (let z = -10; z <= 40; z++) {
+                this.addBlock(x, -10, z, 'lava', false);
             }
         }
     },
 
     _generateCity() {
-        const size = 48;
+        const size = 64;
         const half = Math.floor(size / 2);
+
+        // Ground & Road Grid
         for (let x = -half; x < half; x++) {
             for (let z = -half; z < half; z++) {
                 this.addBlock(x, -1, z, 'stone', false);
-                this.addBlock(x, 0, z, 'cobble', false);
+
+                // Roads every 16 blocks
+                if (Math.abs(x) % 16 === 0 || Math.abs(x) % 16 === 1 ||
+                    Math.abs(z) % 16 === 0 || Math.abs(z) % 16 === 1) {
+                    this.addBlock(x, 0, z, 'stone', false);
+                    // Yellow lines
+                    if ((Math.abs(x) % 16 === 0 && Math.abs(z) % 4 === 0) ||
+                        (Math.abs(z) % 16 === 0 && Math.abs(x) % 4 === 0)) {
+                        this.addBlock(x, 1, z, 'gold', false);
+                    }
+                } else {
+                    this.addBlock(x, 0, z, 'grass', false);
+                }
             }
         }
-        for (let x = -half; x < half; x++) {
-            for (let z = -1; z <= 1; z++) {
-                this.addBlock(x, 1, z, 'stone', false);
-            }
-        }
-        for (let z = -half; z < half; z++) {
-            for (let x = -1; x <= 1; x++) {
-                this.addBlock(x, 1, z, 'stone', false);
-            }
-        }
-        const buildings = [
-            { x: -12, z: -12, w: 5, d: 5, h: 6, type: 'brick' },
-            { x: -5, z: -12, w: 3, d: 4, h: 4, type: 'plank' },
-            { x: 4, z: -12, w: 6, d: 5, h: 8, type: 'brick' },
-            { x: 13, z: -12, w: 4, d: 4, h: 3, type: 'plank' },
-            { x: -12, z: 4, w: 4, d: 6, h: 5, type: 'brick' },
-            { x: -5, z: 5, w: 5, d: 5, h: 7, type: 'stone' },
-            { x: 4, z: 4, w: 3, d: 3, h: 3, type: 'plank' },
-            { x: 8, z: 4, w: 5, d: 6, h: 6, type: 'brick' },
-            { x: -12, z: 13, w: 6, d: 5, h: 4, type: 'plank' },
-            { x: 4, z: 13, w: 5, d: 5, h: 5, type: 'brick' },
-            { x: 13, z: 4, w: 4, d: 4, h: 10, type: 'stone' },
-            { x: 13, z: 13, w: 5, d: 5, h: 4, type: 'plank' },
+
+        // Add Skyscrapers in blocks
+        const blocks = [
+            { x: -24, z: -24 }, { x: -8, z: -24 }, { x: 8, z: -24 }, { x: 24, z: -24 },
+            { x: -24, z: -8 }, { x: 8, z: -8 }, { x: 24, z: -8 },
+            { x: -24, z: 8 }, { x: -8, z: 8 }, { x: 24, z: 8 },
+            { x: -24, z: 24 }, { x: -8, z: 24 }, { x: 8, z: 24 }, { x: 24, z: 24 }
         ];
-        for (const b of buildings) {
-            for (let wx = 0; wx < b.w; wx++) {
-                for (let wz = 0; wz < b.d; wz++) {
-                    for (let wy = 1; wy <= b.h; wy++) {
-                        const isEdgeX = (wx === 0 || wx === b.w - 1);
-                        const isEdgeZ = (wz === 0 || wz === b.d - 1);
-                        if (isEdgeX || isEdgeZ) {
-                            this.addBlock(b.x + wx, wy, b.z + wz, b.type, false);
-                        } else if (wy === b.h) {
-                            this.addBlock(b.x + wx, wy, b.z + wz, 'plank', false);
+
+        for (const b of blocks) {
+            const h = 5 + Math.floor(Math.random() * 15);
+            const w = 6;
+            const type = (h > 15) ? 'stone' : (h > 10 ? 'brick' : 'plank');
+
+            for (let wx = 0; wx < w; wx++) {
+                for (let wz = 0; wz < w; wz++) {
+                    for (let wy = 1; wy <= h; wy++) {
+                        const isEdge = (wx === 0 || wx === w-1 || wz === 0 || wz === w-1);
+                        if (isEdge) {
+                            // Windows
+                            if (wy > 1 && wy % 3 !== 0 && (wx === 2 || wx === 3 || wz === 2 || wz === 3)) {
+                                this.addBlock(b.x + wx, wy, b.z + wz, 'glass', false);
+                            } else {
+                                this.addBlock(b.x + wx, wy, b.z + wz, type, false);
+                            }
+                        } else if (wy === h) {
+                            this.addBlock(b.x + wx, wy, b.z + wz, 'stone', false);
                         }
                     }
                 }
             }
-            const doorX = b.x + Math.floor(b.w / 2);
-            for (let dy = 1; dy <= 2; dy++) {
-                this.removeBlock(doorX, dy, b.z, false);
-            }
         }
-        for (let i = 0; i < 6; i++) {
-            const px = -20 + i * 2;
-            const pz = 13;
-            for (let ty = 1; ty <= 3; ty++) this.addBlock(px, ty, pz, 'wood', false);
-            this.addBlock(px, 4, pz, 'leaf', false);
-            this.addBlock(px+1, 4, pz, 'leaf', false);
-            this.addBlock(px-1, 4, pz, 'leaf', false);
-            this.addBlock(px, 4, pz+1, 'leaf', false);
-            this.addBlock(px, 4, pz-1, 'leaf', false);
+
+        // Central Park
+        for (let x = -7; x <= 7; x++) {
+            for (let z = -7; z <= 7; z++) {
+                this.addBlock(x, 0, z, 'grass', false);
+                if (Math.abs(x) < 3 && Math.abs(z) < 3) {
+                    this.addBlock(x, 0, z, 'water', false);
+                }
+            }
         }
     },
 
@@ -728,71 +778,125 @@ const World = {
     // BLOCK MANAGEMENT (Data Layer + InstancedMesh)
     // =============================================
 
+    /**
+     * Add a block to the world and update rendering.
+     * V2.1: Incremental Occlusion Culling — only renders if visible,
+     * and updates visibility of 6 neighbors.
+     */
     addBlock(x, y, z, blockType, emitEvent) {
-        x = Math.round(x);
-        y = Math.round(y);
-        z = Math.round(z);
-
+        x = Math.round(x); y = Math.round(y); z = Math.round(z);
         if (y < -32 || y > BV.WORLD_HEIGHT_LIMIT) return false;
 
         const key = blockKey(x, y, z);
         if (this.blockMap.has(key)) return false;
 
         const config = BV.BLOCK_TYPES[blockType];
-        if (!config) {
-            console.warn('[World] Unknown block type: "' + blockType + '"');
-            return false;
-        }
+        if (!config) return false;
 
-        // Data layer
+        // 1. Data Layer
         this.blockMap.set(key, { x, y, z, type: blockType });
         this.blockCount++;
 
-        // Render layer (InstancedMesh)
+        // 2. Render Layer (Incremental Update)
         if (typeof BlockRenderer !== 'undefined') {
-            BlockRenderer.addBlock(x, y, z, blockType);
+            if (emitEvent) {
+                // If it's a live edit, update the block and its neighbors
+                this._updateBlockRenderStatus(x, y, z);
+                this._updateNeighborsRenderStatus(x, y, z);
+            } else {
+                // Terrain generation — just add to BlockRenderer,
+                // World.generateTerrain calls rebuildVisibility at the end
+                BlockRenderer.addBlock(x, y, z, blockType, true);
+            }
         }
 
         if (emitEvent) {
-            const event = new CustomEvent('block:place', {
+            window.dispatchEvent(new CustomEvent('block:place', {
                 detail: { x, y, z, type: blockType },
-            });
-            window.dispatchEvent(event);
+            }));
         }
-
         return true;
     },
 
+    /**
+     * Remove a block from the world and update rendering.
+     */
     removeBlock(x, y, z, emitEvent) {
-        x = Math.round(x);
-        y = Math.round(y);
-        z = Math.round(z);
-
+        x = Math.round(x); y = Math.round(y); z = Math.round(z);
         const key = blockKey(x, y, z);
         const block = this.blockMap.get(key);
         if (!block) return false;
 
-        // Render layer
+        const oldType = block.type;
+        const wasCustom = !!block.customColor;
+
+        // 1. Render Layer (Pre-removal)
         if (typeof BlockRenderer !== 'undefined') {
-            if (block.customColor) {
+            if (wasCustom) {
                 BlockRenderer.removeCustomMesh(x, y, z);
             } else {
-                BlockRenderer.removeBlock(x, y, z, block.type);
+                BlockRenderer.removeBlock(x, y, z, oldType);
             }
         }
 
-        // Data layer
+        // 2. Data Layer
         this.blockMap.delete(key);
         this.blockCount--;
 
-        if (emitEvent) {
-            const event = new CustomEvent('block:remove', {
-                detail: { x, y, z, type: block.type },
-            });
-            window.dispatchEvent(event);
+        // 3. Render Layer (Post-removal)
+        if (typeof BlockRenderer !== 'undefined' && emitEvent) {
+            // Neighbor visibility might change (occlusion removed)
+            this._updateNeighborsRenderStatus(x, y, z);
         }
 
+        if (emitEvent) {
+            window.dispatchEvent(new CustomEvent('block:remove', {
+                detail: { x, y, z, type: oldType },
+            }));
+        }
         return true;
+    },
+
+    // =============================================
+    // INTERNAL RENDER OPTIMIZATION
+    // =============================================
+
+    _isBlockOccluded(x, y, z) {
+        const block = this.getBlock(x, y, z);
+        if (!block) return true; // Non-existent blocks "occlude" nothing but aren't rendered anyway
+
+        // Transparent blocks (glass, water) are NEVER occluded
+        if (!isOpaque(block.type)) return false;
+
+        // Check 6 neighbors — if ALL are opaque, this block is occluded
+        const ns = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+        for (let i = 0; i < 6; i++) {
+            const neighbor = this.getBlock(x + ns[i][0], y + ns[i][1], z + ns[i][2]);
+            if (!neighbor || !isOpaque(neighbor.type)) return false;
+        }
+        return true;
+    },
+
+    /** Sync BlockRenderer with blockMap for a single position. */
+    _updateBlockRenderStatus(x, y, z) {
+        const block = this.getBlock(x, y, z);
+        if (!block) return;
+
+        const occluded = this._isBlockOccluded(x, y, z);
+        const rendered = BlockRenderer.isBlockRendered(x, y, z, block.type);
+
+        if (occluded && rendered) {
+            BlockRenderer.removeBlock(x, y, z, block.type);
+        } else if (!occluded && !rendered) {
+            BlockRenderer.addBlock(x, y, z, block.type);
+        }
+    },
+
+    _updateNeighborsRenderStatus(x, y, z) {
+        const ns = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+        for (let i = 0; i < 6; i++) {
+            this._updateBlockRenderStatus(x + ns[i][0], y + ns[i][1], z + ns[i][2]);
+        }
     },
 
     getBlock(x, y, z) {
