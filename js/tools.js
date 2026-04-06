@@ -13,6 +13,8 @@ const Tools = {
     _activeSlot: 0,
 
     _toolbarSlots: [],
+    _gearSlots: [],
+    _hasGears: false,
 
     _grabbedBlock: null,
     _grabOffset: null,
@@ -46,6 +48,9 @@ const Tools = {
             this._toolbarSlots.push('stone');
         }
         this._toolbarSlots = this._toolbarSlots.slice(0, BV.TOOLBAR_SIZE);
+
+        // Gear check (Owner only in sandbox)
+        this._checkGears();
 
         this.buildToolbarUI();
         this.buildBlockPickerUI();
@@ -486,6 +491,18 @@ const Tools = {
     // UI BUILDING
     // =============================================
 
+    _checkGears() {
+        if (typeof Multiplayer !== 'undefined' && Multiplayer.getAmIHost()) {
+            this._hasGears = true;
+            this._gearSlots = [
+                { id: 'gear-bomb', name: 'Explosive Gear', icon: '💣', action: () => this._gearBomb() },
+                { id: 'gear-wall', name: 'Instant Wall', icon: '🚧', action: () => this._gearWall() },
+            ];
+        } else {
+            this._hasGears = false;
+        }
+    }
+
     buildToolbarUI() {
         this._toolbarEl = document.getElementById('toolbar');
         if (!this._toolbarEl) return;
@@ -493,6 +510,7 @@ const Tools = {
         this._toolbarEl.innerHTML = '';
         this._slotElements = [];
 
+        // Build main slots
         for (let i = 0; i < BV.TOOLBAR_SIZE; i++) {
             const slot = document.createElement('div');
             slot.className = 'toolbar-slot' + (i === this._activeSlot ? ' active' : '');
@@ -523,6 +541,56 @@ const Tools = {
             this._toolbarEl.appendChild(slot);
             this._slotElements.push(slot);
         }
+
+        // Add Gear slots if owner
+        if (this._hasGears) {
+            const divider = document.createElement('div');
+            divider.style.width = '2px';
+            divider.style.height = '32px';
+            divider.style.background = 'var(--border-color)';
+            divider.style.margin = '0 6px';
+            this._toolbarEl.appendChild(divider);
+
+            this._gearSlots.forEach((gear, idx) => {
+                const slot = document.createElement('div');
+                slot.className = 'toolbar-slot gear-slot';
+                slot.title = gear.name;
+                slot.innerHTML = `<div class="toolbar-slot-content" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">${gear.icon}</div>`;
+                slot.addEventListener('click', () => gear.action());
+                this._toolbarEl.appendChild(slot);
+            });
+        }
+    },
+
+    _gearBomb() {
+        const hit = this._cursorRaycast();
+        if (!hit) return;
+        const radius = 2;
+        for (let x = hit.position.x - radius; x <= hit.position.x + radius; x++) {
+            for (let y = hit.position.y - radius; y <= hit.position.y + radius; y++) {
+                for (let z = hit.position.z - radius; z <= hit.position.z + radius; z++) {
+                    const dist = Math.sqrt((x-hit.position.x)**2 + (y-hit.position.y)**2 + (z-hit.position.z)**2);
+                    if (dist <= radius) World.removeBlock(x, y, z, true);
+                }
+            }
+        }
+        Utils.showToast('BOOM! 💣', 'warning');
+    },
+
+    _gearWall() {
+        const hit = this._cursorRaycast();
+        if (!hit) return;
+        const dir = Player.getForwardDirection();
+        const axis = Math.abs(dir.x) > Math.abs(dir.z) ? 'z' : 'x';
+        for (let i = -2; i <= 2; i++) {
+            for (let j = 0; j <= 3; j++) {
+                const px = axis === 'z' ? hit.position.x + hit.normal.nx : hit.position.x + hit.normal.nx + i;
+                const pz = axis === 'z' ? hit.position.z + hit.normal.nz + i : hit.position.z + hit.normal.nz;
+                const py = hit.position.y + hit.normal.ny + j;
+                World.addBlock(px, py, pz, this._currentBlockType, true);
+            }
+        }
+        Utils.showToast('Wall Built! 🚧', 'success');
     },
 
     _updateToolbarSlotUI(index) {

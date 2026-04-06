@@ -40,9 +40,87 @@
 .creator-header-center {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex: 1;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-left: 1rem;
+}
+
+.header-menu {
+  position: relative;
+}
+
+.menu-trigger {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.menu-trigger:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  min-width: 180px;
+  display: none;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  padding: 0.25rem;
+}
+
+.header-menu:hover .menu-dropdown {
+  display: flex;
+}
+
+.menu-dropdown button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.menu-dropdown button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.menu-dropdown button.danger:hover {
+  background: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
+}
+
+.menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0.25rem 0.5rem;
+}
+
+.header-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  margin: 0 0.5rem;
 }
 
 .creator-header-right {
@@ -173,12 +251,22 @@
 }
 
 /* ----------------------------------------------------------
-   Left Sidebar - Tools
+   Left Panel - Tools & Hierarchy
    ---------------------------------------------------------- */
+.creator-left-panel {
+  width: 320px;
+  min-width: 240px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  overflow: hidden;
+  z-index: 60;
+}
+
 .creator-tools-panel {
   width: 56px;
   min-width: 56px;
-  background: var(--bg-card);
+  background: rgba(0,0,0,0.15);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -186,7 +274,14 @@
   padding: 0.5rem 0;
   gap: 0.25rem;
   overflow-y: auto;
-  z-index: 50;
+}
+
+.creator-hierarchy-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-card);
 }
 
 .creator-tool-btn {
@@ -440,6 +535,110 @@
   display: flex;
 }
 
+/* --- Explorer / Hierarchy Panel --- */
+.hierarchy-header {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(0,0,0,0.1);
+}
+
+.hierarchy-header h3 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.hierarchy-search-wrapper {
+  position: relative;
+}
+
+.hierarchy-search {
+  width: 100%;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.hierarchy-search:focus {
+  border-color: var(--primary);
+}
+
+.hierarchy-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+}
+
+.hierarchy-node {
+  font-size: 0.78rem;
+  user-select: none;
+}
+
+.node-content {
+  display: flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+}
+
+.node-content:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+.hierarchy-node.selected > .node-content {
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.expand-icon {
+  width: 12px;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.node-icon {
+  font-size: 0.85rem;
+}
+
+.node-buttons {
+  margin-left: auto;
+  display: flex;
+  gap: 0.2rem;
+  opacity: 0;
+}
+
+.node-content:hover .node-buttons {
+  opacity: 1;
+}
+
+.node-buttons button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0.1rem;
+}
+
+.node-buttons button:hover {
+  color: var(--text-primary);
+}
+
+.hierarchy-children {
+  padding-left: 1.25rem;
+}
+
 /* --- Properties Panel --- */
 .properties-section {
   padding: 0.75rem;
@@ -518,6 +717,38 @@
 }
 
 .property-select:focus {
+  border-color: var(--primary);
+}
+
+.property-group-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin: 0.75rem 0 0.4rem;
+  letter-spacing: 1px;
+}
+
+.property-xyz {
+  display: flex;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.property-xyz input {
+  width: 0;
+  flex: 1;
+  padding: 0.2rem 0.35rem;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  outline: none;
+}
+
+.property-xyz input:focus {
   border-color: var(--primary);
 }
 

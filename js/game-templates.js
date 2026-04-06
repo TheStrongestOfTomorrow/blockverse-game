@@ -14,41 +14,54 @@ const GameTemplates = (() => {
 
     const obby = {
         name: 'Obby',
-        description: 'Parkour obstacle course - jump to survive!',
+        description: 'Multi-stage parkour challenge with checkpoints and varying hazards!',
         difficulty: 'Medium',
 
         generate(world) {
-            console.log('[Templates] Generating Obby...');
+            console.log('[Templates] Generating Pro Obby...');
 
-            // Spawn platform
-            _addPlatform(world, 0, 0, 0, 8, 1, 8, 'stone');
+            // Spawn Area
+            _addPlatform(world, 0, 0, 0, 10, 1, 10, 'stone');
+            _addPlatform(world, 0, 1, 0, 4, 0.5, 4, 'gold', { spawn: true });
 
-            // Stage 1: Jump sequence (Y steps)
-            for (let i = 0; i < 8; i++) {
-                _addPlatform(world, i * 3, 3 + i * 1.5, 0, 3, 0.5, 3, 'stone');
-            }
-
-            // Stage 2: Moving platforms (simulated with obstacles)
+            // Stage 1: The Rising Steps
             for (let i = 0; i < 6; i++) {
-                _addPlatform(world, 25, 15 + i * 2, -5 - i * 2, 2, 0.5, 2, 'glass');
+                _addPlatform(world, 8 + i * 4, 1 + i * 1.5, 0, 3, 0.5, 3, 'stone');
             }
 
-            // Stage 3: Rotating obstacles
+            // Checkpoint 1
+            _addPlatform(world, 32, 8, 0, 6, 0.5, 6, 'gold');
+
+            // Stage 2: Glass Walkway
             for (let i = 0; i < 5; i++) {
-                _addPlatform(world, 30 + i * 3, 12, 0, 1.5, 3, 1.5, 'iron');
+                const zOff = (i % 2 === 0) ? 2 : -2;
+                _addPlatform(world, 40 + i * 4, 8, zOff, 2, 0.2, 2, 'glass');
             }
 
-            // Stage 4: Jump pads (use colored stone to indicate)
-            _addPlatform(world, 50, 5, 0, 4, 0.5, 4, 'stone', { highlight: true });
+            // Stage 3: Brick Pillars
+            for (let i = 0; i < 4; i++) {
+                _addPlatform(world, 60 + i * 5, 8, 0, 2, 1 + i*2, 2, 'brick');
+            }
 
-            // Finish platform
-            _addPlatform(world, 55, 5, 15, 6, 1, 6, 'grass');
+            // Checkpoint 2
+            _addPlatform(world, 80, 15, 0, 8, 0.5, 8, 'gold');
 
-            // Add decorative walls
-            _addWall(world, -5, 0, -5, 0.5, 30, 30, 'stone');
-            _addWall(world, 65, 0, -5, 0.5, 30, 30, 'stone');
+            // Final Challenge: The Void Leap
+            _addPlatform(world, 90, 14, 4, 2, 0.5, 2, 'diamond');
+            _addPlatform(world, 95, 16, -4, 2, 0.5, 2, 'diamond');
 
-            console.log('[Templates] Obby generated successfully');
+            // Victory Platform
+            _addPlatform(world, 105, 18, 0, 12, 1, 12, 'grass');
+            _addPlatform(world, 105, 19, 0, 4, 2, 4, 'gold');
+
+            // Hazard floor (Lava)
+            for (let x = -10; x < 120; x += 10) {
+                for (let z = -20; z < 20; z += 10) {
+                    _addPlatform(world, x, -5, z, 10, 1, 10, 'lava');
+                }
+            }
+
+            console.log('[Templates] Pro Obby generated successfully');
         }
     };
 
@@ -152,39 +165,52 @@ const GameTemplates = (() => {
 
     const city = {
         name: 'City',
-        description: 'Urban environment with buildings and streets',
+        description: 'A thriving mini-metropolis with detailed buildings, interiors, and foliage.',
         difficulty: 'Easy',
 
         generate(world) {
-            console.log('[Templates] Generating City...');
+            console.log('[Templates] Generating Detailed City...');
 
-            // Streets
-            _addPlatform(world, 0, 0, 0, 100, 0.5, 10, 'stone');
-            _addPlatform(world, 0, 0, -15, 100, 0.5, 10, 'stone');
+            // Main Plaza
+            _addPlatform(world, 0, -1, 0, 60, 1, 60, 'stone');
 
-            // Buildings (varying heights)
-            const buildings = [
-                { x: -15, y: 1, z: 5, w: 8, h: 10, d: 8 },
-                { x: -15, y: 1, z: -20, w: 8, h: 15, d: 8 },
-                { x: 10, y: 1, z: 5, w: 6, h: 12, d: 6 },
-                { x: 10, y: 1, z: -20, w: 10, h: 8, d: 10 },
-                { x: 35, y: 1, z: 5, w: 8, h: 14, d: 8 },
-            ];
+            // Roads
+            _addPlatform(world, 0, -0.9, 0, 100, 0.1, 12, 'cobble');
+            _addPlatform(world, 0, -0.9, 0, 12, 0.1, 100, 'cobble');
 
-            buildings.forEach(b => {
-                // Building base
-                _addPlatform(world, b.x, b.y, b.z, b.w, b.h, b.d, 'stone');
-                // Roof
-                _addPlatform(world, b.x, b.y + b.h, b.z, b.w, 0.5, b.d, 'iron');
-            });
-
-            // Trees (decorative)
-            for (let i = 0; i < 10; i++) {
-                const x = -30 + i * 7;
-                _addPlatform(world, x, 0, -25, 1, 6, 1, 'leaf');
+            // Building 1: The Skyscraper
+            _addPlatform(world, -20, 0, -20, 12, 30, 12, 'stone');
+            _addPlatform(world, -20, 30, -20, 14, 1, 14, 'iron'); // Roof lip
+            // Windows
+            for(let y=2; y<28; y+=4) {
+                _addPlatform(world, -14, y, -20, 0.1, 2, 8, 'glass');
+                _addPlatform(world, -26, y, -20, 0.1, 2, 8, 'glass');
             }
 
-            console.log('[Templates] City generated successfully');
+            // Building 2: Red Brick Apartments
+            _addPlatform(world, 20, 0, -20, 10, 12, 10, 'brick');
+            _addPlatform(world, 20, 12, -20, 10, 1, 10, 'plank');
+
+            // Building 3: Modern Hub
+            _addPlatform(world, -20, 0, 20, 14, 8, 14, 'iron');
+            _addPlatform(world, -20, 8, 20, 10, 4, 10, 'glass');
+
+            // Central Fountain
+            _addPlatform(world, 0, 0, 0, 6, 0.5, 6, 'stone');
+            _addPlatform(world, 0, 0.5, 0, 4, 0.5, 4, 'water');
+
+            // Trees and Benches
+            for(let i=0; i<4; i++) {
+                const ang = (i/4) * Math.PI * 2;
+                const tx = Math.cos(ang) * 10;
+                const tz = Math.sin(ang) * 10;
+                // Trunk
+                for(let ty=0; ty<4; ty++) World.addBlock(Math.round(tx), ty, Math.round(tz), 'wood');
+                // Leaves
+                _addPlatform(world, tx, 4, tz, 3, 2, 3, 'leaf');
+            }
+
+            console.log('[Templates] Detailed City generated successfully');
         }
     };
 

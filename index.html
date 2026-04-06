@@ -560,6 +560,55 @@
             </div>
         </div>
 
+        <!-- Game Detail Modal -->
+        <div id="game-detail-modal" class="modal hidden">
+            <div class="modal-content modal-lg">
+                <div class="modal-header">
+                    <h2 id="gd-name">Game Name</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="gd-layout">
+                        <div class="gd-left">
+                            <div id="gd-thumb" class="gd-thumb">🎮</div>
+                            <div class="gd-stats">
+                                <span id="gd-category" class="pill">Category</span>
+                                <span id="gd-players" class="pill pill-green">👤 0/12</span>
+                            </div>
+                            <button id="gd-btn-play" class="btn btn-primary btn-full btn-lg mt-md">PLAY</button>
+                        </div>
+                        <div class="gd-right">
+                            <div class="gd-section">
+                                <h3>Description</h3>
+                                <p id="gd-desc">Game description goes here...</p>
+                            </div>
+                            <div class="gd-section">
+                                <h3>Gamepasses</h3>
+                                <div class="gd-placeholder-list">
+                                    <div class="gd-placeholder-item">
+                                        <span>🚀 VIP Access</span>
+                                        <button class="btn btn-sm btn-accent">100 B$</button>
+                                    </div>
+                                    <div class="gd-placeholder-item">
+                                        <span>💎 Double Gems</span>
+                                        <button class="btn btn-sm btn-accent">250 B$</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gd-section">
+                                <h3>Active Servers</h3>
+                                <div id="gd-server-list" class="gd-server-list">
+                                    <div class="empty-state" style="padding:1rem;">
+                                        <p>No active servers. Be the first to host!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Add Friend Modal -->
         <div id="add-friend-modal" class="modal hidden">
             <div class="modal-content">

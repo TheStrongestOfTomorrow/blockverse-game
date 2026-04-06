@@ -21,32 +21,35 @@
                 <span class="creator-title">Creator Studio</span>
             </div>
             <div class="creator-header-center">
+                <div class="header-menu">
+                    <button class="menu-trigger">File</button>
+                    <div class="menu-dropdown">
+                        <button id="btn-save-game">💾 Save Game <small>(Ctrl+S)</small></button>
+                        <button id="btn-load-game">📂 Load Game</button>
+                        <button id="btn-clear-world" class="danger">🗑️ Clear World</button>
+                        <div class="menu-divider"></div>
+                        <button id="btn-publish">🚀 Publish to Discovery</button>
+                    </div>
+                </div>
+                <div class="header-menu">
+                    <button class="menu-trigger">Settings</button>
+                    <div class="menu-dropdown">
+                        <button id="btn-settings">⚙️ Game Settings</button>
+                        <button id="btn-editor-settings">🛠️ Editor Settings</button>
+                    </div>
+                </div>
+                <div class="header-divider"></div>
                 <input type="text" class="creator-game-name-input" id="creator-game-name" placeholder="My Awesome Game" value="My Awesome Game" maxlength="40">
             </div>
             <div class="creator-header-right">
-                <button class="creator-btn creator-btn-outline" id="btn-settings" data-tooltip="Game Settings">
-                    ⚙️ Settings
-                </button>
-                <button class="creator-btn creator-btn-danger" id="btn-clear-world">
-                    🗑️ Clear
-                </button>
                 <button class="creator-btn creator-btn-primary" id="btn-play">
-                    ▶ Play Test
+                    ▶ Play
                 </button>
                 <button class="creator-btn creator-btn-danger hidden" id="btn-stop-play">
-                    ■ Stop Test
-                </button>
-                <button class="creator-btn creator-btn-outline" id="btn-save-game" data-tooltip="Save Game (Ctrl+S)" style="border-color:rgba(0,184,148,0.4);color:var(--secondary);">
-                    💾 Save
-                </button>
-                <button class="creator-btn creator-btn-outline" id="btn-load-game" data-tooltip="Load Game">
-                    📂 Load
-                </button>
-                <button class="creator-btn creator-btn-accent" id="btn-publish">
-                    🚀 Publish
+                    ■ Stop
                 </button>
                 <a href="index.html" class="creator-btn creator-btn-ghost">
-                    ← Lobby
+                    Lobby
                 </a>
             </div>
         </header>
@@ -54,8 +57,9 @@
         <!-- ========== BODY ========== -->
         <div class="creator-body">
 
-            <!-- LEFT SIDEBAR - Tools -->
-            <div class="creator-tools-panel">
+            <!-- LEFT PANEL - Hierarchy & Tools -->
+            <div class="creator-left-panel">
+                <div class="creator-tools-panel">
                 <button class="creator-tool-btn active" data-tool="build" data-tooltip="Build (B)">
                     🔨
                 </button>
@@ -85,9 +89,15 @@
                 <button class="creator-tool-btn" id="btn-undo" data-tooltip="Undo (Ctrl+Z)">
                     ↩️
                 </button>
-                <button class="creator-tool-btn" id="btn-redo" data-tooltip="Redo (Ctrl+Y)">
-                    ↪️
-                </button>
+                    <button class="creator-tool-btn" id="btn-redo" data-tooltip="Redo (Ctrl+Y)">
+                        ↪️
+                    </button>
+                </div>
+
+                <!-- HIERARCHY PANEL -->
+                <div class="creator-hierarchy-container" id="hierarchy-container">
+                    <!-- HierarchyPanel.init() will fill this -->
+                </div>
             </div>
 
             <!-- CENTER - 3D Viewport -->
@@ -165,15 +175,67 @@
                         </div>
                     </div>
 
+                    <!-- Selection Properties (shown when block selected) -->
+                    <div class="properties-section hidden" id="selection-section">
+                        <div class="properties-section-title">Block Properties</div>
+                        <div class="property-row">
+                            <span class="property-label">Name</span>
+                            <input type="text" class="property-input-wide" id="sel-name" value="Block">
+                        </div>
+                        <div class="property-group-title">Transform</div>
+                        <div class="property-row">
+                            <span class="property-label">Position</span>
+                            <div class="property-xyz">
+                                <input type="number" id="sel-pos-x" step="1">
+                                <input type="number" id="sel-pos-y" step="1">
+                                <input type="number" id="sel-pos-z" step="1">
+                            </div>
+                        </div>
+                        <div class="property-group-title">Appearance</div>
+                        <div class="property-row">
+                            <span class="property-label">Material</span>
+                            <select class="property-select" id="sel-material"></select>
+                        </div>
+                        <div class="property-row">
+                            <span class="property-label">Color</span>
+                            <input type="color" id="sel-color-picker">
+                        </div>
+                        <div class="property-row">
+                            <span class="property-label">Transparency</span>
+                            <input type="range" id="sel-transparency" min="0" max="1" step="0.1" value="0">
+                        </div>
+                        <div class="property-group-title">Physics</div>
+                        <div class="property-row">
+                            <span class="property-label">Can Collide</span>
+                            <input type="checkbox" id="sel-collide" checked>
+                        </div>
+                        <div class="property-row">
+                            <span class="property-label">Anchored</span>
+                            <input type="checkbox" id="sel-anchored" checked>
+                        </div>
+                        <div style="padding-top:1rem;display:flex;gap:0.5rem;">
+                            <button class="creator-btn creator-btn-outline" id="btn-duplicate-selected" style="flex:1;">Duplicate</button>
+                            <button class="creator-btn creator-btn-danger" id="btn-delete-selected" style="flex:1;">Delete</button>
+                        </div>
+                    </div>
+
                     <!-- World Properties -->
                     <div class="properties-section">
                         <div class="properties-section-title">World Info</div>
                         <div class="property-row">
-                            <span class="property-label">Blocks</span>
+                            <span class="property-label">Block Count</span>
                             <span class="property-value" id="prop-block-count">0</span>
                         </div>
                         <div class="property-row">
-                            <span class="property-label">Template</span>
+                            <span class="property-label">Spawn Point</span>
+                            <div class="property-xyz">
+                                <input type="number" id="prop-spawn-x" value="0">
+                                <input type="number" id="prop-spawn-y" value="5">
+                                <input type="number" id="prop-spawn-z" value="0">
+                            </div>
+                        </div>
+                        <div class="property-group-title">Terrain Generation</div>
+                        <div class="property-row">
                             <select class="property-select" id="prop-template">
                                 <option value="empty">Empty</option>
                                 <option value="flat" selected>Flat World</option>
@@ -187,36 +249,9 @@
                                 <option value="pirate">Pirate Ship</option>
                             </select>
                         </div>
-                        <div style="padding-top:0.4rem;">
-                            <button class="creator-btn creator-btn-outline" id="btn-generate" style="width:100%;font-size:0.78rem;">
-                                🔄 Generate Terrain
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Selection Properties (shown when block selected) -->
-                    <div class="properties-section hidden" id="selection-section">
-                        <div class="properties-section-title">Selected Block</div>
-                        <div class="property-row">
-                            <span class="property-label">Position</span>
-                            <span class="property-value" id="sel-position">-</span>
-                        </div>
-                        <div class="property-row">
-                            <span class="property-label">Type</span>
-                            <span class="property-value" id="sel-type">-</span>
-                        </div>
-                        <div class="property-row">
-                            <span class="property-label">Color</span>
-                            <span class="property-value" id="sel-color" style="display:flex;align-items:center;gap:4px;">
-                                <span id="sel-color-swatch" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
-                                <span id="sel-color-hex">-</span>
-                            </span>
-                        </div>
-                        <div style="padding-top:0.4rem;">
-                            <button class="creator-btn creator-btn-danger" id="btn-delete-selected" style="width:100%;font-size:0.78rem;">
-                                🗑️ Delete Block
-                            </button>
-                        </div>
+                        <button class="creator-btn creator-btn-outline" id="btn-generate" style="width:100%;margin-top:0.5rem;">
+                            🔄 Generate Terrain
+                        </button>
                     </div>
 
                     <!-- No selection hint -->
@@ -445,6 +480,9 @@
         // =============================================
 
         const CreatorApp = {
+            // Expose to window for debugging/verification
+            expose() { window.CreatorApp = this; },
+
             scene: null,
             camera: null,
             renderer: null,
@@ -494,6 +532,7 @@
             init() {
                 this._initThreeJS();
                 this._initWorld();
+                this._initHierarchy();
                 this._initUI();
                 this._initScripting();
                 this._initEventListeners();
@@ -636,6 +675,8 @@
             },
 
             _initScripting() {
+                this._initProperties();
+
                 // Initialize the scripting engine
                 ScriptEngine.init();
 
@@ -689,6 +730,8 @@
             },
 
             _initEventListeners() {
+                this._setupPropertiesEvents();
+
                 // Viewport mouse events (orbit camera)
                 const canvas = document.getElementById('creator-canvas');
 
@@ -721,6 +764,73 @@
                 if (hint) {
                     setTimeout(() => hint.classList.add('fade'), 5000);
                 }
+            },
+
+            _initHierarchy() {
+                if (typeof HierarchyPanel !== 'undefined') {
+                    HierarchyPanel.init('#hierarchy-container');
+                }
+            },
+
+            _initProperties() {
+                const materialSelect = document.getElementById('sel-material');
+                if (materialSelect) {
+                    for (const [type, config] of Object.entries(BV.BLOCK_TYPES)) {
+                        const opt = document.createElement('option');
+                        opt.value = type;
+                        opt.textContent = config.name;
+                        materialSelect.appendChild(opt);
+                    }
+                }
+            },
+
+            _setupPropertiesEvents() {
+                const updateSelected = () => {
+                    if (!this._selectedBlock) return;
+                    const b = this._selectedBlock;
+                    const oldKey = blockKey(b.x, b.y, b.z);
+
+                    const newX = parseInt(document.getElementById('sel-pos-x').value);
+                    const newY = parseInt(document.getElementById('sel-pos-y').value);
+                    const newZ = parseInt(document.getElementById('sel-pos-z').value);
+                    const newType = document.getElementById('sel-material').value;
+                    const newColor = document.getElementById('sel-color-picker').value;
+
+                    // If position changed, we need to move the block in the map
+                    if (newX !== b.x || newY !== b.y || newZ !== b.z) {
+                        World.removeBlock(b.x, b.y, b.z, false);
+                        World.addBlock(newX, newY, newZ, newType, false);
+                        const newBlock = World.getBlock(newX, newY, newZ);
+                        this._selectedBlock = newBlock;
+                    } else if (newType !== b.type || newColor !== b.customColor) {
+                        // Just update type/color
+                        World.removeBlock(b.x, b.y, b.z, false);
+                        World.addBlock(b.x, b.y, b.z, newType, false);
+                        const newBlock = World.getBlock(b.x, b.y, b.z);
+                        if (newColor !== (BV.BLOCK_TYPES[newType] || {}).color) {
+                            newBlock.customColor = newColor;
+                            // Re-apply custom mesh
+                            BlockRenderer.removeBlock(b.x, b.y, b.z, newType);
+                            const mat = new THREE.MeshLambertMaterial({ color: newColor });
+                            BlockRenderer.addCustomMesh(b.x, b.y, b.z, mat);
+                        }
+                        this._selectedBlock = newBlock;
+                    }
+
+                    this._updateBlockCount();
+                    if (typeof HierarchyPanel !== 'undefined') HierarchyPanel.refresh();
+                };
+
+                ['sel-pos-x', 'sel-pos-y', 'sel-pos-z', 'sel-material', 'sel-color-picker'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', updateSelected);
+                });
+
+                document.getElementById('btn-duplicate-selected').addEventListener('click', () => {
+                    if (!this._selectedBlock) return;
+                    const b = this._selectedBlock;
+                    World.addBlock(b.x, b.y + 1, b.z, b.type, true);
+                    this._updateBlockCount();
+                });
             },
 
             // =============================================
@@ -1389,13 +1499,26 @@ Events.on("gameStart", async function() {
             _selectedBlock: null,
 
             _showSelection(hit) {
-                document.getElementById('selection-section').classList.remove('hidden');
+                const section = document.getElementById('selection-section');
+                if (!section) return;
+
+                section.classList.remove('hidden');
                 document.getElementById('no-selection-hint').classList.add('hidden');
-                document.getElementById('sel-position').textContent = hit.x + ', ' + hit.y + ', ' + hit.z;
-                document.getElementById('sel-type').textContent = (BV.BLOCK_TYPES[hit.type] || {}).name || hit.type;
-                const config = BV.BLOCK_TYPES[hit.type] || {};
-                document.getElementById('sel-color-hex').textContent = config.color || '-';
-                document.getElementById('sel-color-swatch').style.backgroundColor = config.color || '#666';
+
+                const block = World.getBlock(hit.x, hit.y, hit.z);
+                if (!block) return;
+
+                this._selectedBlock = block;
+
+                document.getElementById('sel-name').value = block.name || (BV.BLOCK_TYPES[block.type] || {}).name || 'Block';
+                document.getElementById('sel-pos-x').value = block.x;
+                document.getElementById('sel-pos-y').value = block.y;
+                document.getElementById('sel-pos-z').value = block.z;
+                document.getElementById('sel-material').value = block.type;
+
+                const config = BV.BLOCK_TYPES[block.type] || {};
+                document.getElementById('sel-color-picker').value = block.customColor || config.color || '#ffffff';
+                document.getElementById('sel-transparency').value = block.transparency || 0;
             },
 
             _hideSelection() {
@@ -1981,7 +2104,7 @@ Events.on("gameStart", async function() {
             // =============================================
 
             _animate() {
-                requestAnimationFrame(() => this._animate());
+                this._renderId = requestAnimationFrame(() => this._animate());
 
                 const delta = this._animClock.getDelta();
                 const clampedDelta = Math.min(delta, 0.05); // Clamp to prevent physics explosions
@@ -2017,6 +2140,7 @@ Events.on("gameStart", async function() {
 
         window.addEventListener('DOMContentLoaded', () => {
             CreatorApp.init();
+            CreatorApp.expose();
         });
 
     })();

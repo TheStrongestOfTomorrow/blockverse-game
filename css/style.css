@@ -2162,6 +2162,84 @@ img {
 }
 
 /* ==========================================================
+   GAME DETAIL MODAL
+   ========================================================== */
+.gd-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 2rem;
+}
+
+.gd-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.gd-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gd-section {
+  margin-bottom: 1.5rem;
+}
+
+.gd-section h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+}
+
+.gd-placeholder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gd-placeholder-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.gd-server-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+@media (max-width: 600px) {
+  .gd-layout {
+    grid-template-columns: 1fr;
+  }
+  .gd-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .gd-thumb {
+    width: 120px;
+  }
+}
+
+/* ==========================================================
    TOASTS
    ========================================================== */
 #toast-container {

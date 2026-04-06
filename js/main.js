@@ -717,6 +717,8 @@ const App = (() => {
 
     return {
         init,
+        // Expose internally
+        World: () => typeof World !== 'undefined' ? World : null,
         startGameLoop,
         stopGameLoop,
         enterGame,
