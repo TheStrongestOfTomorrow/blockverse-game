@@ -156,28 +156,63 @@ const Lobby = (() => {
 
         grid.innerHTML = filtered.map((g) => UI.renderGameCard(g)).join('');
 
-        // Wire up game card click -> show play
+        // Wire up game card click -> open Detail Modal
         grid.querySelectorAll('.game-card').forEach((card) => {
             card.addEventListener('click', (e) => {
-                // Don't trigger if clicking the play button directly
-                if (e.target.closest('.game-card-play-btn')) return;
                 const code = card.dataset.code;
-                if (code) {
-                    document.dispatchEvent(new CustomEvent('game:play', { detail: { code } }));
-                }
+                const game = allGames.find(g => g.code === code);
+                if (game) _showGameDetails(game);
             });
         });
+    }
 
-        // Wire up play buttons
-        grid.querySelectorAll('.game-card-play-btn').forEach((btn) => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const code = btn.dataset.code;
-                if (code) {
-                    document.dispatchEvent(new CustomEvent('game:play', { detail: { code } }));
+    function _showGameDetails(game) {
+        const modal = document.getElementById('game-detail-modal');
+        if (!modal) return;
+
+        document.getElementById('gd-name').textContent = game.name;
+        document.getElementById('gd-desc').textContent = game.description;
+        document.getElementById('gd-category').textContent = game.category.toUpperCase();
+        document.getElementById('gd-players').textContent = `👤 ${game.players || 0}/${game.maxPlayers || 12}`;
+
+        const thumb = document.getElementById('gd-thumb');
+        thumb.textContent = game.icon || '🎮';
+        thumb.style.background = game.color || 'var(--bg-hover)';
+
+        const playBtn = document.getElementById('gd-btn-play');
+        playBtn.onclick = () => {
+            modal.classList.add('hidden');
+            joinGameByCode(game.code);
+        };
+
+        // Load servers for this game
+        _renderGameDetailServers(game.code);
+
+        modal.classList.remove('hidden');
+    }
+
+    async function _renderGameDetailServers(gameCode) {
+        const container = document.getElementById('gd-server-list');
+        container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--text-muted);">Scanning for servers...</div>';
+
+        if (typeof Multiplayer !== 'undefined') {
+            try {
+                const servers = await Multiplayer.findServers(gameCode);
+                if (servers.length === 0) {
+                    container.innerHTML = '<div class="empty-state" style="padding:1rem;"><p>No active servers. Be the first to host!</p></div>';
+                } else {
+                    container.innerHTML = servers.map((s, i) => `
+                        <div class="gd-placeholder-item">
+                            <span>🌐 Server #${i+1}</span>
+                            <span>👤 ${s.playerCount}/${s.maxPlayers}</span>
+                            <button class="btn btn-sm btn-primary" onclick="Lobby.joinGameByCode('${s.serverId}')">JOIN</button>
+                        </div>
+                    `).join('');
                 }
-            });
-        });
+            } catch (e) {
+                container.innerHTML = '<div style="padding:1rem;color:var(--danger);">Error finding servers</div>';
+            }
+        }
     }
 
     function renderMyGames() {

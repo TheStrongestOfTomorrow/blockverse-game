@@ -298,6 +298,10 @@ const BlockRenderer = (() => {
         }
 
         // Step 2: For each block, check visibility and add to InstancedMesh if visible
+        // Batch the Map lookups for performance
+        const mapHas = blockMap.has.bind(blockMap);
+        const mapGet = blockMap.get.bind(blockMap);
+
         blockMap.forEach((block) => {
             const { x, y, z, type } = block;
 
@@ -309,9 +313,10 @@ const BlockRenderer = (() => {
 
             // Check all 6 neighbors
             let allOpaqueNeighbors = true;
-            for (const [dx, dy, dz] of neighbors) {
+            for (let i = 0; i < 6; i++) {
+                const [dx, dy, dz] = neighbors[i];
                 const nKey = blockKey(x + dx, y + dy, z + dz);
-                const neighbor = blockMap.get ? blockMap.get(nKey) : blockMap[nKey];
+                const neighbor = mapGet(nKey);
                 if (!neighbor || !isOpaque(neighbor.type)) {
                     allOpaqueNeighbors = false;
                     break;
