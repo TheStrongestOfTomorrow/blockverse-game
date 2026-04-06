@@ -73,11 +73,11 @@ const BV = {
 
     // Avatar Part Types
     AVATAR_PARTS: {
-        head: ['default', 'round', 'square', 'pointy'],
-        body: ['default', 'slim', 'wide', 'tall'],
-        arms: ['default', 'short', 'long', 'thick'],
-        legs: ['default', 'short', 'long'],
-        accessory: ['none', 'hat', 'crown', 'wings', 'cape', 'horns'],
+        head: ['default', 'round', 'square', 'pointy', 'cylindrical', 'flat'],
+        body: ['default', 'slim', 'wide', 'tall', 'blocky', 'curved'],
+        arms: ['default', 'short', 'long', 'thick', 'mechanical', 'ghostly'],
+        legs: ['default', 'short', 'long', 'hover', 'quad'],
+        accessory: ['none', 'hat', 'crown', 'wings', 'cape', 'horns', 'halo', 'scarf', 'aura'],
     },
 
     // Avatar Colors

@@ -142,6 +142,11 @@ const Lobby = (() => {
         else if (sectionId === 'settings') _loadSettings();
         else if (sectionId === 'friends') {
             if (typeof Friends !== 'undefined') Friends.renderUI();
+        } else if (sectionId === 'join-friends') {
+            if (typeof Friends !== 'undefined') {
+                Friends.refreshFriendStatuses();
+                Friends.renderJoinFriendsUI();
+            }
         }
     }
 
@@ -173,17 +178,23 @@ const Lobby = (() => {
         document.getElementById('gd-name').textContent = game.name;
         document.getElementById('gd-desc').textContent = game.description;
         document.getElementById('gd-category').textContent = game.category.toUpperCase();
-        document.getElementById('gd-players').textContent = `👤 ${game.players || 0}/${game.maxPlayers || 12}`;
+        document.getElementById('gd-players').textContent = game.players || 0;
 
         const thumb = document.getElementById('gd-thumb');
-        thumb.textContent = game.icon || '🎮';
-        thumb.style.background = game.color || 'var(--bg-hover)';
+        const heroIcon = document.getElementById('gd-hero-icon');
+        if (heroIcon) heroIcon.textContent = game.icon || '🎮';
+        thumb.style.background = game.color || 'var(--primary)';
 
         const playBtn = document.getElementById('gd-btn-play');
         playBtn.onclick = () => {
             modal.classList.add('hidden');
             joinGameByCode(game.code);
         };
+
+        const refreshBtn = document.getElementById('gd-refresh-servers');
+        if (refreshBtn) {
+            refreshBtn.onclick = () => _renderGameDetailServers(game.code);
+        }
 
         // Load servers for this game
         _renderGameDetailServers(game.code);
@@ -193,24 +204,32 @@ const Lobby = (() => {
 
     async function _renderGameDetailServers(gameCode) {
         const container = document.getElementById('gd-server-list');
-        container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--text-muted);">Scanning for servers...</div>';
+        if (!container) return;
+
+        container.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-muted);">Scanning for active sessions...</div>';
 
         if (typeof Multiplayer !== 'undefined') {
             try {
                 const servers = await Multiplayer.findServers(gameCode);
                 if (servers.length === 0) {
-                    container.innerHTML = '<div class="empty-state" style="padding:1rem;"><p>No active servers. Be the first to host!</p></div>';
+                    container.innerHTML = `
+                        <div class="empty-state" style="padding:1rem;">
+                            <p>No active servers found for this world.</p>
+                            <button class="btn btn-sm btn-ghost mt-sm" onclick="Lobby.joinGameByCode('${gameCode}')">Create Solo Session</button>
+                        </div>`;
                 } else {
                     container.innerHTML = servers.map((s, i) => `
-                        <div class="gd-placeholder-item">
-                            <span>🌐 Server #${i+1}</span>
-                            <span>👤 ${s.playerCount}/${s.maxPlayers}</span>
+                        <div class="gd-server-card">
+                            <div class="gd-server-info">
+                                <div class="gd-server-name">🌐 ${s.name || 'Public Server #' + (i + 1)}</div>
+                                <div class="gd-server-players">👤 ${s.playerCount}/${s.maxPlayers} players online</div>
+                            </div>
                             <button class="btn btn-sm btn-primary" onclick="Lobby.joinGameByCode('${s.serverId}')">JOIN</button>
                         </div>
                     `).join('');
                 }
             } catch (e) {
-                container.innerHTML = '<div style="padding:1rem;color:var(--danger);">Error finding servers</div>';
+                container.innerHTML = '<div style="padding:1.5rem;color:var(--danger);text-align:center;">Network error while fetching servers.</div>';
             }
         }
     }
