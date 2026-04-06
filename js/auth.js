@@ -206,7 +206,12 @@ const Auth = (() => {
     function _loadSession() {
         try {
             const raw = localStorage.getItem(BV.STORAGE_KEYS.AUTH);
-            return raw ? JSON.parse(raw) : null;
+            const session = raw ? JSON.parse(raw) : null;
+            // Handle mock sessions from verification scripts
+            if (session && session.username && !session.loginTime) {
+                session.loginTime = Date.now();
+            }
+            return session;
         } catch {
             return null;
         }

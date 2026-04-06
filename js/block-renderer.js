@@ -18,6 +18,7 @@ const BlockRenderer = (() => {
     let _customGroup = null;
     let _geo = null;
     let _tempMatrix = null;
+    let _raycastResult = { x: 0, y: 0, z: 0, nx: 0, ny: 0, nz: 0, distance: 0 };
 
     // =============================================
     // INITIALIZATION
@@ -254,7 +255,14 @@ const BlockRenderer = (() => {
 
             // Skip the block the camera is inside
             if (blockMap.get && blockMap.get(key) && t > 0.01) {
-                return { x: x, y: y, z: z, nx: nx, ny: ny, nz: nz, distance: t };
+                _raycastResult.x = x;
+                _raycastResult.y = y;
+                _raycastResult.z = z;
+                _raycastResult.nx = nx;
+                _raycastResult.ny = ny;
+                _raycastResult.nz = nz;
+                _raycastResult.distance = t;
+                return _raycastResult;
             }
 
             // Advance to next voxel boundary

@@ -7,11 +7,11 @@
    CSS Custom Properties
    ---------------------------------------------------------- */
 :root {
-  --bg-dark: #0a0a1a;
-  --bg-card: #1a1a2e;
-  --bg-hover: #2d2d44;
-  --primary: #6c5ce7;
-  --primary-rgb: 108, 92, 231;
+  --bg-dark: #1B1D1E;
+  --bg-card: #232527;
+  --bg-hover: #393B3D;
+  --primary: #00A2FF;
+  --primary-rgb: 0, 162, 255;
   --secondary: #00b894;
   --secondary-rgb: 0, 184, 148;
   --danger: #d63031;
@@ -615,8 +615,8 @@ img {
 .lobby-sidebar {
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
-  background: var(--bg-card);
-  border-right: 1px solid var(--border-color);
+  background: #232527;
+  border-right: 1px solid #393B3D;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -625,11 +625,17 @@ img {
 }
 
 .sidebar-header {
-  padding: 1.25rem 1rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 1rem;
+  border-bottom: 1px solid #393B3D;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: #393B3D;
+  margin: 0.5rem 1rem;
 }
 
 .logo-text-sm {
@@ -818,7 +824,91 @@ img {
   display: none;
   flex: 1;
   overflow-y: auto;
+  padding: 2rem;
+}
+
+/* Home Hero */
+.home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 2.5rem;
+  background: #232527;
+  border-radius: var(--radius-lg);
+  margin-bottom: 2rem;
+  border: 1px solid #393B3D;
+}
+
+.home-hero-info h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.home-avatar-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: #393B3D;
+  border: 4px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.home-avatar-circle img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+.home-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 2rem;
+}
+
+.home-friends-widget {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.home-friend-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 80px;
+  cursor: pointer;
+}
+
+.home-friend-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #393B3D;
+  border: 2px solid #393B3D;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-friend-card.online .home-friend-avatar {
+  border-color: #00E676;
+}
+
+.home-friend-name {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 .lobby-section.active {
@@ -849,36 +939,34 @@ img {
 /* Games grid */
 .games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1.25rem;
 }
 
 .game-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
-  transition:
-    transform var(--transition-base),
-    box-shadow var(--transition-base),
-    border-color var(--transition-base);
+  transition: transform var(--transition-base);
 }
 
 .game-card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-lg), 0 12px 30px rgba(0, 0, 0, 0.4);
-  border-color: var(--primary);
+  transform: translateY(-4px);
 }
 
 .game-card-thumb {
-  height: 160px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  aspect-ratio: 1;
+  height: auto;
+  background: #393B3D;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  margin-bottom: 0.5rem;
 }
 
 .game-card-thumb::after {
@@ -895,39 +983,35 @@ img {
 }
 
 .game-card-info {
-  padding: 1rem;
+  padding: 0 0.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.2rem;
 }
 
 .game-card-title {
-  font-size: 1.05rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #fff;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .game-card-desc {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.4;
-  min-height: 2.3em;
+  display: none;
 }
 
 .game-card-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 0.3rem;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: #B8B9B9;
+}
+
+.game-card-play-btn {
+  display: none;
 }
 
 .game-card-meta span {

@@ -91,29 +91,33 @@
                     </div>
                 </div>
                 <nav class="sidebar-nav">
-                    <button class="sidebar-btn active" data-section="discover">
-                        <span class="sidebar-icon">🏠</span> Discover
+                    <button class="sidebar-btn active" data-section="home">
+                        <span class="sidebar-icon">🏠</span> Home
                     </button>
-                    <button class="sidebar-btn" data-section="my-games">
-                        <span class="sidebar-icon">🎮</span> My Games
-                    </button>
-                    <button class="sidebar-btn" data-section="create-game">
-                        <span class="sidebar-icon">➕</span> Create Game
-                    </button>
-                    <button class="sidebar-btn" onclick="window.location.href='creator.html'" style="margin-top:0.15rem;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.2);border-radius:var(--radius-sm);color:var(--primary);font-weight:600;">
-                        <span class="sidebar-icon">🔧</span> Creator Studio
-                    </button>
-                    <button class="sidebar-btn" data-section="friends">
-                        <span class="sidebar-icon">👥</span> Friends
-                    </button>
-                    <button class="sidebar-btn" data-section="join-friends">
-                        <span class="sidebar-icon">🤝</span> Join Friends
+                    <button class="sidebar-btn" data-section="discover">
+                        <span class="sidebar-icon">🎮</span> Games
                     </button>
                     <button class="sidebar-btn" data-section="avatar">
                         <span class="sidebar-icon">👤</span> Avatar
                     </button>
                     <button class="sidebar-btn" data-section="inventory">
                         <span class="sidebar-icon">🎒</span> Inventory
+                    </button>
+                    <button class="sidebar-btn" onclick="window.location.href='creator.html'" style="margin-top:0.15rem;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.2);border-radius:var(--radius-sm);color:var(--primary);font-weight:600;">
+                        <span class="sidebar-icon">🔧</span> Creator Studio
+                    </button>
+                    <div class="sidebar-divider"></div>
+                    <button class="sidebar-btn" data-section="my-games">
+                        <span class="sidebar-icon">📂</span> My Games
+                    </button>
+                    <button class="sidebar-btn" data-section="create-game">
+                        <span class="sidebar-icon">➕</span> Create
+                    </button>
+                    <button class="sidebar-btn" data-section="friends">
+                        <span class="sidebar-icon">👥</span> Friends
+                    </button>
+                    <button class="sidebar-btn" data-section="join-friends">
+                        <span class="sidebar-icon">🤝</span> Join
                     </button>
                     <button class="sidebar-btn" data-section="settings">
                         <span class="sidebar-icon">⚙️</span> Settings
@@ -148,10 +152,44 @@
                 </div>
 
                 <!-- Sections -->
-                <!-- Discover -->
-                <section id="section-discover" class="lobby-section active">
+                <!-- Home -->
+                <section id="section-home" class="lobby-section active">
+                    <div class="home-hero">
+                        <div class="home-hero-info">
+                            <h1>Welcome Back, <span id="home-username">Player</span></h1>
+                        </div>
+                        <div id="home-avatar-container" class="home-avatar-circle">
+                            <!-- Large circular avatar -->
+                        </div>
+                    </div>
+
+                    <div class="home-content-grid">
+                        <div class="home-main-col">
+                            <div class="section-header">
+                                <h2>Recently Played</h2>
+                                <button class="btn btn-ghost btn-sm" onclick="Lobby.showSection('discover')">See All</button>
+                            </div>
+                            <div id="recently-played-grid" class="games-grid">
+                                <!-- Filled dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="home-side-col">
+                            <div class="section-header">
+                                <h2>Friends</h2>
+                                <button class="btn btn-ghost btn-sm" onclick="Lobby.showSection('friends')">See All</button>
+                            </div>
+                            <div id="home-friends-widget" class="home-friends-widget">
+                                <!-- Online friends horizontal list -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Games (formerly Discover) -->
+                <section id="section-discover" class="lobby-section">
                     <div class="section-header">
-                        <h2>🎮 Discover Games</h2>
+                        <h2>🎮 Games</h2>
                     </div>
                     <div id="games-grid" class="games-grid">
                         <!-- Game cards filled dynamically -->
@@ -340,12 +378,21 @@
                     <div class="section-header">
                         <h2>👥 Friends</h2>
                         <div class="section-actions">
+                            <div class="search-box friend-search">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" id="friend-search-input" placeholder="Search for players...">
+                            </div>
                             <button id="btn-add-friend" class="btn btn-sm btn-secondary">+ Add Friend</button>
                             <button id="btn-refresh-friends" class="btn btn-sm btn-ghost">
                                 🔄 Refresh <span id="friends-cooldown" class="cooldown-badge"></span>
                             </button>
                         </div>
                     </div>
+
+                    <div id="player-search-results" class="friends-list hidden">
+                        <!-- Search results -->
+                    </div>
+
                     <div id="friends-list" class="friends-list">
                         <!-- Friend items filled dynamically -->
                     </div>

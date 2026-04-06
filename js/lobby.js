@@ -108,6 +108,8 @@ const Lobby = (() => {
     // ========================================
 
     function init() {
+        const username = Auth.getCurrentUser();
+        if (username) renderHome();
         renderFeaturedGames();
         if (typeof UI !== 'undefined') UI.renderCategoryFilters();
         renderMyGames();
@@ -137,7 +139,8 @@ const Lobby = (() => {
             }
         });
 
-        if (sectionId === 'my-games') renderMyGames();
+        if (sectionId === 'home') renderHome();
+        else if (sectionId === 'my-games') renderMyGames();
         else if (sectionId === 'discover') renderFeaturedGames();
         else if (sectionId === 'settings') _loadSettings();
         else if (sectionId === 'friends') {
@@ -146,6 +149,49 @@ const Lobby = (() => {
             if (typeof Friends !== 'undefined') {
                 Friends.refreshFriendStatuses();
                 Friends.renderJoinFriendsUI();
+            }
+        }
+    }
+
+    /**
+     * Render the Roblox-inspired Home screen.
+     */
+    function renderHome() {
+        const username = Auth.getCurrentUser();
+        const homeUsernameEl = document.getElementById('home-username');
+        if (homeUsernameEl) homeUsernameEl.textContent = username;
+
+        const homeAvatarEl = document.getElementById('home-avatar-container');
+        if (homeAvatarEl && typeof Avatar !== 'undefined') {
+            homeAvatarEl.innerHTML = Avatar.getAvatarHTML(username, 'xlarge');
+        }
+
+        // Render Recently Played (just using top featured games for now)
+        const recentGrid = document.getElementById('recently-played-grid');
+        if (recentGrid) {
+            recentGrid.innerHTML = FEATURED_GAMES.slice(0, 3).map(g => UI.renderGameCard(g)).join('');
+            recentGrid.querySelectorAll('.game-card').forEach((card) => {
+                card.addEventListener('click', (e) => {
+                    const code = card.dataset.code;
+                    const game = FEATURED_GAMES.find(g => g.code === code);
+                    if (game) _showGameDetails(game);
+                });
+            });
+        }
+
+        // Render Friends Widget
+        const friendsWidget = document.getElementById('home-friends-widget');
+        if (friendsWidget && typeof Friends !== 'undefined') {
+            const friends = Friends.getFriends();
+            if (friends.length === 0) {
+                friendsWidget.innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem;">No friends yet.</p>';
+            } else {
+                friendsWidget.innerHTML = friends.map(u => `
+                    <div class="home-friend-card online" onclick="Lobby.showSection('friends')">
+                        <div class="home-friend-avatar">${Avatar.getAvatarHTML(u, 'small')}</div>
+                        <div class="home-friend-name">${u}</div>
+                    </div>
+                `).join('');
             }
         }
     }
