@@ -1321,13 +1321,17 @@ img {
 
 
 /* ==========================================================
-   MOBILE CONTROLS
+   MOBILE CONTROLS (Portrait & Landscape optimized)
    ========================================================== */
 .mobile-controls {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 150;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 30px;
 }
 
 .mobile-controls.hidden {
@@ -1335,9 +1339,6 @@ img {
 }
 
 .joystick-base {
-  position: absolute;
-  bottom: 40px;
-  left: 40px;
   width: 120px;
   height: 120px;
   background: rgba(255, 255, 255, 0.1);
@@ -1346,6 +1347,7 @@ img {
   pointer-events: auto;
   backdrop-filter: blur(5px);
   touch-action: none;
+  position: relative;
 }
 
 .joystick-thumb {
@@ -1362,9 +1364,6 @@ img {
 }
 
 .mobile-jump-btn {
-  position: absolute;
-  bottom: 40px;
-  right: 40px;
   width: 80px;
   height: 80px;
   background: rgba(255, 255, 255, 0.1);
@@ -1385,6 +1384,24 @@ img {
 .mobile-jump-btn:active {
   background: rgba(255, 255, 255, 0.3);
   transform: scale(0.95);
+}
+
+/* Landscape Tweaks */
+@media (orientation: landscape) and (max-height: 500px) {
+  .mobile-controls {
+    padding: 15px 40px;
+  }
+  .joystick-base {
+    width: 100px;
+    height: 100px;
+  }
+  .mobile-jump-btn {
+    width: 70px;
+    height: 70px;
+  }
+  .toolbar {
+    bottom: 0.5rem;
+  }
 }
 
 /* ==========================================================
@@ -1428,9 +1445,10 @@ img {
   justify-content: space-between;
   padding: 0.8rem 1.5rem;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
-  z-index: 90;
+  z-index: 180; /* Above mobile controls but below menus */
   gap: 1rem;
   pointer-events: none;
+  flex-wrap: wrap; /* Handle narrow screens */
 }
 
 .hud-top > * {

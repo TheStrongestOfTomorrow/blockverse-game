@@ -152,6 +152,19 @@ const Player = {
         this._syncCamera();
     },
 
+    handleResize() {
+        if (!this._camera) return;
+        this._camera.aspect = window.innerWidth / window.innerHeight;
+        this._camera.updateProjectionMatrix();
+
+        // Re-check mobile status on resize (orientation change)
+        this._isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        const mobileContainer = document.getElementById('mobile-controls');
+        if (mobileContainer) {
+            mobileContainer.classList.toggle('hidden', !this._isMobile);
+        }
+    },
+
     _initMobileControls() {
         this._isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
         const mobileContainer = document.getElementById('mobile-controls');
@@ -805,11 +818,6 @@ const Player = {
         return this._isGrounded;
     },
 
-    handleResize() {
-        if (!this._camera) return;
-        this._camera.aspect = window.innerWidth / window.innerHeight;
-        this._camera.updateProjectionMatrix();
-    },
 
     /**
      * Respawn the player at the spawn point.

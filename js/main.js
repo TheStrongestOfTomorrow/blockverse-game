@@ -33,6 +33,7 @@ const App = (() => {
     function init() {
         console.log(`[App] ${BV.NAME} v${BV.VERSION} starting... (tab: ${_TAB_ID})`);
 
+        _registerServiceWorker();
         _initTabLock();
         UI.init();
         _setupGlobalEvents();
@@ -696,6 +697,16 @@ const App = (() => {
     function _broadcastToTab(tabId, msg) {
         msg.targetTabId = tabId;
         _broadcastToAll(msg);
+    }
+
+    function _registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('[App] ServiceWorker registered:', reg.scope))
+                    .catch(err => console.log('[App] ServiceWorker registration failed:', err));
+            });
+        }
     }
 
     if (document.readyState === 'loading') {
