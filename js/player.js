@@ -33,13 +33,19 @@ const Player = {
     _mouseScreenX: 0,
     _mouseScreenY: 0,
 
-    // --- Camera orbit ---
+    // --- Camera orbit & Smoothing ---
     _cameraDistance: 6,
     _cameraMinDistance: 2,
     _cameraMaxDistance: 25,
     _cameraHeightOffset: 2.5,
     _cameraPitch: 0.35,       // Radians: slight downward angle
     _cameraYaw: 0,            // Orbit yaw around player
+    _targetCameraYaw: 0,
+    _targetCameraPitch: 0.35,
+    _currentCameraPos: new THREE.Vector3(),
+    _currentLookTarget: new THREE.Vector3(),
+    _cameraLerpSpeed: 10,     // Speed of camera position smoothing
+    _rotationLerpSpeed: 15,   // Speed of rotation smoothing
     _rightMouseDown: false,
     _lastMouseX: 0,
     _lastMouseY: 0,
@@ -69,6 +75,11 @@ const Player = {
     _onContextMenu: null,
     _onWheel: null,
 
+    // --- Mobile Input ---
+    _isMobile: false,
+    _joystickInput: { x: 0, y: 0 },
+    _touchActive: false,
+
     // =============================================
     // INITIALIZATION
     // =============================================
@@ -90,6 +101,8 @@ const Player = {
         this.rotation = { yaw: 0, pitch: 0 };
         this._cameraYaw = 0;
         this._cameraPitch = 0.35;
+        this._targetCameraYaw = 0;
+        this._targetCameraPitch = 0.35;
         this._cameraDistance = 6;
         this._isGrounded = false;
         this._isActive = true;
@@ -97,6 +110,10 @@ const Player = {
         this._lastMovementYaw = 0;
         this._hasMovedOnce = false;
         this._mouseNDC = { x: 0, y: 0 };
+
+        // Initialize smoothing vectors
+        this._currentCameraPos.set(0, 7.5, 6);
+        this._currentLookTarget.set(0, 1.2, 0);
 
         // Build avatar mesh
         this._buildAvatar();
@@ -129,7 +146,115 @@ const Player = {
         this._domElement.addEventListener('mouseenter', () => { this._gameCanvasHovered = true; });
         this._domElement.addEventListener('mouseleave', () => { this._gameCanvasHovered = false; this._rightMouseDown = false; });
 
+        // --- Mobile Controls ---
+        this._initMobileControls();
+
         this._syncCamera();
+    },
+
+    handleResize() {
+        if (!this._camera) return;
+        this._camera.aspect = window.innerWidth / window.innerHeight;
+        this._camera.updateProjectionMatrix();
+
+        // Re-check mobile status on resize (orientation change)
+        this._isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        const mobileContainer = document.getElementById('mobile-controls');
+        if (mobileContainer) {
+            mobileContainer.classList.toggle('hidden', !this._isMobile);
+        }
+    },
+
+    _initMobileControls() {
+        this._isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        const mobileContainer = document.getElementById('mobile-controls');
+        if (!mobileContainer) return;
+
+        if (this._isMobile) {
+            mobileContainer.classList.remove('hidden');
+
+            const joystickBase = document.getElementById('joystick-base');
+            const joystickThumb = document.getElementById('joystick-thumb');
+            const jumpBtn = document.getElementById('mobile-jump-btn');
+
+            if (joystickBase && joystickThumb) {
+                const handleJoystick = (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const rect = joystickBase.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    const maxDist = rect.width / 2;
+
+                    let dx = touch.clientX - centerX;
+                    let dy = touch.clientY - centerY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist > maxDist) {
+                        dx *= maxDist / dist;
+                        dy *= maxDist / dist;
+                    }
+
+                    joystickThumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                    this._joystickInput.x = dx / maxDist;
+                    this._joystickInput.y = dy / maxDist;
+                };
+
+                joystickBase.addEventListener('touchstart', handleJoystick);
+                joystickBase.addEventListener('touchmove', handleJoystick);
+                joystickBase.addEventListener('touchend', () => {
+                    joystickThumb.style.transform = 'translate(-50%, -50%)';
+                    this._joystickInput.x = 0;
+                    this._joystickInput.y = 0;
+                });
+            }
+
+            if (jumpBtn) {
+                jumpBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this._keys['Space'] = true;
+                });
+                jumpBtn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this._keys['Space'] = false;
+                });
+            }
+
+            // Touch-based camera rotation
+            this._onTouchStart = (e) => {
+                // If not touching a control, start rotation
+                if (e.target === this._domElement) {
+                    this._touchActive = true;
+                    const touch = e.touches[0];
+                    this._lastMouseX = touch.clientX;
+                    this._lastMouseY = touch.clientY;
+                }
+            };
+
+            this._onTouchMove = (e) => {
+                if (this._touchActive) {
+                    const touch = e.touches[0];
+                    const dx = touch.clientX - this._lastMouseX;
+                    const dy = touch.clientY - this._lastMouseY;
+                    const sensitivity = BV.MOUSE_SENSITIVITY * 1.5;
+
+                    this._targetCameraYaw -= dx * sensitivity;
+                    this._targetCameraPitch -= dy * sensitivity * 0.6;
+                    this._targetCameraPitch = Utils.clamp(this._targetCameraPitch, -0.5, 1.4);
+
+                    this._lastMouseX = touch.clientX;
+                    this._lastMouseY = touch.clientY;
+                }
+            };
+
+            this._onTouchEnd = () => {
+                this._touchActive = false;
+            };
+
+            this._domElement.addEventListener('touchstart', this._onTouchStart, { passive: false });
+            this._domElement.addEventListener('touchmove', this._onTouchMove, { passive: false });
+            this._domElement.addEventListener('touchend', this._onTouchEnd);
+        }
     },
 
     destroy() {
@@ -140,6 +265,11 @@ const Player = {
             this._domElement.removeEventListener('mousedown', this._onMouseDown);
             this._domElement.removeEventListener('contextmenu', this._onContextMenu);
             this._domElement.removeEventListener('wheel', this._onWheel);
+
+            // Mobile listeners
+            this._domElement.removeEventListener('touchstart', this._onTouchStart);
+            this._domElement.removeEventListener('touchmove', this._onTouchMove);
+            this._domElement.removeEventListener('touchend', this._onTouchEnd);
         }
         document.removeEventListener('mouseup', this._onMouseUp);
 
@@ -279,12 +409,12 @@ const Player = {
         const dx = e.clientX - this._lastMouseX;
         const dy = e.clientY - this._lastMouseY;
 
-        // Orbit camera around player
-        this._cameraYaw -= dx * sensitivity;
-        this._cameraPitch -= dy * sensitivity * 0.6;
+        // Update target rotation, which _syncCamera will smoothly lerp towards
+        this._targetCameraYaw -= dx * sensitivity;
+        this._targetCameraPitch -= dy * sensitivity * 0.6;
 
         // Clamp pitch: allow from below-horizontal to nearly top-down
-        this._cameraPitch = Utils.clamp(this._cameraPitch, -0.5, 1.4);
+        this._targetCameraPitch = Utils.clamp(this._targetCameraPitch, -0.5, 1.4);
 
         this._lastMouseX = e.clientX;
         this._lastMouseY = e.clientY;
@@ -379,10 +509,18 @@ const Player = {
         // --- Input -> target velocity ---
         let inputX = 0;
         let inputZ = 0;
+
+        // Keyboard input
         if (this._keys['KeyW']) { inputX += forward.x; inputZ += forward.z; }
         if (this._keys['KeyS']) { inputX -= forward.x; inputZ -= forward.z; }
         if (this._keys['KeyA']) { inputX -= right.x; inputZ -= right.z; }
         if (this._keys['KeyD']) { inputX += right.x; inputZ += right.z; }
+
+        // Mobile joystick input
+        if (this._isMobile) {
+            inputX += forward.x * -this._joystickInput.y + right.x * this._joystickInput.x;
+            inputZ += forward.z * -this._joystickInput.y + right.z * this._joystickInput.x;
+        }
 
         // Normalize diagonal movement
         const inputLen = Math.sqrt(inputX * inputX + inputZ * inputZ);
@@ -416,7 +554,7 @@ const Player = {
         }
 
         // --- Horizontal movement with smooth damping ---
-        const damping = this._isGrounded ? 10 : 3;
+        const damping = this._isGrounded ? 12 : 5;
         this.velocity.x = Utils.lerp(this.velocity.x, inputX, damping * dt);
         this.velocity.z = Utils.lerp(this.velocity.z, inputZ, damping * dt);
 
@@ -459,7 +597,7 @@ const Player = {
         this._animateAvatar(dt, isMoving);
 
         // --- Sync camera and avatar position ---
-        this._syncCamera();
+        this._syncCamera(dt);
         this._syncAvatar();
     },
 
@@ -504,22 +642,37 @@ const Player = {
         this._avatarGroup.rotation.y = this.rotation.yaw;
     },
 
-    _syncCamera() {
+    _syncCamera(dt = 0.016) {
         if (!this._camera) return;
 
-        const camX = this.position.x + Math.sin(this._cameraYaw) * this._cameraDistance * Math.cos(this._cameraPitch);
-        const camY = this.position.y + this._cameraHeightOffset + Math.sin(this._cameraPitch) * this._cameraDistance;
-        const camZ = this.position.z + Math.cos(this._cameraYaw) * this._cameraDistance * Math.cos(this._cameraPitch);
+        // Smoothen rotation angles
+        const rotLerp = Utils.clamp(this._rotationLerpSpeed * dt, 0, 1);
+        this._cameraYaw = Utils.lerp(this._cameraYaw, this._targetCameraYaw, rotLerp);
+        this._cameraPitch = Utils.lerp(this._cameraPitch, this._targetCameraPitch, rotLerp);
 
-        this._camera.position.set(camX, camY, camZ);
+        // Calculate target camera position
+        const targetCamX = this.position.x + Math.sin(this._cameraYaw) * this._cameraDistance * Math.cos(this._cameraPitch);
+        const targetCamY = this.position.y + this._cameraHeightOffset + Math.sin(this._cameraPitch) * this._cameraDistance;
+        const targetCamZ = this.position.z + Math.cos(this._cameraYaw) * this._cameraDistance * Math.cos(this._cameraPitch);
 
-        // Look at player's upper body
-        const lookTarget = new THREE.Vector3(
-            this.position.x,
-            this.position.y + 1.2,
-            this.position.z
-        );
-        this._camera.lookAt(lookTarget);
+        // Calculate target look point (upper body)
+        const targetLookX = this.position.x;
+        const targetLookY = this.position.y + 1.2;
+        const targetLookZ = this.position.z;
+
+        // Apply linear interpolation to camera position and look target
+        const posLerp = Utils.clamp(this._cameraLerpSpeed * dt, 0, 1);
+
+        this._currentCameraPos.x = Utils.lerp(this._currentCameraPos.x, targetCamX, posLerp);
+        this._currentCameraPos.y = Utils.lerp(this._currentCameraPos.y, targetCamY, posLerp);
+        this._currentCameraPos.z = Utils.lerp(this._currentCameraPos.z, targetCamZ, posLerp);
+
+        this._currentLookTarget.x = Utils.lerp(this._currentLookTarget.x, targetLookX, posLerp);
+        this._currentLookTarget.y = Utils.lerp(this._currentLookTarget.y, targetLookY, posLerp);
+        this._currentLookTarget.z = Utils.lerp(this._currentLookTarget.z, targetLookZ, posLerp);
+
+        this._camera.position.copy(this._currentCameraPos);
+        this._camera.lookAt(this._currentLookTarget);
     },
 
     // =============================================
@@ -665,11 +818,6 @@ const Player = {
         return this._isGrounded;
     },
 
-    handleResize() {
-        if (!this._camera) return;
-        this._camera.aspect = window.innerWidth / window.innerHeight;
-        this._camera.updateProjectionMatrix();
-    },
 
     /**
      * Respawn the player at the spawn point.

@@ -33,6 +33,7 @@ const App = (() => {
     function init() {
         console.log(`[App] ${BV.NAME} v${BV.VERSION} starting... (tab: ${_TAB_ID})`);
 
+        _registerServiceWorker();
         _initTabLock();
         UI.init();
         _setupGlobalEvents();
@@ -472,11 +473,10 @@ const App = (() => {
         const leaveBtn = document.getElementById('btn-leave-game');
         if (leaveBtn) leaveBtn.addEventListener('click', () => leaveGame());
 
-        const hudLeave = document.getElementById('hud-leave');
-        if (hudLeave) hudLeave.addEventListener('click', () => leaveGame());
 
-        const cornerLeaveBtn = document.getElementById('btn-leave-game-corner');
-        if (cornerLeaveBtn) cornerLeaveBtn.addEventListener('click', () => leaveGame());
+        const hudMenu = document.getElementById('hud-menu');
+        if (hudMenu) hudMenu.addEventListener('click', () => toggleGameMenu());
+
 
         const togglePlayersBtn = document.getElementById('btn-toggle-players');
         if (togglePlayersBtn) togglePlayersBtn.addEventListener('click', () => _togglePlayerList());
@@ -697,6 +697,16 @@ const App = (() => {
     function _broadcastToTab(tabId, msg) {
         msg.targetTabId = tabId;
         _broadcastToAll(msg);
+    }
+
+    function _registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('[App] ServiceWorker registered:', reg.scope))
+                    .catch(err => console.log('[App] ServiceWorker registration failed:', err));
+            });
+        }
     }
 
     if (document.readyState === 'loading') {
