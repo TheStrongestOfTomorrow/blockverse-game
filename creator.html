@@ -577,15 +577,18 @@
                 const sun = new THREE.DirectionalLight(0xfff0d0, 1.0);
                 sun.position.set(50, 80, 30);
                 sun.castShadow = true;
-                sun.shadow.mapSize.width = 1024;
-                sun.shadow.mapSize.height = 1024;
+                sun.shadow.mapSize.width = 2048; // Higher resolution
+                sun.shadow.mapSize.height = 2048;
                 sun.shadow.camera.near = 0.5;
-                sun.shadow.camera.far = 60;
-                sun.shadow.camera.left = -25;
-                sun.shadow.camera.right = 25;
-                sun.shadow.camera.top = 25;
-                sun.shadow.camera.bottom = -25;
+                sun.shadow.camera.far = 150;     // Increased for better coverage
+                sun.shadow.camera.left = -40;    // Wider frustum
+                sun.shadow.camera.right = 40;
+                sun.shadow.camera.top = 40;
+                sun.shadow.camera.bottom = -40;
+                sun.shadow.bias = -0.0005;       // Reduce shadow acne
                 this.scene.add(sun);
+                this.scene.add(sun.target);
+                this.sun = sun; // Store for updates
 
                 const fill = new THREE.DirectionalLight(0xc0d0ff, 0.15);
                 fill.position.set(-30, 40, -20);
@@ -2112,6 +2115,10 @@ Events.on("gameStart", async function() {
                 // Update play mode (first-person player movement)
                 this._updatePlayMode(clampedDelta);
 
+                if (typeof BlockRenderer !== 'undefined' && typeof World !== 'undefined' && this.camera) {
+                    BlockRenderer.updateFrustumCulling(this.camera, World.blockMap);
+                }
+
                 // Update highlight pulse (only in editor mode)
                 if (!this._isPlayMode && this._highlightMesh && this._highlightMesh.visible) {
                     const pulse = 0.5 + 0.3 * Math.sin(performance.now() * 0.006);
@@ -2120,6 +2127,14 @@ Events.on("gameStart", async function() {
 
                 // Update scripting engine (tweens)
                 ScriptEngine.update();
+
+                // Update sun to follow orbit target (Studio Mode) or Player (Play Mode)
+                if (this.sun) {
+                    const target = this._isPlayMode ? this._player.position : this._orbit.target;
+                    this.sun.position.set(target.x + 50, target.y + 80, target.z + 30);
+                    this.sun.target.position.copy(target);
+                    this.sun.target.updateMatrixWorld();
+                }
 
                 // Render
                 this.renderer.render(this.scene, this.camera);

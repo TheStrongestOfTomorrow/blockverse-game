@@ -20,6 +20,13 @@ const BlockRenderer = (() => {
     let _tempMatrix = null;
     let _raycastResult = { x: 0, y: 0, z: 0, nx: 0, ny: 0, nz: 0, distance: 0 };
 
+    // Culling state
+    let _frustum = new THREE.Frustum();
+    let _projScreenMatrix = new THREE.Matrix4();
+    let _bbox = new THREE.Box3();
+    let _lastCullingPos = new THREE.Vector3();
+    let _lastCullingQuat = new THREE.Quaternion();
+
     // =============================================
     // INITIALIZATION
     // =============================================
@@ -40,7 +47,7 @@ const BlockRenderer = (() => {
             const mesh = new THREE.InstancedMesh(_geo, mat, MAX_INSTANCES);
             mesh.name = 'blocks_' + type;
             // Shadow optimization: transparent blocks don't cast meaningful shadows
-            mesh.castShadow = !config.transparent;
+            mesh.castShadow = config.castShadow !== undefined ? config.castShadow : !config.transparent;
             mesh.receiveShadow = true;
             mesh.frustumCulled = false; // Don't cull — we manage visibility ourselves
 
@@ -314,6 +321,66 @@ const BlockRenderer = (() => {
      * Rebuild visibility for all blocks using occlusion culling.
      * Batch process: clears all and re-adds only visible blocks.
      */
+    /**
+     * Advanced Frustum Culling: Hides blocks outside the camera frustum.
+     * Throttled to only run on significant camera changes.
+     */
+    function updateFrustumCulling(camera, blockMap) {
+        if (!camera || !blockMap) return;
+
+        // Throttle: only update if camera moved > 0.5 units or rotated > 5 degrees
+        const distSq = camera.position.distanceToSquared(_lastCullingPos);
+        const angle = camera.quaternion.angleTo(_lastCullingQuat);
+
+        if (distSq < 0.25 && angle < 0.1) return;
+
+        _lastCullingPos.copy(camera.position);
+        _lastCullingQuat.copy(camera.quaternion);
+
+        _projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        _frustum.setFromProjectionMatrix(_projScreenMatrix);
+
+        for (const type in _instances) {
+            const inst = _instances[type];
+            if (inst.count === 0) continue;
+
+            const arr = inst.mesh.instanceMatrix.array;
+            let changed = false;
+
+            for (let i = 0; i < inst.count; i++) {
+                const key = inst.data[i];
+                // Decode key: ((x + 64) << 16) | ((y & 0xFF) << 8) | (z + 64)
+                const x = ((key >> 16) & 0xFF) - 64;
+                const y = (key >> 8) & 0xFF;
+                const z = (key & 0xFF) - 64;
+
+                _bbox.min.set(x, y, z);
+                _bbox.max.set(x + 1, y + 1, z + 1);
+
+                const visible = _frustum.intersectsBox(_bbox);
+                const idx = i * 16;
+
+                // We use the first element of the matrix as a visibility flag (scale 0 vs scale 1)
+                const isCurrentlyVisible = arr[idx] !== 0;
+
+                if (visible && !isCurrentlyVisible) {
+                    // Restore position
+                    _tempMatrix.makeTranslation(x + 0.5, y + 0.5, z + 0.5);
+                    _tempMatrix.toArray(arr, idx);
+                    changed = true;
+                } else if (!visible && isCurrentlyVisible) {
+                    // Hide by zeroing the matrix
+                    for (let j = 0; j < 16; j++) arr[idx + j] = 0;
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                inst.mesh.instanceMatrix.needsUpdate = true;
+            }
+        }
+    }
+
     function rebuildVisibility(blockMap) {
         if (!blockMap) return;
 
@@ -479,6 +546,7 @@ const BlockRenderer = (() => {
         dispose,
         getStats,
         rebuildVisibility,
+        updateFrustumCulling,
         // Expose _instances for World.generateTerrain matrix flush
         get _instances() { return _instances; },
     };
