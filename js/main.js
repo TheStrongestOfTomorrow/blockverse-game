@@ -62,6 +62,9 @@ const App = (() => {
             _lastTime = now;
 
             if (typeof World !== 'undefined') World.update(dt);
+            if (typeof BlockRenderer !== 'undefined' && typeof World !== 'undefined' && Player && Player.camera) {
+                BlockRenderer.updateFrustumCulling(Player.camera, World.blockMap);
+            }
             if (typeof Player !== 'undefined' && Player.camera) Player.update(dt, World.blockMap);
             if (typeof Tools !== 'undefined' && Player && Player.camera) {
                 // Cursor-based highlight: follows mouse position, not screen center

@@ -50,7 +50,7 @@ const BV = {
     // Block Types
     BLOCK_TYPES: {
         grass:   { name: 'Grass',   color: '#4CAF50', topColor: '#66BB6A', sideColor: '#795548', bottomColor: '#795548' },
-        stone:   { name: 'Stone',   color: '#9E9E9E' },
+        stone:   { name: 'Stone',   color: '#9E9E9E', castShadow: true },
         dirt:    { name: 'Dirt',    color: '#795548' },
         wood:    { name: 'Wood',    color: '#8D6E63' },
         brick:   { name: 'Brick',   color: '#E74C3C' },
@@ -66,10 +66,11 @@ const BV = {
         leaf:    { name: 'Leaves',  color: '#2E7D32', transparent: true, opacity: 0.8 },
         plank:   { name: 'Planks',  color: '#D7CCC8' },
         cobble:  { name: 'Cobble',  color: '#757575' },
+        iron:    { name: 'Iron',    color: '#BDBDBD', castShadow: true },
     },
 
     // Default Toolbar
-    DEFAULT_TOOLBAR: ['grass', 'stone', 'dirt', 'wood', 'brick', 'sand', 'plank', 'cobble', 'glass'],
+    DEFAULT_TOOLBAR: ['grass', 'stone', 'dirt', 'wood', 'brick', 'sand', 'plank', 'cobble', 'glass', 'iron'],
 
     // Avatar Part Types
     AVATAR_PARTS: {
