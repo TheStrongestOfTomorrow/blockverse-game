@@ -228,10 +228,19 @@ const Tools = {
     _performPrimaryAction() {
         if (typeof World === 'undefined' || !World.camera) return;
 
-        // Tool Restrictions: Only allow building/deleting in sandbox games
+        // Tool Restrictions: Disable building/deleting in competitive modes
+        const competitiveTemplates = ['arena', 'obby', 'racing', 'parkour'];
+        const isCompetitiveTemplate = competitiveTemplates.includes(World.template);
+        const amIHost = (typeof Multiplayer !== 'undefined') ? Multiplayer.getAmIHost() : true;
+
+        if (isCompetitiveTemplate && !amIHost) {
+            Utils.showToast('Building is disabled in this game mode.', 'info');
+            return;
+        }
+
+        // Legacy check for backward compatibility with sandbox codes
         if (typeof Multiplayer !== 'undefined' && Multiplayer.gameCode) {
             const isSandbox = Multiplayer.gameCode.includes('BLDW') || Multiplayer.gameCode.includes('SPDB') || Multiplayer.gameCode.includes('SAND');
-            const amIHost = Multiplayer.getAmIHost();
 
             // Non-hosts can't modify non-sandbox games
             if (!isSandbox && !amIHost) {

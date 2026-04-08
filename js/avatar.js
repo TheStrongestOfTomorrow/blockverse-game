@@ -384,12 +384,12 @@ const Avatar = (() => {
      * @returns {string}
      */
     function getAvatarHTML(username, size = 'medium') {
-        const sizeMap = { small: 32, medium: 48, large: 64 };
+        const sizeMap = { small: 32, medium: 48, large: 64, xlarge: 120 };
         const px = sizeMap[size] || 48;
         const userData = Auth.getUserData(username);
         const color = (userData && userData.avatar) ? userData.avatar.bodyColor : '#607D8B';
         const letter = (username || '?')[0].toUpperCase();
-        return `<div class="avatar-circle avatar-${size}" style="width:${px}px;height:${px}px;background:${color};display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:700;font-size:${px * 0.42}px;text-shadow:0 1px 2px rgba(0,0,0,0.4);">${letter}</div>`;
+        return `<div class="avatar-circle avatar-${size}" style="width:${px}px;height:${px}px;background:${color};display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:700;font-size:${px * 0.42}px;text-shadow:0 1px 2px rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.1);">${letter}</div>`;
     }
 
     // ========================================

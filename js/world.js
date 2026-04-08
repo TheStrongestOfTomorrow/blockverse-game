@@ -22,6 +22,7 @@ const World = {
     _animClock: null,
 
     playerGroup: null,
+    template: 'flat',
 
     // =============================================
     // INITIALIZATION
@@ -227,6 +228,7 @@ const World = {
 
     generateTerrain(template) {
         this.clearAll();
+        this.template = template;
 
         switch (template) {
             case 'empty': this._generateEmpty(); break;

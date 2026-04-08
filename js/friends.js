@@ -187,6 +187,79 @@ const Friends = (() => {
     }
 
     /**
+     * Search for players by username and render results.
+     * Simulated search: shows users from existing friends, pending, and other players.
+     * @param {string} query
+     */
+    function searchPlayers(query) {
+        const resultsContainer = document.getElementById('player-search-results');
+        const friendsListContainer = document.getElementById('friends-list');
+        if (!resultsContainer) return;
+
+        if (!query) {
+            resultsContainer.classList.add('hidden');
+            friendsListContainer.classList.remove('hidden');
+            return;
+        }
+
+        resultsContainer.classList.remove('hidden');
+        friendsListContainer.classList.add('hidden');
+        resultsContainer.innerHTML = '<div style="padding:1rem;text-align:center">Searching...</div>';
+
+        // In a real app, this would be an API call.
+        // For this demo, we search through current friends and provide a "discovery" feel.
+        // We simulate finding a few users that aren't friends.
+        setTimeout(() => {
+            const potentialUsers = [
+                'Robloxian', 'BuilderBoy', 'SkyDancer', 'BlockMaster',
+                'ShadowWalker', 'NeonCoder', 'LavaJump', 'GoldenGamer'
+            ];
+
+            const results = potentialUsers.filter(u => u.toLowerCase().includes(query.toLowerCase()));
+
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--text-muted)">No players found matching "' + query + '"</div>';
+                return;
+            }
+
+            resultsContainer.innerHTML = '<h4>Search Results</h4>';
+            results.forEach(username => {
+                const isFriend = friendsList.includes(username);
+                const isPending = pendingSent.includes(username);
+
+                const item = document.createElement('div');
+                item.className = 'friend-item';
+                item.innerHTML = `
+                    <div class="friend-avatar">${Avatar.getAvatarHTML(username, 'small')}</div>
+                    <div class="friend-info">
+                        <div class="friend-name">${username}</div>
+                        <div class="friend-status-text">${isFriend ? 'Friend' : (isPending ? 'Request Sent' : 'Player')}</div>
+                    </div>
+                    <div class="friend-actions">
+                        ${isFriend ? '' :
+                          (isPending ? '<button class="btn btn-sm btn-ghost" disabled>Pending</button>' :
+                          `<button class="btn btn-sm btn-primary search-add-btn" data-username="${username}">Add Friend</button>`)
+                        }
+                    </div>
+                `;
+                resultsContainer.appendChild(item);
+            });
+
+            resultsContainer.querySelectorAll('.search-add-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const u = btn.dataset.username;
+                    const res = addFriend(u);
+                    if (res.success) {
+                        btn.textContent = 'Pending';
+                        btn.disabled = true;
+                        btn.classList.replace('btn-primary', 'btn-ghost');
+                    }
+                };
+            });
+        }, 300);
+    }
+
+    /**
      * Check online status for every friend via PeerJS identity peers.
      * Applies a cooldown to prevent hammering.
      */
@@ -695,6 +768,15 @@ const Friends = (() => {
     }
 
     function _setupUIHandlers() {
+        // Player search input
+        const searchInput = document.getElementById('friend-search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                searchPlayers(query);
+            });
+        }
+
         // Refresh join friends
         const refreshJoinBtn = document.getElementById('btn-refresh-join');
         if (refreshJoinBtn) {
