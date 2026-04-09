@@ -223,29 +223,122 @@ const Lobby = (() => {
 
         document.getElementById('gd-name').textContent = game.name;
         document.getElementById('gd-desc').textContent = game.description;
-        document.getElementById('gd-category').textContent = game.category.toUpperCase();
-        document.getElementById('gd-players').textContent = game.players || 0;
+        const catEl = document.getElementById('gd-category');
+        if (catEl) catEl.textContent = (game.category || 'sandbox').toUpperCase();
+        const playersEl = document.getElementById('gd-players');
+        if (playersEl) playersEl.textContent = game.players || 0;
 
         const thumb = document.getElementById('gd-thumb');
         const heroIcon = document.getElementById('gd-hero-icon');
         if (heroIcon) heroIcon.textContent = game.icon || '🎮';
-        thumb.style.background = game.color || 'var(--primary)';
+        if (thumb) thumb.style.background = game.color || 'var(--primary)';
 
         const playBtn = document.getElementById('gd-btn-play');
-        playBtn.onclick = () => {
-            modal.classList.add('hidden');
-            joinGameByCode(game.code);
-        };
+        if (playBtn) {
+            playBtn.onclick = () => {
+                modal.classList.add('hidden');
+                joinGameByCode(game.code);
+            };
+        }
 
         const refreshBtn = document.getElementById('gd-refresh-servers');
         if (refreshBtn) {
             refreshBtn.onclick = () => _renderGameDetailServers(game.code);
         }
 
-        // Load servers for this game
-        _renderGameDetailServers(game.code);
+        // Ratings system
+        const likeBtn = modal.querySelector('.btn-rate[title="Like"]');
+        const dislikeBtn = modal.querySelector('.btn-rate[title="Dislike"]');
+        const favoriteBtn = modal.querySelector('.btn-rate[title="Favorite"]');
 
+                const updateRatingUI = () => {
+            const current = _getRatings(game.code);
+            if (likeBtn) likeBtn.textContent = `👍 ${current.likes}`;
+            if (dislikeBtn) dislikeBtn.textContent = `👎 ${current.dislikes}`;
+
+            // Calculate ratio
+            const total = current.likes + current.dislikes;
+            const ratio = total > 0 ? Math.round((current.likes / total) * 100) : 100;
+            const ratioEl = modal.querySelector('.gd-rating-ratio');
+            if (ratioEl) {
+                ratioEl.textContent = `${ratio}% Positive`;
+                ratioEl.style.color = ratio >= 70 ? '#4CAF50' : (ratio >= 40 ? '#FF9800' : '#F44336');
+            }
+
+            const userRating = _getUserRating(game.code);
+            if (likeBtn) likeBtn.style.color = userRating === 'like' ? '#4CAF50' : '';
+            if (dislikeBtn) dislikeBtn.style.color = userRating === 'dislike' ? '#F44336' : '';
+
+            const isFav = _isFavorite(game.code);
+            if (favoriteBtn) {
+                favoriteBtn.textContent = isFav ? '⭐' : '☆';
+                favoriteBtn.style.color = isFav ? '#FFD700' : '';
+            }
+        };
+
+        if (likeBtn) likeBtn.onclick = (e) => { e.stopPropagation(); _toggleRating(game.code, 'like'); updateRatingUI(); };
+        if (dislikeBtn) dislikeBtn.onclick = (e) => { e.stopPropagation(); _toggleRating(game.code, 'dislike'); updateRatingUI(); };
+        if (favoriteBtn) favoriteBtn.onclick = (e) => { e.stopPropagation(); _toggleFavorite(game.code); updateRatingUI(); };
+
+        updateRatingUI();
+        _renderGameDetailServers(game.code);
         modal.classList.remove('hidden');
+    }
+
+    function _getRatings(code) {
+        try {
+            const allRatings = JSON.parse(localStorage.getItem('bv_game_ratings') || '{}');
+            if (allRatings[code]) return allRatings[code];
+            const likes = Math.floor(Math.random() * 500) + 100;
+            const dislikes = Math.floor(Math.random() * 50);
+            return { likes, dislikes };
+        } catch { return { likes: 0, dislikes: 0 }; }
+    }
+
+    function _getUserRating(code) {
+        try {
+            const userRatings = JSON.parse(localStorage.getItem('bv_user_ratings') || '{}');
+            return userRatings[code];
+        } catch { return null; }
+    }
+
+    function _toggleRating(code, type) {
+        try {
+            const userRatings = JSON.parse(localStorage.getItem('bv_user_ratings') || '{}');
+            const allRatings = JSON.parse(localStorage.getItem('bv_game_ratings') || '{}');
+            if (!allRatings[code]) allRatings[code] = _getRatings(code);
+
+            const current = userRatings[code];
+            if (current === type) {
+                delete userRatings[code];
+                allRatings[code][type === 'like' ? 'likes' : 'dislikes']--;
+            } else {
+                if (current) allRatings[code][current === 'like' ? 'likes' : 'dislikes']--;
+                userRatings[code] = type;
+                allRatings[code][type === 'like' ? 'likes' : 'dislikes']++;
+            }
+            localStorage.setItem('bv_user_ratings', JSON.stringify(userRatings));
+            localStorage.setItem('bv_game_ratings', JSON.stringify(allRatings));
+        } catch (e) {}
+    }
+
+    function _isFavorite(code) {
+        try {
+            const favorites = JSON.parse(localStorage.getItem('bv_user_favorites') || '[]');
+            return favorites.includes(code);
+        } catch { return false; }
+    }
+
+    function _toggleFavorite(code) {
+        try {
+            let favorites = JSON.parse(localStorage.getItem('bv_user_favorites') || '[]');
+            if (favorites.includes(code)) {
+                favorites = favorites.filter(c => c !== code);
+            } else {
+                favorites.push(code);
+            }
+            localStorage.setItem('bv_user_favorites', JSON.stringify(favorites));
+        } catch (e) {}
     }
 
     async function _renderGameDetailServers(gameCode) {
@@ -498,6 +591,66 @@ const Lobby = (() => {
                 'SAMPLE-VLG': 'village',
                 'SAMPLE-ARNA': 'arena',
             };
+            const template = templates[code] || 'flat';
+
+            const allGames = [...FEATURED_GAMES, ..._getUserGames()];
+            const gameConfig = allGames.find(g => g.code === code) || {};
+
+            setTimeout(() => {
+                if (typeof UI !== 'undefined') UI.updateLoadingBar(30, 'Generating world...');
+
+                // Init World and generate terrain
+                if (typeof World !== 'undefined') {
+                    if (!World.scene) World.init();
+                    World.generateTerrain(template);
+                }
+
+                setTimeout(() => {
+                    if (typeof UI !== 'undefined') {
+                        UI.updateLoadingBar(100, 'Done!');
+                        setTimeout(() => {
+                            UI.hideLoading();
+                            if (typeof App !== 'undefined') App.enterGame();
+                            Utils.showToast(`Playing ${gameConfig.name || code}`, 'success');
+                        }, 200);
+                    }
+                }, 400);
+            }, 200);
+            return;
+        }
+
+        // Normal multiplayer join for user-created games
+        if (typeof UI !== 'undefined') UI.showLoading(`Joining ${code}...`);
+
+        // Check if input is already a server ID (e.g. BV-XXXX-S1)
+        const hostPeerId = code.includes('-S') ? code : `${code}-S1`;
+
+        if (typeof Multiplayer !== 'undefined') {
+            Multiplayer.joinGame(hostPeerId).then(() => {
+                if (typeof UI !== 'undefined') UI.updateLoadingBar(100, 'Connected!');
+                setTimeout(() => {
+                    if (typeof UI !== 'undefined') {
+                        UI.hideLoading();
+                        if (typeof App !== 'undefined') App.enterGame();
+                    }
+                }, 400);
+            }).catch(() => {
+                console.warn('[Lobby] Multiplayer join failed, trying solo');
+                // Solo fallback - just load with flat terrain
+                if (typeof World !== 'undefined') {
+                    if (!World.scene) World.init();
+                    World.generateTerrain('flat');
+                }
+                if (typeof UI !== 'undefined') {
+                    UI.updateLoadingBar(100, 'Solo mode');
+                    setTimeout(() => {
+                        UI.hideLoading();
+                        if (typeof App !== 'undefined') App.enterGame();
+                    }, 400);
+                }
+            });
+        }
+    };
             const template = templates[code] || 'flat';
 
             const allGames = [...FEATURED_GAMES, ..._getUserGames()];

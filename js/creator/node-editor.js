@@ -8,11 +8,12 @@ const NodeEditor = {
     // ── State ──────────────────────────────────────────────────────────────
     _blocks: [],
     _connections: [],
-    _selectedBlock: null,
+    _selectedBlocks: new Set(),
     _dragOffset: { x: 0, y: 0 },
     _isDragging: false,
     _dragSource: null,          // 'workspace' | 'palette'
-    _dragGhost: null,           // Ghost element during palette drag
+    _dragGhost: null,
+    _draggedBlocks: [],           // Ghost element during palette drag
     _palette: null,
     _customBlocks: {},
     _variables: {},
@@ -26,7 +27,7 @@ const NodeEditor = {
     _blockIdCounter: 0,
     _zoom: 1,
     _scrollOffset: { x: 0, y: 0 },
-    _activeCategory: 'events',
+    _activeCategory: 'all',
     _snapThreshold: 20,
     _trashZone: null,
     _isOverTrash: false,
@@ -35,6 +36,7 @@ const NodeEditor = {
 
     // ── Block Category Definitions ─────────────────────────────────────────
     CATEGORIES: {
+        all:       { label: 'All',       color: '#ffffff', bg: '#1e1e38', icon: '🔍' },
         events:    { label: 'Events',    color: '#4CAF50', bg: '#1a3d1a', icon: '⚡' },
         motion:    { label: 'Motion',    color: '#2196F3', bg: '#1a1a4a', icon: '🏃' },
         blocks:    { label: 'Blocks',    color: '#8D6E63', bg: '#3e2a22', icon: '🧱' },
@@ -190,44 +192,44 @@ const NodeEditor = {
             height: 100%;
             display: flex;
             flex-direction: column;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
             font-size: 13px;
             color: #e0e0e0;
             overflow: hidden;
-            background: #0d0d1a;
+            background: #1e1e1e; /* Roblox Dark Theme */
         }
 
         .ne-toolbar {
             display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 6px 12px;
-            background: #16162b;
-            border-bottom: 1px solid #2a2a44;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #2b2b2b;
+            border-bottom: 1px solid #3f3f3f;
             flex-shrink: 0;
             z-index: 100;
-            overflow-x: auto;
         }
         .ne-toolbar-btn {
-            padding: 4px 10px;
-            background: #1e1e38;
-            border: 1px solid #3a3a5c;
-            border-radius: 6px;
+            padding: 5px 12px;
+            background: #3f3f3f;
+            border: 1px solid #555;
+            border-radius: 3px;
             color: #ccc;
             font-size: 12px;
             cursor: pointer;
             white-space: nowrap;
-            transition: background 0.15s, color 0.15s;
+            transition: all 0.15s;
         }
         .ne-toolbar-btn:hover {
-            background: #2a2a50;
+            background: #4f4f4f;
             color: #fff;
+            border-color: #0e639c;
         }
         .ne-toolbar-sep {
             width: 1px;
             height: 20px;
-            background: #3a3a5c;
-            margin: 0 4px;
+            background: #3f3f3f;
+            margin: 0 6px;
         }
 
         .ne-body {
@@ -238,77 +240,84 @@ const NodeEditor = {
 
         /* ── Palette ──────────────────────────────────────────────── */
         .ne-palette {
-            width: 220px;
+            width: 240px;
             flex-shrink: 0;
-            background: #12122a;
-            border-right: 1px solid #2a2a44;
+            background: #2b2b2b;
+            border-right: 1px solid #3f3f3f;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
         .ne-palette-search {
-            padding: 8px;
-            border-bottom: 1px solid #2a2a44;
+            padding: 12px;
+            background: #242424;
+            border-bottom: 1px solid #3f3f3f;
         }
         .ne-palette-search input {
             width: 100%;
             box-sizing: border-box;
-            padding: 5px 8px;
-            background: #1a1a36;
-            border: 1px solid #3a3a5c;
-            border-radius: 6px;
+            padding: 6px 10px;
+            background: #3f3f3f;
+            border: 1px solid #555;
+            border-radius: 3px;
             color: #e0e0e0;
             font-size: 12px;
             outline: none;
         }
         .ne-palette-search input:focus {
-            border-color: #6a6aac;
+            border-color: #0e639c;
+            box-shadow: 0 0 0 2px rgba(14, 99, 156, 0.2);
         }
         .ne-palette-categories {
             display: flex;
             flex-wrap: wrap;
-            gap: 3px;
-            padding: 6px 8px;
-            border-bottom: 1px solid #2a2a44;
+            gap: 4px;
+            padding: 8px 12px;
+            border-bottom: 1px solid #3f3f3f;
+            background: #2b2b2b;
         }
         .ne-cat-btn {
-            padding: 3px 8px;
-            border: 1px solid transparent;
-            border-radius: 12px;
+            padding: 4px 10px;
+            border: 1px solid #3f3f3f;
+            border-radius: 14px;
             font-size: 11px;
             cursor: pointer;
-            background: #1e1e38;
+            background: #1f1f1f;
             color: #aaa;
             transition: all 0.15s;
         }
         .ne-cat-btn:hover, .ne-cat-btn.active {
             color: #fff;
             border-color: currentColor;
+            background: rgba(255, 255, 255, 0.05);
         }
         .ne-palette-blocks {
             flex: 1;
             overflow-y: auto;
-            padding: 8px;
+            padding: 12px;
+            background: #2b2b2b;
         }
-        .ne-palette-blocks::-webkit-scrollbar { width: 6px; }
-        .ne-palette-blocks::-webkit-scrollbar-track { background: transparent; }
-        .ne-palette-blocks::-webkit-scrollbar-thumb { background: #3a3a5c; border-radius: 3px; }
+        .ne-palette-blocks::-webkit-scrollbar { width: 8px; }
+        .ne-palette-blocks::-webkit-scrollbar-track { background: #2b2b2b; }
+        .ne-palette-blocks::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
 
         .ne-palette-item {
-            padding: 6px 10px;
-            margin-bottom: 4px;
-            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            border-radius: 4px;
             cursor: grab;
             font-size: 12px;
             display: flex;
             align-items: center;
-            gap: 6px;
-            transition: transform 0.1s, box-shadow 0.1s;
+            gap: 8px;
+            transition: all 0.15s;
             border-left: 4px solid;
             user-select: none;
+            background: #1f1f1f;
         }
         .ne-palette-item:hover {
             transform: translateX(2px);
+            background: #333;
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
@@ -317,6 +326,7 @@ const NodeEditor = {
             flex: 1;
             position: relative;
             overflow: hidden;
+            background: #1e1e1e;
         }
         .ne-workspace {
             position: absolute;
@@ -331,26 +341,26 @@ const NodeEditor = {
             width: 100%;
             height: 100%;
             background-image:
-                radial-gradient(circle, #2a2a44 1px, transparent 1px);
-            background-size: 24px 24px;
+                linear-gradient(to right, #2a2a2a 1px, transparent 1px),
+                linear-gradient(to bottom, #2a2a2a 1px, transparent 1px);
+            background-size: 40px 40px;
             pointer-events: none;
-            opacity: 0.5;
         }
 
         .ne-trash-zone {
             position: absolute;
-            bottom: 12px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 8px 20px;
+            padding: 10px 24px;
             background: rgba(180, 40, 40, 0.15);
             border: 2px dashed #b42828;
-            border-radius: 10px;
+            border-radius: 4px;
             color: #ff6b6b;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             opacity: 0;
-            transition: opacity 0.2s, background 0.2s;
+            transition: all 0.2s;
             pointer-events: none;
             z-index: 200;
         }
@@ -358,9 +368,9 @@ const NodeEditor = {
             opacity: 1;
         }
         .ne-trash-zone.hover {
-            opacity: 1;
             background: rgba(180, 40, 40, 0.35);
             transform: translateX(-50%) scale(1.05);
+            border-style: solid;
         }
 
         /* ── Block ────────────────────────────────────────────────── */
@@ -368,253 +378,126 @@ const NodeEditor = {
             position: absolute;
             min-width: 180px;
             max-width: 420px;
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 10px 14px;
+            border-radius: 4px;
             cursor: grab;
             user-select: none;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
             font-size: 13px;
             display: flex;
             align-items: center;
             flex-wrap: wrap;
-            gap: 6px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-            transition: transform 0.1s, box-shadow 0.15s;
-            border-left: 4px solid;
+            gap: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            transition: box-shadow 0.15s;
+            border-left: 5px solid;
             z-index: 10;
         }
-        .ne-block:hover {
-            transform: scale(1.02);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            z-index: 20;
-        }
         .ne-block.selected {
-            outline: 2px solid #fff;
-            outline-offset: 1px;
+            outline: 2px solid #0e639c;
+            outline-offset: 2px;
             z-index: 30;
         }
         .ne-block.dragging {
             cursor: grabbing;
-            opacity: 0.85;
+            opacity: 0.8;
             z-index: 1000;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.7);
         }
 
-        /* Notch & bump */
-        .ne-block-hat::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40px;
-            height: 10px;
-            background: inherit;
-            border-radius: 10px 10px 0 0;
-            border-left: inherit;
-            border-right: none;
-        }
-        .ne-block::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 16px;
-            height: 8px;
-            background: inherit;
-            border-radius: 0 0 8px 8px;
-        }
-        .ne-block.no-notch::after { display: none; }
-
-        /* Category colors */
-        .ne-block.cat-events    { background: #1a3d1a; border-left-color: #4CAF50; color: #a5d6a7; }
-        .ne-block.cat-motion    { background: #1a1a4a; border-left-color: #2196F3; color: #90caf9; }
-        .ne-block.cat-blocks    { background: #3e2a22; border-left-color: #8D6E63; color: #bcaaa4; }
-        .ne-block.cat-control   { background: #4a3210; border-left-color: #FF9800; color: #ffcc80; }
-        .ne-block.cat-looks     { background: #3a1a44; border-left-color: #9C27B0; color: #ce93d8; }
-        .ne-block.cat-sound     { background: #4a1028; border-left-color: #E91E63; color: #f48fb1; }
-        .ne-block.cat-variables { background: #4a1a1a; border-left-color: #F44336; color: #ef9a9a; }
-        .ne-block.cat-custom    { background: #0a3a36; border-left-color: #009688; color: #80cbc4; }
+        /* Category colors - Roblox Studio Palette */
+        .ne-block.cat-events    { background: #1a3d1a; border-left-color: #4CAF50; color: #fff; }
+        .ne-block.cat-motion    { background: #1a1a4a; border-left-color: #2196F3; color: #fff; }
+        .ne-block.cat-blocks    { background: #3e2a22; border-left-color: #8D6E63; color: #fff; }
+        .ne-block.cat-control   { background: #4a3210; border-left-color: #FF9800; color: #fff; }
+        .ne-block.cat-looks     { background: #3a1a44; border-left-color: #9C27B0; color: #fff; }
+        .ne-block.cat-sound     { background: #4a1028; border-left-color: #E91E63; color: #fff; }
+        .ne-block.cat-variables { background: #4a1a1a; border-left-color: #F44336; color: #fff; }
+        .ne-block.cat-custom    { background: #0a3a36; border-left-color: #009688; color: #fff; }
 
         /* Block inputs */
-        .ne-block-label {
-            white-space: nowrap;
-            font-weight: 500;
-        }
         .ne-block-input {
-            background: rgba(0,0,0,0.35);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 4px;
-            padding: 2px 6px;
+            background: #3f3f3f;
+            border: 1px solid #555;
+            border-radius: 3px;
+            padding: 3px 8px;
             color: #fff;
             font-size: 12px;
-            font-family: 'Consolas', 'Courier New', monospace;
+            font-family: monospace;
             outline: none;
-            min-width: 36px;
-            transition: border-color 0.15s;
+            min-width: 40px;
         }
         .ne-block-input:focus {
-            border-color: rgba(255,255,255,0.4);
+            border-color: #0e639c;
         }
-        .ne-block-input.wide { min-width: 80px; }
         .ne-block-select {
-            background: rgba(0,0,0,0.35);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 4px;
-            padding: 2px 4px;
+            background: #3f3f3f;
+            border: 1px solid #555;
+            border-radius: 3px;
+            padding: 3px 6px;
             color: #fff;
             font-size: 12px;
             outline: none;
             cursor: pointer;
-        }
-        .ne-block-color-input {
-            width: 28px;
-            height: 22px;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 4px;
-            cursor: pointer;
-            background: transparent;
-            padding: 0;
-        }
-        .ne-block-static {
-            color: #888;
-            font-size: 12px;
-            font-style: italic;
-        }
-
-        /* Delete button */
-        .ne-block-delete {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 20px;
-            height: 20px;
-            background: #d32f2f;
-            border: 2px solid #0d0d1a;
-            border-radius: 50%;
-            color: #fff;
-            font-size: 11px;
-            line-height: 16px;
-            text-align: center;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.15s;
-            z-index: 50;
-        }
-        .ne-block:hover .ne-block-delete {
-            opacity: 1;
-        }
-
-        /* Body wrapper (for if/repeat blocks) */
-        .ne-block-body {
-            width: calc(100% + 4px);
-            margin-left: -2px;
-            margin-top: 6px;
-            padding: 6px 4px 4px 16px;
-            border-left: 3px solid rgba(255,255,255,0.15);
-            border-radius: 0 0 6px 6px;
-            min-height: 36px;
-            position: relative;
-        }
-        .ne-block-body.ne-else-body {
-            border-top: 1px solid rgba(255,255,255,0.1);
-            margin-top: 4px;
-            padding-top: 8px;
-        }
-        .ne-block-body-label {
-            position: absolute;
-            top: -1px;
-            left: 4px;
-            font-size: 10px;
-            color: #888;
-            background: inherit;
-            padding: 0 4px;
-            line-height: 1;
         }
 
         /* ── Properties Panel ─────────────────────────────────────── */
         .ne-properties {
-            width: 240px;
+            width: 260px;
             flex-shrink: 0;
-            background: #12122a;
-            border-left: 1px solid #2a2a44;
+            background: #2b2b2b;
+            border-left: 1px solid #3f3f3f;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
         .ne-props-title {
-            padding: 10px 12px;
+            padding: 12px 16px;
             font-weight: 600;
-            font-size: 13px;
-            border-bottom: 1px solid #2a2a44;
-            color: #aaa;
+            font-size: 12px;
+            border-bottom: 1px solid #3f3f3f;
+            background: #242424;
+            color: #fff;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
         }
         .ne-props-body {
             flex: 1;
-            padding: 12px;
+            padding: 16px;
             overflow-y: auto;
         }
-        .ne-props-body::-webkit-scrollbar { width: 6px; }
-        .ne-props-body::-webkit-scrollbar-track { background: transparent; }
-        .ne-props-body::-webkit-scrollbar-thumb { background: #3a3a5c; border-radius: 3px; }
-        .ne-props-empty {
-            color: #666;
-            font-size: 12px;
-            font-style: italic;
-        }
         .ne-props-field {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         .ne-props-label {
             font-size: 11px;
-            color: #888;
-            margin-bottom: 3px;
+            color: #999;
+            margin-bottom: 4px;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
         }
-        .ne-props-value {
+        .ne-props-value, .ne-props-batch-value {
             width: 100%;
             box-sizing: border-box;
-            padding: 5px 8px;
-            background: #1a1a36;
-            border: 1px solid #3a3a5c;
-            border-radius: 6px;
+            padding: 6px 10px;
+            background: #3f3f3f;
+            border: 1px solid #555;
+            border-radius: 3px;
             color: #e0e0e0;
             font-size: 12px;
             outline: none;
-            font-family: 'Consolas', monospace;
+            font-family: monospace;
         }
-        .ne-props-value:focus {
-            border-color: #6a6aac;
+        .ne-props-value:focus, .ne-props-batch-value:focus {
+            border-color: #0e639c;
         }
-        .ne-props-category {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        /* ── Status Bar ───────────────────────────────────────────── */
         .ne-statusbar {
-            padding: 4px 12px;
-            background: #16162b;
-            border-top: 1px solid #2a2a44;
+            padding: 6px 16px;
+            background: #007acc;
+            color: #fff;
             font-size: 11px;
-            color: #666;
-            flex-shrink: 0;
+            z-index: 100;
         }
-
-        /* ── Zoom label ───────────────────────────────────────────── */
-        .ne-zoom-label {
-            font-size: 11px;
-            color: #888;
-            margin-left: auto;
-        }
-        `;
+`;
     },
 
     // ── Global Event Listeners ─────────────────────────────────────────────
@@ -642,26 +525,12 @@ const NodeEditor = {
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
-
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-                e.preventDefault();
-                if (e.shiftKey) this.redo(); else this.undo();
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-                e.preventDefault();
-                this.redo();
-            }
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                if (this._selectedBlock) {
-                    this.removeBlock(this._selectedBlock);
-                }
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-                if (this._selectedBlock) this._copyBlock(this._selectedBlock);
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-                this._pasteBlock();
-            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); if (e.shiftKey) this.redo(); else this.undo(); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); this.redo(); }
+            if (e.key === 'Delete' || e.key === 'Backspace') { if (this._selectedBlocks.size > 0) Array.from(this._selectedBlocks).forEach(id => this.removeBlock(id)); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') { e.preventDefault(); this._blocks.forEach(b => this._selectBlock(b.id, true)); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c') { if (this._selectedBlocks.size === 1) this._copyBlock(Array.from(this._selectedBlocks)[0]); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') { this._pasteBlock(); }
         });
 
         // Click workspace to deselect
@@ -676,18 +545,17 @@ const NodeEditor = {
 
     _renderPalette() {
         this._paletteEl.innerHTML = '';
-
-        // Search
         const searchDiv = document.createElement('div');
         searchDiv.className = 'ne-palette-search';
         searchDiv.innerHTML = `<input type="text" id="ne-search" placeholder="Search blocks..." value="${this._searchQuery}">`;
         this._paletteEl.appendChild(searchDiv);
-        searchDiv.querySelector('input').addEventListener('input', (e) => {
+        const searchInput = searchDiv.querySelector('input');
+        searchInput.addEventListener('input', (e) => {
             this._searchQuery = e.target.value.toLowerCase();
             this._renderPalette();
+            document.getElementById('ne-search').focus();
         });
 
-        // Category tabs
         const catDiv = document.createElement('div');
         catDiv.className = 'ne-palette-categories';
         for (const [catId, cat] of Object.entries(this.CATEGORIES)) {
@@ -695,7 +563,10 @@ const NodeEditor = {
             btn.className = 'ne-cat-btn' + (this._activeCategory === catId ? ' active' : '');
             btn.textContent = cat.icon + ' ' + cat.label;
             btn.style.color = cat.color;
-            if (this._activeCategory === catId) btn.style.borderColor = cat.color;
+            if (this._activeCategory === catId) {
+                btn.style.borderColor = cat.color;
+                btn.style.background = 'rgba(255, 255, 255, 0.05)';
+            }
             btn.addEventListener('click', () => {
                 this._activeCategory = catId;
                 this._renderPalette();
@@ -704,36 +575,54 @@ const NodeEditor = {
         }
         this._paletteEl.appendChild(catDiv);
 
-        // Block list
         const blocksDiv = document.createElement('div');
         blocksDiv.className = 'ne-palette-blocks';
 
         const filteredBlocks = Object.entries(this.BLOCK_DEFS)
             .filter(([id, def]) => {
-                const matchCategory = def.category === this._activeCategory;
+                const matchCategory = this._activeCategory === 'all' || def.category === this._activeCategory;
                 const matchSearch = !this._searchQuery ||
                     def.label.toLowerCase().includes(this._searchQuery) ||
-                    id.toLowerCase().includes(this._searchQuery);
+                    id.toLowerCase().includes(this._searchQuery) ||
+                    this.CATEGORIES[def.category].label.toLowerCase().includes(this._searchQuery);
+                if (this._searchQuery && !matchCategory) return matchSearch;
                 return matchCategory && matchSearch;
             });
 
-        // Add custom blocks to the custom category
         let customEntries = [];
-        if (this._activeCategory === 'custom') {
-            customEntries = Object.values(this._customBlocks).map(cb => ({
-                id: 'custom_' + cb.id,
-                def: {
-                    category: 'custom',
-                    label: cb.name,
-                    isHat: false,
-                    params: cb.inputs.map(inp => ({
-                        name: inp.name,
-                        type: inp.type === 'number' ? 'number' : 'text',
-                        default: inp.default || '0',
-                    })),
-                    isCustom: true,
-                    customId: cb.id,
-                },
+        if (this._activeCategory === 'all' || this._activeCategory === 'custom' || (this._searchQuery && 'custom'.includes(this._searchQuery))) {
+            customEntries = Object.values(this._customBlocks)
+                .map(cb => ({
+                    id: 'custom_' + cb.id,
+                    def: {
+                        category: 'custom', label: cb.name, isHat: false, isCustom: true, customId: cb.id,
+                        params: cb.inputs.map(inp => ({ name: inp.name, type: inp.type === 'number' ? 'number' : 'text', default: inp.default || '0' }))
+                    }
+                }))
+                .filter(item => !this._searchQuery || item.def.label.toLowerCase().includes(this._searchQuery));
+        }
+
+        const allItems = [...filteredBlocks.map(([id, def]) => ({ id, def })), ...customEntries];
+        for (const item of allItems) {
+            const cat = this.CATEGORIES[item.def.category];
+            const el = document.createElement('div');
+            el.className = 'ne-palette-item';
+            el.style.borderLeftColor = cat.color;
+            el.style.background = cat.bg;
+            el.style.color = cat.color;
+            el.textContent = (cat.icon + ' ' + item.def.label);
+            el.addEventListener('mousedown', (e) => this._startPaletteDrag(e, item.id, item.def));
+            blocksDiv.appendChild(el);
+        }
+        if (allItems.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'ne-palette-empty';
+            empty.textContent = 'No blocks found.';
+            empty.style.padding = '20px'; empty.style.textAlign = 'center'; empty.style.color = '#666';
+            blocksDiv.appendChild(empty);
+        }
+        this._paletteEl.appendChild(blocksDiv);
+    },
             }));
         }
 
@@ -814,28 +703,21 @@ const NodeEditor = {
 
     _onMouseMove(e) {
         if (!this._isDragging) return;
-
         if (this._dragSource === 'palette' && this._dragGhost) {
             this._dragGhost.style.left = (e.clientX - 90) + 'px';
             this._dragGhost.style.top = (e.clientY - 18) + 'px';
-        } else if (this._dragSource === 'workspace' && this._selectedBlock) {
+        } else if (this._dragSource === 'workspace' && this._draggedBlocks) {
             const wsRect = this._workspaceEl.getBoundingClientRect();
-            const x = (e.clientX - wsRect.left) / this._zoom + this._scrollOffset.x - this._dragOffset.x;
-            const y = (e.clientY - wsRect.top) / this._zoom + this._scrollOffset.y - this._dragOffset.y;
-
-            const block = this._getBlock(this._selectedBlock);
-            if (block) {
-                block.x = x;
-                block.y = y;
-                this._updateBlockPosition(this._selectedBlock);
+            for (const item of this._draggedBlocks) {
+                const x = (e.clientX - wsRect.left) / this._zoom + this._scrollOffset.x - item.offsetX;
+                const y = (e.clientY - wsRect.top) / this._zoom + this._scrollOffset.y - item.offsetY;
+                const block = this._getBlock(item.id);
+                if (block) { block.x = x; block.y = y; this._updateBlockPosition(item.id); }
             }
         }
-
-        // Trash zone hover detection
         if (this._trashZone) {
             const trashRect = this._trashZone.getBoundingClientRect();
-            const over = e.clientX >= trashRect.left && e.clientX <= trashRect.right &&
-                         e.clientY >= trashRect.top && e.clientY <= trashRect.bottom;
+            const over = e.clientX >= trashRect.left && e.clientX <= trashRect.right && e.clientY >= trashRect.top && e.clientY <= trashRect.bottom;
             this._trashZone.classList.toggle('hover', over);
             this._isOverTrash = over;
         }
@@ -846,48 +728,29 @@ const NodeEditor = {
     _onMouseUp(e) {
         if (!this._isDragging) return;
         this._isDragging = false;
-
-        // Clean up trash zone
-        if (this._trashZone) {
-            this._trashZone.classList.remove('visible', 'hover');
-        }
-
+        this._trashZone.classList.remove('visible', 'hover');
         if (this._dragSource === 'palette') {
-            // Remove ghost
-            if (this._dragGhost) {
-                this._dragGhost.remove();
-                this._dragGhost = null;
-            }
-
-            // Check if dropped over trash (ignore for palette items)
-            if (this._isOverTrash) {
-                this._isOverTrash = false;
-                this._dragMeta = null;
-                return;
-            }
-
-            // Check if dropped on workspace
+            if (this._dragGhost) this._dragGhost.remove();
+            this._dragGhost = null;
+            if (this._isOverTrash) return;
             const wsRect = this._workspaceEl.getBoundingClientRect();
-            if (e.clientX >= wsRect.left && e.clientX <= wsRect.right &&
-                e.clientY >= wsRect.top && e.clientY <= wsRect.bottom) {
+            if (e.clientX >= wsRect.left && e.clientX <= wsRect.right && e.clientY >= wsRect.top && e.clientY <= wsRect.bottom) {
                 const x = (e.clientX - wsRect.left) / this._zoom + this._scrollOffset.x - 90;
                 const y = (e.clientY - wsRect.top) / this._zoom + this._scrollOffset.y - 18;
-                this.addBlock(this._dragMeta.blockType, {}, x, y, this._dragMeta.blockDef);
+                this.addBlock(this._dragMeta.blockType, {}, x, y);
             }
-            this._dragMeta = null;
         } else if (this._dragSource === 'workspace') {
-            // Delete if over trash
-            if (this._isOverTrash && this._selectedBlock) {
-                this.removeBlock(this._selectedBlock);
+            if (this._isOverTrash) {
+                Array.from(this._selectedBlocks).forEach(id => this.removeBlock(id));
+            } else {
+                for (const id of this._selectedBlocks) {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('dragging');
+                    this._snapBlock(id);
+                }
             }
-            this._isOverTrash = false;
-
-            // Snap check
-            if (this._selectedBlock) {
-                this._snapBlock(this._selectedBlock);
-            }
+            this._draggedBlocks = [];
         }
-
         this._dragSource = null;
     },
 
@@ -940,7 +803,7 @@ const NodeEditor = {
         this._blocks.push(block);
         this._renderBlock(block);
         this._updateStatus();
-        this._selectBlock(block.id);
+        this._selectBlock(block.id, e.shiftKey);
         return block;
     },
 
@@ -983,9 +846,7 @@ const NodeEditor = {
         // Remove from data
         this._blocks = this._blocks.filter(b => !toRemove.has(b.id));
 
-        if (this._selectedBlock === blockId) {
-            this._selectBlock(null);
-        }
+        if (this._selectedBlocks.has(blockId)) { this._selectedBlocks.delete(blockId); if (this._selectedBlocks.size === 0) this._selectBlock(null); }
         this._updateStatus();
     },
 
@@ -1163,7 +1024,7 @@ const NodeEditor = {
         el.addEventListener('click', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
             if (e.target.classList.contains('ne-block-delete')) return;
-            this._selectBlock(block.id);
+            this._selectBlock(block.id, e.shiftKey);
         });
 
         return el;
@@ -1177,7 +1038,7 @@ const NodeEditor = {
 
         if (paramDef.type === 'number') {
             const input = document.createElement('input');
-            input.className = 'ne-block-input';
+            input.className = 'ne-block-input'; input.dataset.param = paramDef.name;
             input.type = 'number';
             input.value = value;
             input.style.width = '52px';
@@ -1191,7 +1052,7 @@ const NodeEditor = {
 
         if (paramDef.type === 'text') {
             const input = document.createElement('input');
-            input.className = 'ne-block-input wide';
+            input.className = 'ne-block-input wide'; input.dataset.param = paramDef.name;
             input.type = 'text';
             input.value = value;
             input.addEventListener('change', (e) => {
@@ -1204,7 +1065,7 @@ const NodeEditor = {
 
         if (paramDef.type === 'select') {
             const select = document.createElement('select');
-            select.className = 'ne-block-select';
+            select.className = 'ne-block-select'; select.dataset.param = paramDef.name;
             for (const opt of paramDef.options) {
                 const option = document.createElement('option');
                 option.value = opt;
@@ -1222,7 +1083,7 @@ const NodeEditor = {
 
         if (paramDef.type === 'color') {
             const input = document.createElement('input');
-            input.className = 'ne-block-color-input';
+            input.className = 'ne-block-color-input'; input.dataset.param = paramDef.name;
             input.type = 'color';
             input.value = value || '#87CEEB';
             input.addEventListener('change', (e) => {
@@ -1235,7 +1096,7 @@ const NodeEditor = {
 
         if (paramDef.type === 'condition') {
             const input = document.createElement('input');
-            input.className = 'ne-block-input wide';
+            input.className = 'ne-block-input wide'; input.dataset.param = paramDef.name;
             input.type = 'text';
             input.value = value;
             input.placeholder = 'condition...';
@@ -1249,7 +1110,7 @@ const NodeEditor = {
 
         if (paramDef.type === 'varName') {
             const select = document.createElement('select');
-            select.className = 'ne-block-select';
+            select.className = 'ne-block-select'; select.dataset.param = paramDef.name;
             const varNames = Object.keys(this._variables);
             for (const v of varNames) {
                 const option = document.createElement('option');
@@ -1292,7 +1153,7 @@ const NodeEditor = {
     _onParamChange(block, paramName, value) {
         this._pushUndo('paramChange', { blockId: block.id, paramName, oldValue: block.params[paramName], newValue: value });
         // Update properties panel if this block is selected
-        if (this._selectedBlock === block.id) {
+        if (this._selectedBlocks.has(block.id)) {
             this._renderProperties(block);
         }
     },
@@ -1335,9 +1196,9 @@ const NodeEditor = {
 
             // Drop zone: detect drop onto empty body
             bodyDiv.addEventListener('mouseup', (e) => {
-                if (this._isDragging && this._dragSource === 'workspace' && this._selectedBlock) {
+                if (this._isDragging && this._dragSource === 'workspace' && this._selectedBlocks.size === 1) {
                     // Dropped into body
-                    const dragId = this._selectedBlock;
+                    const dragId = Array.from(this._selectedBlocks)[0];
                     this._disconnectFromParents(dragId);
                     this.connectToBody(block.id, dragId, slotClass === 'ne-else-body' ? 'else' : 'main');
                     e.stopPropagation();
@@ -1375,24 +1236,19 @@ const NodeEditor = {
     _startWorkspaceDrag(e, blockId) {
         this._dragSource = 'workspace';
         this._isDragging = true;
-        this._selectBlock(blockId);
-
-        const block = this._getBlock(blockId);
-        if (!block) return;
-
-        const wsRect = this._workspaceEl.getBoundingClientRect();
-        const blockScreenX = (block.x - this._scrollOffset.x) * this._zoom + wsRect.left;
-        const blockScreenY = (block.y - this._scrollOffset.y) * this._zoom + wsRect.top;
-
-        this._dragOffset = {
-            x: e.clientX - blockScreenX,
-            y: e.clientY - blockScreenY,
-        };
-
-        // Visual feedback
-        const el = document.getElementById(blockId);
-        if (el) el.classList.add('dragging');
-
+        if (!this._selectedBlocks.has(blockId)) this._selectBlock(blockId, e.shiftKey);
+        this._draggedBlocks = [];
+        for (const id of this._selectedBlocks) {
+            const b = this._getBlock(id);
+            if (b) {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('dragging');
+                const wsRect = this._workspaceEl.getBoundingClientRect();
+                const bX = (b.x - this._scrollOffset.x) * this._zoom + wsRect.left;
+                const bY = (b.y - this._scrollOffset.y) * this._zoom + wsRect.top;
+                this._draggedBlocks.push({ id, offsetX: e.clientX - bX, offsetY: e.clientY - bY });
+            }
+        }
         this._trashZone.classList.add('visible');
     },
 
@@ -1495,20 +1351,33 @@ const NodeEditor = {
 
     // ── Block Selection ────────────────────────────────────────────────────
 
-    _selectBlock(blockId) {
-        // Deselect previous
-        if (this._selectedBlock) {
-            const prev = document.getElementById(this._selectedBlock);
-            if (prev) prev.classList.remove('selected');
+    _selectBlock(blockId, append = false) {
+        if (!append) {
+            for (const id of this._selectedBlocks) {
+                const prev = document.getElementById(id);
+                if (prev) prev.classList.remove('selected');
+            }
+            this._selectedBlocks.clear();
         }
 
-        this._selectedBlock = blockId;
-
         if (blockId) {
-            const el = document.getElementById(blockId);
-            if (el) el.classList.add('selected');
-            const block = this._getBlock(blockId);
+            if (this._selectedBlocks.has(blockId) && append) {
+                this._selectedBlocks.delete(blockId);
+                const el = document.getElementById(blockId);
+                if (el) el.classList.remove('selected');
+            } else {
+                this._selectedBlocks.add(blockId);
+                const el = document.getElementById(blockId);
+                if (el) el.classList.add('selected');
+            }
+        }
+
+        if (this._selectedBlocks.size === 1) {
+            const id = Array.from(this._selectedBlocks)[0];
+            const block = this._getBlock(id);
             if (block) this._renderProperties(block);
+        } else if (this._selectedBlocks.size > 1) {
+            this._renderBatchProperties();
         } else {
             this._propsEl.innerHTML = '<p class="ne-props-empty">Select a block to view its properties.</p>';
         }
@@ -1517,7 +1386,85 @@ const NodeEditor = {
     /**
      * Render properties panel for a selected block.
      */
+
+    _renderBatchProperties() {
+        const selectedIds = Array.from(this._selectedBlocks);
+        const selectedBlocks = selectedIds.map(id => this._getBlock(id)).filter(b => b);
+        if (selectedBlocks.length === 0) return;
+
+        const paramMap = new Map();
+        selectedBlocks.forEach(block => {
+            const def = this.BLOCK_DEFS[block.type];
+            if (!def) return;
+            def.params.forEach(p => {
+                if (p.type === 'static') return;
+                if (!paramMap.has(p.name)) {
+                    paramMap.set(p.name, { def: p, values: new Set(), count: 0 });
+                }
+                const entry = paramMap.get(p.name);
+                entry.values.add(block.params[p.name]);
+                entry.count++;
+            });
+        });
+
+        const commonParams = [];
+        for (const [name, entry] of paramMap.entries()) {
+            if (entry.count === selectedBlocks.length) commonParams.push(entry);
+        }
+
+        let html = `
+            <div class="ne-props-field">
+                <div class="ne-props-label">Selection</div>
+                <div style="font-size:13px;font-weight:600;color:#0e639c;">${selectedBlocks.length} blocks selected</div>
+            </div>
+            <div style="border-top:1px solid #3f3f3f;margin:8px 0;"></div>
+        `;
+
+        if (commonParams.length === 0) {
+            html += '<p class="ne-props-empty">No common editable properties.</p>';
+        } else {
+            commonParams.forEach(entry => {
+                const p = entry.def;
+                const isMixed = entry.values.size > 1;
+                const value = isMixed ? '' : entry.values.values().next().value;
+                const placeholder = isMixed ? 'Mixed values' : '';
+                html += `
+                    <div class="ne-props-field">
+                        <div class="ne-props-label">${p.name}</div>
+                        <input class="ne-props-batch-value" data-param="${p.name}" value="${this._escapeHtml(value)}" placeholder="${placeholder}" />
+                    </div>
+                `;
+            });
+        }
+        this._propsEl.innerHTML = html;
+
+        this._propsEl.querySelectorAll('.ne-props-batch-value').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const paramName = e.target.dataset.param;
+                const newVal = e.target.value;
+                selectedBlocks.forEach(block => {
+                    this._onParamChange(block, paramName, newVal);
+                    const blockEl = document.getElementById(block.id);
+                    if (blockEl) {
+                        const inputs = blockEl.querySelectorAll('.ne-block-input, .ne-block-select');
+                        inputs.forEach(inp => {
+                            if (inp.dataset.param === paramName) inp.value = newVal;
+                        });
+                    }
+                });
+                this._renderBatchProperties();
+            });
+        });
+    },
     _renderProperties(block) {
+        if (!block) {
+            if (this._selectedBlocks.size > 1) {
+                this._renderBatchProperties();
+                return;
+            }
+            this._propsEl.innerHTML = '<p class="ne-props-empty">Select a block to view its properties.</p>';
+            return;
+        }
         const def = this.BLOCK_DEFS[block.type];
         const cat = this.CATEGORIES[block.category];
         if (!cat) return;
@@ -1840,7 +1787,7 @@ const NodeEditor = {
             this._pushUndo('clear', { blocks: this._blocks.map(b => ({ ...b })) });
         }
         this._blocks = [];
-        this._selectedBlock = null;
+        this._selectedBlocks.clear();
         this._renderWorkspace();
         this._updateStatus();
     },

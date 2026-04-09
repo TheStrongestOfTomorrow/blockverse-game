@@ -1274,6 +1274,11 @@ Events.on("gameStart", async function() {
                         visualEditor.classList.remove('hidden');
                         advancedEditor.classList.add('hidden');
                         templatesSection.classList.remove('hidden');
+                        if (typeof NodeEditor !== 'undefined') {
+                            if (!NodeEditor._container) {
+                                NodeEditor.init('visual-node-editor');
+                            }
+                        }
                     }
                 });
             },
