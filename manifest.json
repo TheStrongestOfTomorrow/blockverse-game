@@ -7,6 +7,23 @@
   "background_color": "#0a0a1a",
   "theme_color": "#6c5ce7",
   "orientation": "any",
+  "categories": ["games", "productivity", "social"],
+  "shortcuts": [
+    {
+      "name": "Lobby",
+      "short_name": "Lobby",
+      "description": "Go to the game lobby",
+      "url": "./index.html",
+      "icons": [{ "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236c5ce7'/><text y='.85em' x='0.1em' font-size='80'>🏠</text></svg>", "sizes": "192x192" }]
+    },
+    {
+      "name": "Creator Studio",
+      "short_name": "Creator",
+      "description": "Open the Creator Studio",
+      "url": "./creator.html",
+      "icons": [{ "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236c5ce7'/><text y='.85em' x='0.1em' font-size='80'>🛠️</text></svg>", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236c5ce7'/><text y='.85em' x='0.1em' font-size='80'>🧱</text></svg>",

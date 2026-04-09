@@ -479,7 +479,7 @@
         // CREATOR APP STATE
         // =============================================
 
-        const CreatorApp = {
+        window.CreatorApp = {
             // Expose to window for debugging/verification
             expose() { window.CreatorApp = this; },
 
@@ -523,7 +523,7 @@
             _animClock: null,
             _undoStack: [],
             _redoStack: [],
-            _maxUndoSteps: 50,
+            _maxUndoSteps: 100,
 
             // =============================================
             // INITIALIZATION
@@ -2154,8 +2154,8 @@ Events.on("gameStart", async function() {
         // =============================================
 
         window.addEventListener('DOMContentLoaded', () => {
-            CreatorApp.init();
-            CreatorApp.expose();
+            window.CreatorApp.init();
+
         });
 
     })();

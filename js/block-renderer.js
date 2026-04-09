@@ -447,11 +447,19 @@ const BlockRenderer = (() => {
         }
 
         for (const key in _customMeshes) {
-            if (_customMeshes[key].parent) {
-                _customMeshes[key].parent.remove(_customMeshes[key]);
+            const mesh = _customMeshes[key];
+            if (mesh.parent) {
+                mesh.parent.remove(mesh);
             }
-            if (_customMeshes[key].material && _customMeshes[key].material.dispose) {
-                _customMeshes[key].material.dispose();
+            if (mesh.geometry) {
+                mesh.geometry.dispose();
+            }
+            if (mesh.material) {
+                if (Array.isArray(mesh.material)) {
+                    mesh.material.forEach(mat => mat.dispose());
+                } else if (mesh.material.dispose) {
+                    mesh.material.dispose();
+                }
             }
         }
         _customMeshes = {};
