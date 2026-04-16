@@ -517,78 +517,60 @@ const Tools = {
     },
 
     // =============================================
-    // UI BUILDING
+    // TOOL CONFIGURATION (Game-Specific)
     // =============================================
 
     _checkGears() {
-        if (typeof Multiplayer !== 'undefined' && Multiplayer.getAmIHost()) {
-            this._hasGears = true;
-            this._gearSlots = [
-                { id: 'gear-bomb', name: 'Explosive Gear', icon: '💣', action: () => this._gearBomb() },
-                { id: 'gear-wall', name: 'Instant Wall', icon: '🚧', action: () => this._gearWall() },
-            ];
-        } else {
-            this._hasGears = false;
-        }
-    }
+        const isSandbox = (typeof Multiplayer !== 'undefined' && Multiplayer.gameSettings?.category === 'sandbox');
+        const isHost = (typeof Multiplayer !== 'undefined' && Multiplayer.getAmIHost());
+        
+        this._hasGears = (isSandbox && isHost);
+        this._gearSlots = [
+            { id: 'gear-bomb', name: 'Explosive Gear', icon: '💣', action: () => this._gearBomb() },
+            { id: 'gear-wall', name: 'Instant Wall', icon: '🚧', action: () => this._gearWall() },
+        ];
+    },
 
-    buildToolbarUI() {
-        this._toolbarEl = document.getElementById('toolbar');
-        if (!this._toolbarEl) return;
+    // New: Helper to get allowed tools based on category
+    getAllowedTools() {
+        const category = (typeof Multiplayer !== 'undefined' && Multiplayer.gameSettings?.category) || 'sandbox';
+        
+        const toolDefinitions = {
+            'sandbox': ['build', 'delete', 'paint', 'grab'],
+            'racing': ['boost', 'drift', 'horn'],
+            'adventure': ['sword', 'interact', 'heal'],
+            'obby': ['check-point', 'jump-boost'],
+            'roleplay': ['emote', 'chat-bubble', 'trade'],
+            'minigame': ['shoot', 'interact']
+        };
 
-        this._toolbarEl.innerHTML = '';
-        this._slotElements = [];
+        return toolDefinitions[category] || ['interact'];
+    },
 
-        // Build main slots
-        for (let i = 0; i < BV.TOOLBAR_SIZE; i++) {
-            const slot = document.createElement('div');
-            slot.className = 'toolbar-slot' + (i === this._activeSlot ? ' active' : '');
-            slot.dataset.index = i;
+    buildToolButtons() {
+        const allowedTools = this.getAllowedTools();
+        const toolButtons = document.querySelectorAll('.btn-tool');
+        
+        toolButtons.forEach(btn => {
+            const tool = btn.dataset.tool;
+            if (!tool) return;
 
-            const preview = document.createElement('div');
-            preview.className = 'toolbar-slot-content';
-            const blockType = this._toolbarSlots[i];
-            const config = BV.BLOCK_TYPES[blockType];
-            if (config) {
-                preview.style.backgroundColor = config.color;
-                if (config.transparent) {
-                    preview.style.opacity = config.opacity || 0.5;
-                }
+            // Hide tools not in the allowed list
+            if (!allowedTools.includes(tool)) {
+                btn.style.display = 'none';
+                return;
             }
 
-            const keyLabel = document.createElement('span');
-            keyLabel.className = 'toolbar-slot-key';
-            keyLabel.textContent = (i + 1).toString();
+            btn.style.display = 'inline-block';
+            if (tool === this._currentTool) {
+                btn.classList.add('active');
+            }
 
-            if (config) slot.title = config.name;
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
 
-            slot.appendChild(preview);
-            slot.appendChild(keyLabel);
-
-            slot.addEventListener('click', () => this.setToolbarSlot(i));
-
-            this._toolbarEl.appendChild(slot);
-            this._slotElements.push(slot);
-        }
-
-        // Add Gear slots if owner
-        if (this._hasGears) {
-            const divider = document.createElement('div');
-            divider.style.width = '2px';
-            divider.style.height = '32px';
-            divider.style.background = 'var(--border-color)';
-            divider.style.margin = '0 6px';
-            this._toolbarEl.appendChild(divider);
-
-            this._gearSlots.forEach((gear, idx) => {
-                const slot = document.createElement('div');
-                slot.className = 'toolbar-slot gear-slot';
-                slot.title = gear.name;
-                slot.innerHTML = `<div class="toolbar-slot-content" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">${gear.icon}</div>`;
-                slot.addEventListener('click', () => gear.action());
-                this._toolbarEl.appendChild(slot);
-            });
-        }
+            newBtn.addEventListener('click', () => this.setTool(tool));
+        });
     },
 
     _gearBomb() {
