@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>">
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -115,6 +116,9 @@
                     </button>
                     <button class="sidebar-btn" data-section="friends">
                         <span class="sidebar-icon">👥</span> Friends
+                    </button>
+                    <button class="sidebar-btn" data-section="server-list">
+                        <span class="sidebar-icon">🌐</span> Servers
                     </button>
                     <button class="sidebar-btn" data-section="join-friends">
                         <span class="sidebar-icon">🤝</span> Join
@@ -370,6 +374,22 @@
                         <div class="empty-icon">🤝</div>
                         <h3>No friends online</h3>
                         <p>When your friends are in a game, they'll appear here!</p>
+                    </div>
+                </section>
+
+                <!-- Server Browser -->
+                <section id="section-server-list" class="lobby-section">
+                    <div class="section-header">
+                        <h2>🌐 Public Server Browser</h2>
+                        <button id="btn-refresh-public-servers" class="btn btn-sm btn-ghost">🔄 Refresh</button>
+                    </div>
+                    <div id="public-server-grid" class="games-grid">
+                        <!-- All active servers list -->
+                    </div>
+                    <div id="no-public-servers" class="empty-state">
+                        <div class="empty-icon">🌐</div>
+                        <h3>No active servers</h3>
+                        <p>Be the first to host a world!</p>
                     </div>
                 </section>
 
@@ -757,6 +777,7 @@
     <script src="js/avatar.js"></script>
     <script src="js/friends.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/lobby-registry.js"></script>
     <script src="js/multiplayer.js"></script>
     <script src="js/block-renderer.js"></script>
     <script src="js/world.js"></script>

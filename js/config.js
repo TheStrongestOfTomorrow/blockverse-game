@@ -11,6 +11,28 @@ const BV = {
     PEERJS_PORT: 443,
     PEERJS_SECURE: true,
     MAX_PLAYERS_PER_SERVER: 12,
+
+    // OpenRelay Project (Free TURN/STUN)
+    // Ensures connectivity through strict firewalls and ISPs.
+    ICE_SERVERS: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { 
+            urls: 'turn:openrelay.metered.ca:80', 
+            username: 'openrelayproject', 
+            credential: 'openrelayproject' 
+        },
+        { 
+            urls: 'turn:openrelay.metered.ca:443', 
+            username: 'openrelayproject', 
+            credential: 'openrelayproject' 
+        },
+        { 
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp', 
+            username: 'openrelayproject', 
+            credential: 'openrelayproject' 
+        }
+    ],
     
     // World
     BLOCK_SIZE: 1,

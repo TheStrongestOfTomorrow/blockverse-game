@@ -142,6 +142,7 @@ const Lobby = (() => {
         if (sectionId === 'home') renderHome();
         else if (sectionId === 'my-games') renderMyGames();
         else if (sectionId === 'discover') renderFeaturedGames();
+        else if (sectionId === 'server-list') renderPublicServerBrowser();
         else if (sectionId === 'settings') _loadSettings();
         else if (sectionId === 'friends') {
             if (typeof Friends !== 'undefined') Friends.renderUI();
@@ -276,6 +277,49 @@ const Lobby = (() => {
                 }
             } catch (e) {
                 container.innerHTML = '<div style="padding:1.5rem;color:var(--danger);text-align:center;">Network error while fetching servers.</div>';
+            }
+        }
+    }
+
+    /**
+     * Render the global server browser.
+     */
+    async function renderPublicServerBrowser() {
+        const grid = document.getElementById('public-server-grid');
+        const empty = document.getElementById('no-public-servers');
+        if (!grid) return;
+
+        grid.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-muted);grid-column:1/-1;">Scanning for active worlds...</div>';
+        if (empty) empty.classList.add('hidden');
+
+        if (typeof Multiplayer !== 'undefined') {
+            try {
+                // Discover all servers globally
+                LobbyRegistry.discoverServers('all_rooms', (servers) => {
+                    if (!servers || servers.length === 0) {
+                        grid.innerHTML = '';
+                        if (empty) empty.classList.remove('hidden');
+                    } else {
+                        if (empty) empty.classList.add('hidden');
+                        grid.innerHTML = servers.map(s => `
+                            <div class="game-card server-browser-card" data-code="${s.serverId}">
+                                <div class="game-card-thumb" style="background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:3rem;">
+                                    🌐
+                                </div>
+                                <div class="game-card-info">
+                                    <div class="game-card-title">${s.name || 'Public Server'}</div>
+                                    <div class="game-card-category">${s.gameCode}</div>
+                                    <div class="game-card-stats">
+                                        <span class="game-card-players">👤 ${s.playerCount}/${s.maxPlayers} players</span>
+                                    </div>
+                                    <button class="btn btn-sm btn-primary btn-full mt-sm" onclick="Lobby.joinGameByCode('${s.serverId}')">JOIN</button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                });
+            } catch (e) {
+                grid.innerHTML = '<div style="padding:2rem;color:var(--danger);grid-column:1/-1;">Failed to fetch server list.</div>';
             }
         }
     }
@@ -764,6 +808,11 @@ const Lobby = (() => {
                 const code = prompt('Enter game code:');
                 if (code) loadServers(code.trim().toUpperCase());
             });
+        }
+
+        const refreshPublicBtn = document.getElementById('btn-refresh-public-servers');
+        if (refreshPublicBtn) {
+            refreshPublicBtn.addEventListener('click', renderPublicServerBrowser);
         }
     }
 

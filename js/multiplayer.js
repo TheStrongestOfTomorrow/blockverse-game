@@ -51,6 +51,11 @@ const Multiplayer = (() => {
             identityPeer = Friends.identityPeer;
         }
 
+        // Initialize decentralized discovery
+        if (typeof LobbyRegistry !== 'undefined') {
+            LobbyRegistry.init();
+        }
+
         // Attempt WebSocket connection
         if (WS_URL) {
             _connectWebSocket();
@@ -173,10 +178,24 @@ const Multiplayer = (() => {
                 host: BV.PEERJS_HOST,
                 port: BV.PEERJS_PORT,
                 secure: BV.PEERJS_SECURE,
+                config: {
+                    iceServers: BV.ICE_SERVERS || [],
+                    iceTransportPolicy: 'all'
+                }
             });
 
             gamePeer.on('open', (id) => {
                 console.log(`[Multiplayer] WebRTC Host started on ${id}`);
+                
+                // Announce to decentralized lobby
+                if (typeof LobbyRegistry !== 'undefined') {
+                    LobbyRegistry.announceServer(pGameCode, id, {
+                        name: settings.name || 'Public Server',
+                        playerCount: players.size + 1, // Include host
+                        maxPlayers: settings.maxPlayers || BV.MAX_PLAYERS_PER_SERVER
+                    });
+                }
+
                 resolve(id);
             });
 
@@ -284,6 +303,10 @@ const Multiplayer = (() => {
                 host: BV.PEERJS_HOST,
                 port: BV.PEERJS_PORT,
                 secure: BV.PEERJS_SECURE,
+                config: {
+                    iceServers: BV.ICE_SERVERS || [],
+                    iceTransportPolicy: 'all'
+                }
             });
 
             gamePeer.on('open', () => {
@@ -688,11 +711,24 @@ const Multiplayer = (() => {
 
     /**
      * Probe potential servers for a given game code.
-     * Tries ${gameCode}-S1 through ${gameCode}-S5.
+     * Uses decentralized discovery via GunDB.
      * @param {string} gameCode
      * @returns {Promise<Array<{serverId, playerCount, maxPlayers}>>}
      */
     async function findServers(pGameCode) {
+        if (typeof LobbyRegistry !== 'undefined') {
+            return new Promise((resolve) => {
+                // Get current list from GunDB
+                LobbyRegistry.discoverServers(pGameCode, (servers) => {
+                    resolve(servers);
+                });
+                
+                // Safety timeout
+                setTimeout(() => resolve([]), 3000);
+            });
+        }
+
+        // Fallback to legacy probing if LobbyRegistry is missing
         const results = [];
 
         const probePromise = (async () => {
@@ -826,6 +862,11 @@ const Multiplayer = (() => {
      * Leave the current game: clean up all connections, destroy game peer.
      */
     function leaveGame() {
+        // Stop announcing to lobby
+        if (typeof LobbyRegistry !== 'undefined') {
+            LobbyRegistry.stopAnnouncing();
+        }
+
         // Notify peers
         broadcast({
             type: BV.MSG.PLAYER_LEAVE,
