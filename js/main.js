@@ -61,7 +61,13 @@ const App = (() => {
             const dt = Math.min((now - _lastTime) / 1000, 0.1);
             _lastTime = now;
 
-            if (typeof World !== 'undefined') World.update(dt);
+            if (typeof World !== 'undefined') {
+                World.update(dt);
+                // Trigger structural integrity tick
+                if (World._isProcessingIntegrity && !World._integrityTickStarted) {
+                   // Integrity is handled via requestAnimationFrame inside _processIntegrityQueue
+                }
+            }
             if (typeof BlockRenderer !== 'undefined' && typeof World !== 'undefined' && Player && Player.camera) {
                 BlockRenderer.updateFrustumCulling(Player.camera, World.blockMap);
             }

@@ -845,7 +845,12 @@ const World = {
         this.blockMap.delete(key);
         this.blockCount--;
 
-        // 3. Render Layer (Post-removal)
+        // 3. Structural Integrity Check
+        if (emitEvent) {
+            this._checkNeighborsIntegrity(x, y, z);
+        }
+
+        // 4. Render Layer (Post-removal)
         if (typeof BlockRenderer !== 'undefined' && emitEvent) {
             // Neighbor visibility might change (occlusion removed)
             this._updateNeighborsRenderStatus(x, y, z);
@@ -857,6 +862,104 @@ const World = {
             }));
         }
         return true;
+    },
+
+    // =============================================
+    // STRUCTURAL INTEGRITY (Optimized V2)
+    // =============================================
+
+    _integrityQueue: new Set(),
+    _isProcessingIntegrity: false,
+
+    _checkNeighborsIntegrity(x, y, z) {
+        const ns = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+        for (let i = 0; i < 6; i++) {
+            const nx = x + ns[i][0];
+            const ny = y + ns[i][1];
+            const nz = z + ns[i][2];
+            const key = blockKey(nx, ny, nz);
+            
+            if (this.blockMap.has(key)) {
+                this._integrityQueue.add(key);
+            }
+        }
+
+        if (!this._isProcessingIntegrity) {
+            this._processIntegrityQueue();
+        }
+    },
+
+    _processIntegrityQueue() {
+        if (this._integrityQueue.size === 0) {
+            this._isProcessingIntegrity = false;
+            return;
+        }
+
+        this._isProcessingIntegrity = true;
+        const batchSize = 10; // Process in small batches to keep FPS high
+        const batch = Array.from(this._integrityQueue).slice(0, batchSize);
+        
+        // Cache for this batch to avoid redundant ground checks
+        const connectivityCache = new Map();
+
+        for (const key of batch) {
+            this._integrityQueue.delete(key);
+            const block = this.blockMap.get(key);
+            if (!block) continue;
+
+            if (!this._isConnectedToGroundCached(block.x, block.y, block.z, connectivityCache)) {
+                this.removeBlock(block.x, block.y, block.z, true);
+            }
+        }
+
+        // Continue processing in next frame
+        requestAnimationFrame(() => this._processIntegrityQueue());
+    },
+
+    _isConnectedToGroundCached(startX, startY, startZ, cache) {
+        const visited = new Set();
+        const queue = [[startX, startY, startZ]];
+        const startKey = blockKey(startX, startY, startZ);
+        visited.add(startKey);
+
+        let count = 0;
+        const maxCheck = 300; // Slightly higher limit with caching
+
+        while (queue.length > 0 && count < maxCheck) {
+            const [x, y, z] = queue.shift();
+            count++;
+
+            if (y <= 0) {
+                // Mark all visited blocks as connected in the cache
+                visited.forEach(k => cache.set(k, true));
+                return true;
+            }
+
+            // Check cache
+            const currentKey = blockKey(x, y, z);
+            if (cache.has(currentKey)) {
+                const connected = cache.get(currentKey);
+                if (connected) {
+                    visited.forEach(k => cache.set(k, true));
+                    return true;
+                }
+            }
+
+            const ns = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+            for (let i = 0; i < 6; i++) {
+                const nx = x + ns[i][0];
+                const ny = y + ns[i][1];
+                const nz = z + ns[i][2];
+                const key = blockKey(nx, ny, nz);
+
+                if (this.blockMap.has(key) && !visited.has(key)) {
+                    visited.add(key);
+                    queue.push([nx, ny, nz]);
+                }
+            }
+        }
+
+        return false;
     },
 
     // =============================================
