@@ -25,6 +25,7 @@ const Multiplayer = (() => {
     let serverId = null; // Can be PeerID or UUID from WebSocket
     let gameCode = null;
     let gameSettings = {};
+    let serverPassword = null;
 
     // ---- Player roster ----
     // Map<peerId, { username, joinedAt, avatar }>
@@ -149,6 +150,7 @@ const Multiplayer = (() => {
         gameCode = pGameCode;
         gameSettings = settings;
         amIHost = true;
+        serverPassword = settings.password || null;
         players.clear();
         connections.clear();
 
@@ -192,7 +194,10 @@ const Multiplayer = (() => {
                     LobbyRegistry.announceServer(pGameCode, id, {
                         name: settings.name || 'Public Server',
                         playerCount: players.size + 1, // Include host
-                        maxPlayers: settings.maxPlayers || BV.MAX_PLAYERS_PER_SERVER
+                        maxPlayers: settings.maxPlayers || BV.MAX_PLAYERS_PER_SERVER,
+                        isPrivate: !!settings.isPrivate,
+                        hasPassword: !!serverPassword,
+                        host: Auth.getCurrentUser(),
                     });
                 }
 
@@ -272,7 +277,7 @@ const Multiplayer = (() => {
      * @param {string} hostPeerIdToJoin  The full PeerJS ID of the host (e.g. "BV-ABCD-S1").
      * @returns {Promise<void>}
      */
-    function joinGame(targetId) {
+    function joinGame(targetId, password = null) {
         // WebSocket Join
         if (useWebSocket && socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
@@ -326,6 +331,7 @@ const Multiplayer = (() => {
                             username: myUsername,
                             avatar: myAvatar,
                             peerId: myPeerId,
+                            password: password,
                         },
                     });
 
@@ -955,6 +961,17 @@ const Multiplayer = (() => {
     // ========================================
 
     function _onPlayerJoin(peerId, payload) {
+        // --- PRIVACY & ACCESS CONTROL ---
+        if (amIHost && serverPassword) {
+            const isFriend = typeof Friends !== 'undefined' && Friends.isFriend(payload.username);
+            if (!isFriend && payload.password !== serverPassword) {
+                console.warn(`[Multiplayer] Unauthorized join attempt from ${payload.username}`);
+                const conn = connections.get(peerId);
+                if (conn) conn.close();
+                return;
+            }
+        }
+
         const username = payload.username || 'Unknown';
         players.set(peerId, {
             username,

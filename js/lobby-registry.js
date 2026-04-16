@@ -44,6 +44,9 @@ const LobbyRegistry = (() => {
                 playerCount: metadata.playerCount || 0,
                 maxPlayers: metadata.maxPlayers || 12,
                 lastSeen: Date.now(),
+                isPrivate: !!metadata.isPrivate,
+                hasPassword: !!metadata.hasPassword,
+                host: metadata.host || Auth.getCurrentUser(),
             });
         };
 

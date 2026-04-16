@@ -711,7 +711,10 @@
                             <div class="gd-servers-section">
                                 <div class="gd-section-header">
                                     <h3>🌐 Servers</h3>
-                                    <button class="btn-refresh-sm" id="gd-refresh-servers">🔄</button>
+                                    <div class="gd-server-actions">
+                                        <button class="btn btn-sm btn-accent" id="gd-btn-create-private">🔒 Create Private</button>
+                                        <button class="btn-refresh-sm" id="gd-refresh-servers">🔄</button>
+                                    </div>
                                 </div>
                                 <div id="gd-server-list" class="gd-server-list-v2">
                                     <!-- Servers filled here -->
@@ -720,6 +723,39 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Password Entry Modal -->
+        <div id="password-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🔒 Private Server</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="form-group">
+                    <p id="password-modal-desc" style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem;">This server is private. Please enter the password to join.</p>
+                    <label>Server Password</label>
+                    <input type="password" id="server-password-input" placeholder="Enter password">
+                </div>
+                <div id="password-modal-error" class="form-error"></div>
+                <button id="btn-confirm-password" class="btn btn-primary btn-full">Join Server</button>
+            </div>
+        </div>
+
+        <!-- Create Private Server Modal -->
+        <div id="create-private-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🔒 Create Private Server</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="form-group">
+                    <label>Set Password (Optional)</label>
+                    <input type="text" id="create-private-password" placeholder="Leave empty for No Password (Friends Only)">
+                    <small class="form-hint">Friends can always join. Others need the password.</small>
+                </div>
+                <button id="btn-confirm-private-server" class="btn btn-primary btn-full">Launch Private World</button>
             </div>
         </div>
 

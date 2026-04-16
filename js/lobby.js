@@ -234,18 +234,55 @@ const Lobby = (() => {
 
         const playBtn = document.getElementById('gd-btn-play');
         playBtn.onclick = () => {
-            modal.classList.add('hidden');
-            joinGameByCode(game.code);
+            if (game.isPrivate && !Friends.isFriend(game.host)) {
+                _showPasswordModal(game.serverId);
+            } else {
+                modal.classList.add('hidden');
+                joinGameByCode(game.serverId);
+            }
         };
+
+        const createPrivateBtn = document.getElementById('gd-btn-create-private');
+        createPrivateBtn.onclick = () => {
+            modal.classList.add('hidden');
+            _showCreatePrivateModal(game);
+        };
+        // Show create button only if user owns the game
+        createPrivateBtn.style.display = (game.createdBy === Auth.getCurrentUser()) ? 'inline-block' : 'none';
 
         const refreshBtn = document.getElementById('gd-refresh-servers');
         if (refreshBtn) {
             refreshBtn.onclick = () => _renderGameDetailServers(game.code);
         }
 
-        // Load servers for this game
         _renderGameDetailServers(game.code);
+        modal.classList.remove('hidden');
+    }
 
+    function _showPasswordModal(serverId) {
+        const modal = document.getElementById('password-modal');
+        const input = document.getElementById('server-password-input');
+        const btn = document.getElementById('btn-confirm-password');
+
+        input.value = '';
+        btn.onclick = () => {
+            const password = input.value.trim();
+            modal.classList.add('hidden');
+            joinGameByCode(serverId, password);
+        };
+        modal.classList.remove('hidden');
+    }
+
+    function _showCreatePrivateModal(game) {
+        const modal = document.getElementById('create-private-modal');
+        const input = document.getElementById('create-private-password');
+        const btn = document.getElementById('btn-confirm-private-server');
+
+        btn.onclick = () => {
+            const password = input.value.trim();
+            modal.classList.add('hidden');
+            hostGame(game.code, { ...game, password, isPrivate: true });
+        };
         modal.classList.remove('hidden');
     }
 
