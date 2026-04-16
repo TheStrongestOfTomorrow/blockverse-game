@@ -212,6 +212,14 @@ const Tools = {
     handleMouseDown(event) {
         if (typeof Player !== 'undefined' && !Player.isActive()) return;
         if (event.button !== 0) return; // Only left-click for tools
+        
+        // Sandbox mode enforcement
+        const isSandbox = (typeof Multiplayer !== 'undefined' && Multiplayer.gameSettings?.category === 'sandbox');
+        if (!isSandbox) {
+            console.warn('[Tools] Tool not allowed in this game mode.');
+            return;
+        }
+
         this._performPrimaryAction();
     },
 
