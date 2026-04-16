@@ -523,9 +523,25 @@ const Lobby = (() => {
         });
     }
 
-    function joinGameByCode(code) {
+    async function joinGameByCode(code) {
         if (!code) return;
-        code = code.toUpperCase().trim();
+        const rawCode = code.trim();
+        code = rawCode.toUpperCase();
+
+        // Check if it's a room name first (if it doesn't look like a standard code)
+        if (!code.startsWith('BV-') && !code.startsWith('SAMPLE-')) {
+            if (typeof UI !== 'undefined') UI.showLoading('Resolving world name...');
+            
+            // Try to find by name in the registry
+            const servers = await Multiplayer.findServers('all_rooms');
+            const found = servers.find(s => s.name?.toLowerCase() === rawCode.toLowerCase());
+            
+            if (found) {
+                code = found.serverId;
+            } else {
+                console.log(`[Lobby] No server found by name "${rawCode}", trying as raw code.`);
+            }
+        }
 
         // For sample games, launch in single-player mode
         if (code.startsWith('SAMPLE-')) {
