@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  passwordHash  String
+  avatar        String   @default("{}")
+  createdAt     DateTime @default(now())
+  lastSeen      DateTime @default(now())
+  friends       Friend[] @relation("UserFriends")
+  friendOf      Friend[] @relation("UserFriendOf")
+  sentRequests  FriendRequest[] @relation("SentRequests")
+  receivedRequests FriendRequest[] @relation("ReceivedRequests")
+  createdGames  Game[]   @relation("GameCreator")
+  settings      String   @default("{}")
+}
+
+model Friend {
+  id         String @id @default(cuid())
+  userId     String
+  friendId   String
+  user       User   @relation("UserFriends", fields: [userId], references: [id])
+  friend     User   @relation("UserFriendOf", fields: [friendId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, friendId])
+}
+
+model FriendRequest {
+  id         String   @id @default(cuid())
+  fromId     String
+  toId       String
+  status     String   @default("pending")
+  from       User     @relation("SentRequests", fields: [fromId], references: [id])
+  to         User     @relation("ReceivedRequests", fields: [toId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([fromId, toId])
+}
+
+model Game {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  category    String   @default("sandbox")
+  code        String   @unique
+  creatorId   String
+  creator     User     @relation("GameCreator", fields: [creatorId], references: [id])
+  maxPlayers  Int      @default(12)
+  template    String   @default("flat")
+  thumbnailColor String @default("#6c5ce7")
+  worldData   String   @default("")
+  visits      Int      @default(0)
+  activePlayers Int    @default(0)
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
