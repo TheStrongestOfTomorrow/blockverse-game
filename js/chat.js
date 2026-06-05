@@ -89,6 +89,9 @@ const Chat = (() => {
             text = text.substring(0, BV.CHAT_MAX_LENGTH);
         }
 
+        // Apply swearing censor
+        text = _censorSwearWords(text);
+
         const username = Auth.getCurrentUser() || 'Unknown';
 
         // Display locally
@@ -220,6 +223,27 @@ const Chat = (() => {
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
+    }
+
+    /**
+     * Censor swear words in text by replacing them with asterisks.
+     * Uses a configurable list of blocked words.
+     * @param {string} text
+     * @returns {string} Censored text
+     */
+    function _censorSwearWords(text) {
+        if (!BV.SWEAR_WORDS || BV.SWEAR_WORDS.length === 0) return text;
+        
+        let censoredText = text;
+        const regex = new RegExp(`\\b(${BV.SWEAR_WORDS.join('|')})\\b`, 'gi');
+        
+        return censoredText.replace(regex, (match) => {
+            // Replace with asterisks, keeping first and last letter if length > 3
+            if (match.length <= 3) {
+                return '*'.repeat(match.length);
+            }
+            return match[0] + '*'.repeat(match.length - 2) + match[match.length - 1];
+        });
     }
 
     // ========================================

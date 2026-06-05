@@ -11,7 +11,12 @@ const BV = {
     PEERJS_PORT: 443,
     PEERJS_SECURE: true,
     MAX_PLAYERS_PER_SERVER: 12,
-
+    
+    // WebSocket Relay (Optional - disabled by default)
+    // Set to true to enable WebSocket relay for games that need it
+    USE_WEBSOCKET_RELAY: false,
+    WEBSOCKET_RELAY_URL: null, // Auto-detected based on environment if not set
+    
     // Default ICE Servers (OpenRelay + Google STUN)
     // Creators can override these in Creator Studio with their own TURN/STUN servers
     DEFAULT_ICE_SERVERS: [
@@ -42,6 +47,13 @@ const BV = {
     set ICE_SERVERS(value) {
         this._iceServers = value;
     },
+    
+    // Swear word filter list (configurable)
+    SWEAR_WORDS: [
+        'damn', 'hell', 'crap', 'ass', 'bitch', 'bastard',
+        'idiot', 'stupid', 'dumb', 'loser', 'pathetic',
+        'rude', 'mean', 'ugly', 'fat', 'stinky'
+    ],
     
     // World
     BLOCK_SIZE: 1,

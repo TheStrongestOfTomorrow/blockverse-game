@@ -1717,6 +1717,22 @@ img {
   z-index: 85;
   overflow: hidden;
   box-shadow: var(--shadow-md);
+  /* Hide on mobile by default - shown only when chat is open */
+}
+
+/* Mobile: hide chat container unless chat input is visible */
+@media (max-width: 768px) {
+  .chat-container {
+    display: none;
+  }
+  
+  .chat-container:not(.hidden):has(#chat-input-wrapper:not(.hidden)) {
+    display: block;
+    bottom: 5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+  }
 }
 
 .chat-messages {
@@ -2929,13 +2945,7 @@ img {
     border-radius: var(--radius-md);
   }
 
-  /* Chat */
-  .chat-container {
-    bottom: 5rem;
-    left: 0.5rem;
-    right: 0.5rem;
-    width: auto;
-  }
+  /* Chat - already handled in main chat-container section above */
 
   /* Toolbar */
   .toolbar {

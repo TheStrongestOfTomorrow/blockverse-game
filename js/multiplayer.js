@@ -10,7 +10,8 @@ const Multiplayer = (() => {
     'use strict';
 
     // ---- Hybrid Networking (WebSocket + WebRTC) ----
-    const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:3000' : null;
+    // Only use WebSocket if explicitly enabled via config or localhost with running server
+    const WS_URL = BV.USE_WEBSOCKET_RELAY ? (window.location.hostname === 'localhost' ? 'ws://localhost:3000' : BV.WEBSOCKET_RELAY_URL) : null;
     let socket = null;
     let useWebSocket = false;
 
@@ -633,8 +634,9 @@ const Multiplayer = (() => {
     /**
      * Transfer the host role to another player.
      * @param {string} newHostPeerId
+     * @param {boolean} isAutoTransfer - True if this is an automatic transfer due to host leaving
      */
-    function transferHost(newHostPeerId) {
+    function transferHost(newHostPeerId, isAutoTransfer = false) {
         if (!amIHost) return;
 
         // Collect full world state
@@ -654,20 +656,27 @@ const Multiplayer = (() => {
                 worldState,
                 gameSettings,
                 playerList,
+                isAutoTransfer, // Flag to indicate this is auto-transfer (new host gets limited permissions)
             },
         });
 
         // Announce to everyone
         broadcast({
             type: 'host_changed',
-            payload: { newHostPeerId },
+            payload: { newHostPeerId, isAutoTransfer },
         });
 
         amIHost = false;
         hostPeerId = newHostPeerId;
 
         document.dispatchEvent(
-            new CustomEvent('multiplayer:hostChanged', { detail: { newHostPeerId } })
+            new CustomEvent('multiplayer:hostChanged', { 
+                detail: { 
+                    newHostPeerId,
+                    isAutoTransfer,
+                    hasFullPermissions: !isAutoTransfer // Only original owner has full permissions
+                } 
+            })
         );
     }
 
@@ -866,11 +875,31 @@ const Multiplayer = (() => {
 
     /**
      * Leave the current game: clean up all connections, destroy game peer.
+     * If hosting and persistentUntilTabClose is enabled, keep room alive until last player leaves.
      */
     function leaveGame() {
         // Stop announcing to lobby
         if (typeof LobbyRegistry !== 'undefined') {
             LobbyRegistry.stopAnnouncing();
+        }
+
+        // If hosting with persistence enabled, don't fully close if players remain
+        const isPersistent = gameSettings && gameSettings.persistentUntilTabClose;
+        
+        if (amIHost && isPersistent && players.size > 0) {
+            // Host is leaving but room should persist - transfer host automatically
+            const candidates = [...players.keys()].filter((pid) => pid !== hostPeerId);
+            if (candidates.length > 0) {
+                console.log('[Multiplayer] Persistent room: transferring host before leaving');
+                transferHost(candidates[0]);
+                // Don't destroy peer or close connections yet - let new host take over
+                // Just reset local state
+                amIHost = false;
+                hostPeerId = null;
+                serverId = null;
+                document.dispatchEvent(new CustomEvent('multiplayer:leaveGame'));
+                return;
+            }
         }
 
         // Notify peers
@@ -879,7 +908,7 @@ const Multiplayer = (() => {
             payload: { peerId: gamePeer ? gamePeer.id : null },
         });
 
-        // If hosting, transfer or close
+        // If hosting without persistence, transfer or close
         if (amIHost && players.size > 0) {
             // Transfer to the oldest connected non-host player
             const candidates = [...players.keys()].filter((pid) => pid !== hostPeerId);
