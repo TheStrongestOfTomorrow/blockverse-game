@@ -12,10 +12,12 @@ const BV = {
     PEERJS_SECURE: true,
     MAX_PLAYERS_PER_SERVER: 12,
     
-    // WebSocket Relay (Optional - disabled by default)
-    // Set to true to enable WebSocket relay for games that need it
-    USE_WEBSOCKET_RELAY: false,
-    WEBSOCKET_RELAY_URL: null, // Auto-detected based on environment if not set
+    // WebSocket Relay (Auto-enabled only for localhost development)
+    // For production, WebRTC is used exclusively unless explicitly overridden
+    USE_WEBSOCKET_RELAY: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+    WEBSOCKET_RELAY_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? 'ws://localhost:3000' 
+        : null,
     
     // Default ICE Servers (OpenRelay + Google STUN)
     // Creators can override these in Creator Studio with their own TURN/STUN servers

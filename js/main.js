@@ -138,7 +138,8 @@ const App = (() => {
         // World MUST be initialized first (creates scene, camera, renderer)
         if (!_worldInitialised && typeof World !== 'undefined') {
             if (!World.scene) {
-                World.init();
+                const canvas = document.getElementById('game-canvas');
+                World.init(canvas);
             }
             _worldInitialised = true;
 
