@@ -33,6 +33,11 @@ const App = (() => {
     function init() {
         console.log(`[App] ${BV.NAME} v${BV.VERSION} starting... (tab: ${_TAB_ID})`);
 
+        // Initialize network settings (WebSocket only on localhost)
+        if (typeof BV.initNetworkSettings === 'function') {
+            BV.initNetworkSettings();
+        }
+
         _registerServiceWorker();
         _initTabLock();
         UI.init();
@@ -254,11 +259,69 @@ const App = (() => {
         try { if (typeof Lobby !== 'undefined') Lobby.init(); } catch (err) { console.error('[App] Lobby.init failed:', err); }
         try { if (typeof Multiplayer !== 'undefined') Multiplayer.init(); } catch (err) { console.error('[App] Multiplayer.init failed:', err); }
 
+        // Check for Device Flow Login prompt
+        checkDeviceFlowLogin();
+
         UI.showScreen('screen-lobby');
 
         setTimeout(() => {
             try { if (typeof Friends !== 'undefined') Friends.refreshFriendStatuses(); } catch (_) {}
         }, 3000);
+    }
+
+    function checkDeviceFlowLogin() {
+        const hasLinkedAccount = localStorage.getItem('bv_github_linked');
+        const skipPrompt = localStorage.getItem('bv_skip_link_prompt');
+        const user = Auth.getCurrentUser();
+        
+        if (user && !hasLinkedAccount && !skipPrompt) {
+            // Show modal prompting to link GitHub for Community & Saving
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+            modal.innerHTML = `
+                <div class="modal-content" style="background:#1a1a2e;padding:30px;border-radius:15px;max-width:500px;text-align:center;border:2px solid #00ff88;box-shadow:0 0 30px rgba(0,255,136,0.3);">
+                    <h2 style="color:#00ff88;margin-top:0;">🚀 Unlock Full Potential!</h2>
+                    <p style="color:#ccc;">Link your GitHub account to:</p>
+                    <ul style="text-align:left;margin:20px auto;max-width:300px;color:#fff;">
+                        <li>✅ Save games to the cloud</li>
+                        <li>✅ Join the Community Hub</li>
+                        <li>✅ Publish games for others</li>
+                        <li>✅ Enable Uncopylocking</li>
+                    </ul>
+                    <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;">
+                        <button id="btn-link-github" style="background:#00ff88;color:#000;border:none;padding:12px 24px;border-radius:8px;font-weight:bold;cursor:pointer;">Link GitHub Account</button>
+                        <button id="btn-skip-link" style="background:#444;color:#fff;border:none;padding:12px 24px;border-radius:8px;cursor:pointer;">Maybe Later</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('btn-link-github').onclick = () => {
+                // Use DeviceFlow.renderAuthUI directly
+                if (typeof DeviceFlow !== 'undefined' && DeviceFlow.renderAuthUI) {
+                    const modalBody = document.createElement('div');
+                    modalBody.style.cssText = 'background:#1a1a2e;padding:30px;border-radius:15px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;';
+                    document.body.appendChild(modalBody);
+                    
+                    DeviceFlow.renderAuthUI(modalBody, (user) => {
+                        localStorage.setItem('bv_github_linked', 'true');
+                        localStorage.setItem('bv_github_username', user.login);
+                        alert(`✅ Successfully linked to ${user.login}! You can now save games and access the community.`);
+                        modal.remove();
+                        modalBody.remove();
+                    });
+                    modal.querySelector('.modal-content').style.display = 'none';
+                } else {
+                    alert('DeviceFlow module not loaded yet. Please refresh.');
+                }
+            };
+
+            document.getElementById('btn-skip-link').onclick = () => {
+                localStorage.setItem('bv_skip_link_prompt', 'true');
+                modal.remove();
+            };
+        }
     }
 
     function _setupGlobalEvents() {

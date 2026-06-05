@@ -14,10 +14,21 @@ const BV = {
     
     // WebSocket Relay (Auto-enabled only for localhost development)
     // For production, WebRTC is used exclusively unless explicitly overridden
-    USE_WEBSOCKET_RELAY: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
-    WEBSOCKET_RELAY_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? 'ws://localhost:3000' 
-        : null,
+    USE_WEBSOCKET_RELAY: false, // Disabled by default, only enabled if explicitly set or localhost dev server detected
+    WEBSOCKET_RELAY_URL: null,
+    
+    // Check if running on localhost (for dev tools)
+    isLocalhost: function() {
+        return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    },
+    
+    // Initialize WebSocket settings based on environment
+    initNetworkSettings: function() {
+        if (this.isLocalhost()) {
+            this.USE_WEBSOCKET_RELAY = true;
+            this.WEBSOCKET_RELAY_URL = 'ws://localhost:3000';
+        }
+    },
     
     // Default ICE Servers (OpenRelay + Google STUN)
     // Creators can override these in Creator Studio with their own TURN/STUN servers

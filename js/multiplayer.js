@@ -11,7 +11,7 @@ const Multiplayer = (() => {
 
     // ---- Hybrid Networking (WebSocket + WebRTC) ----
     // Only use WebSocket if explicitly enabled via config or localhost with running server
-    const WS_URL = BV.USE_WEBSOCKET_RELAY ? (window.location.hostname === 'localhost' ? 'ws://localhost:3000' : BV.WEBSOCKET_RELAY_URL) : null;
+    let WS_URL = null;
     let socket = null;
     let useWebSocket = false;
 
@@ -48,6 +48,11 @@ const Multiplayer = (() => {
      * Reuses the identity peer if Friends already created one.
      */
     function init() {
+        // Initialize WebSocket URL based on config (only enabled on localhost)
+        if (BV.USE_WEBSOCKET_RELAY && BV.WEBSOCKET_RELAY_URL) {
+            WS_URL = BV.WEBSOCKET_RELAY_URL;
+        }
+        
         // Share the identity peer with Friends if available
         if (Friends.identityPeer && !Friends.identityPeer.destroyed) {
             identityPeer = Friends.identityPeer;
@@ -58,7 +63,7 @@ const Multiplayer = (() => {
             LobbyRegistry.init();
         }
 
-        // Attempt WebSocket connection
+        // Attempt WebSocket connection only if URL is set
         if (WS_URL) {
             _connectWebSocket();
         }

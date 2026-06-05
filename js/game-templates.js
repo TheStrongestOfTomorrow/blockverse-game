@@ -278,10 +278,10 @@ const GameTemplates = (() => {
 
             try {
                 template.generate(world);
-                return true;
+                return Promise.resolve(true);
             } catch (err) {
                 console.error(`[Templates] Error generating ${templateId}:`, err);
-                return false;
+                return Promise.resolve(false);
             }
         },
     };

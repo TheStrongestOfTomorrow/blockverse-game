@@ -622,11 +622,11 @@ const Lobby = (() => {
             }
         }
 
-        // For sample games, launch in single-player mode
+        // For sample games, launch in single-player mode with proper game templates
         if (code.startsWith('SAMPLE-')) {
             if (typeof UI !== 'undefined') UI.showLoading('Loading game...');
 
-            const templates = {
+            const templateMap = {
                 'SAMPLE-BLDW': 'flat',
                 'SAMPLE-TOWR': 'obby',
                 'SAMPLE-SPDB': 'empty',
@@ -637,7 +637,7 @@ const Lobby = (() => {
                 'SAMPLE-VLG': 'village',
                 'SAMPLE-ARNA': 'arena',
             };
-            const template = templates[code] || 'flat';
+            const template = templateMap[code] || 'flat';
 
             const allGames = [...FEATURED_GAMES, ..._getUserGames()];
             const gameConfig = allGames.find(g => g.code === code) || {};
@@ -645,22 +645,24 @@ const Lobby = (() => {
             setTimeout(() => {
                 if (typeof UI !== 'undefined') UI.updateLoadingBar(30, 'Generating world...');
 
-                // Init World and generate terrain
+                // Init World and generate terrain using GameTemplates if available
                 if (typeof World !== 'undefined') {
                     if (!World.scene) World.init();
-                    World.generateTerrain(template);
-                }
-
-                setTimeout(() => {
-                    if (typeof UI !== 'undefined') {
-                        UI.updateLoadingBar(100, 'Done!');
-                        setTimeout(() => {
-                            UI.hideLoading();
-                            if (typeof App !== 'undefined') App.enterGame();
-                            Utils.showToast(`Playing ${gameConfig.name || code}`, 'success');
-                        }, 200);
+                    
+                    // Use GameTemplates for complex templates, fallback to World.generateTerrain
+                    if (typeof GameTemplates !== 'undefined' && ['obby', 'arena', 'city', 'parkour'].includes(template)) {
+                        GameTemplates.generateGame(template, World).then(success => {
+                            if (!success) {
+                                console.warn(`[Lobby] Template ${template} failed, using fallback`);
+                                World.generateTerrain(template);
+                            }
+                            _finishGameLoad(gameConfig, code);
+                        });
+                    } else {
+                        World.generateTerrain(template);
+                        _finishGameLoad(gameConfig, code);
                     }
-                }, 400);
+                }
             }, 200);
             return;
         }
@@ -995,6 +997,20 @@ const Lobby = (() => {
     function _setChecked(id, checked) {
         const el = document.getElementById(id);
         if (el) el.checked = checked;
+    }
+
+    // Helper to finish game loading after terrain generation
+    function _finishGameLoad(gameConfig, code) {
+        setTimeout(() => {
+            if (typeof UI !== 'undefined') {
+                UI.updateLoadingBar(100, 'Done!');
+                setTimeout(() => {
+                    UI.hideLoading();
+                    if (typeof App !== 'undefined') App.enterGame();
+                    Utils.showToast(`Playing ${gameConfig.name || code}`, 'success');
+                }, 200);
+            }
+        }, 400);
     }
 
     document.addEventListener('lobby:filterCategory', (e) => {
