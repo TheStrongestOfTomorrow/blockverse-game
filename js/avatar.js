@@ -88,6 +88,11 @@ const Avatar = (() => {
             case 'thick': armW = 24; break;
             case 'mechanical': armW = 12; break;
             case 'ghostly': armH = 40; break;
+            // Roblox-like styles
+            case 'roblox-classic': armW = 18; armH = 45; break;
+            case 'roblox-detailed': armW = 20; armH = 48; break;
+            case 'winged': armW = 14; armH = 55; break;
+            case 'robotic': armW = 22; armH = 42; break;
         }
 
         // Leg shape tweaks
@@ -96,6 +101,11 @@ const Avatar = (() => {
             case 'long': legH = 60; break;
             case 'hover': legH = 0; break;
             case 'quad': legW = 30; break;
+            // Roblox-like styles
+            case 'roblox-classic': legW = 22; legH = 42; break;
+            case 'roblox-detailed': legW = 24; legH = 44; break;
+            case 'animal': legW = 18; legH = 35; break;
+            case 'wheeled': legW = 28; legH = 30; break;
         }
 
         // Head shape tweaks
@@ -105,6 +115,11 @@ const Avatar = (() => {
             case 'pointy': headR = 4; headH = 64; break;
             case 'cylindrical': headR = 6; headW = 44; headH = 70; break;
             case 'flat': headR = 2; headW = 70; headH = 30; break;
+            // Roblox-like styles
+            case 'roblox-classic': headR = 8; headW = 54; headH = 54; break;
+            case 'roblox-modern': headR = 10; headW = 52; headH = 56; break;
+            case 'anime': headR = 14; headW = 50; headH = 62; break;
+            case 'chibi': headR = 24; headW = 64; headH = 64; break;
             default: headR = 12;
         }
 
@@ -115,6 +130,11 @@ const Avatar = (() => {
             case 'tall': bodyH = 80; break;
             case 'blocky': bodyW = 70; bodyH = 70; break;
             case 'curved': bodyW = 56; headR = 20; break;
+            // Roblox-like styles
+            case 'roblox-r6': bodyW = 50; bodyH = 58; break;
+            case 'roblox-r15': bodyW = 46; bodyH = 62; break;
+            case 'athletic': bodyW = 52; bodyH = 64; break;
+            case 'slender': bodyW = 40; bodyH = 68; break;
             default: break;
         }
 
@@ -361,6 +381,107 @@ const Avatar = (() => {
             ctx.lineTo(cx + headW / 2 - 14, headTop + 2);
             ctx.closePath();
             ctx.fill();
+            ctx.restore();
+        }
+
+        // New Roblox-like accessories
+        if (_config.accessory === 'backpack') {
+            ctx.save();
+            ctx.fillStyle = _shadeColor(baseColor, -40);
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 6;
+            // Backpack behind body
+            ctx.fillRect(cx - bodyW / 2 - 12, bodyTop + 8, 10, bodyH - 16);
+            // Straps
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx - bodyW / 2 - 6, bodyTop);
+            ctx.lineTo(cx - bodyW / 2 - 6, bodyTop + 15);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx + bodyW / 2 + 6, bodyTop);
+            ctx.lineTo(cx + bodyW / 2 + 6, bodyTop + 15);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        if (_config.accessory === 'sword') {
+            ctx.save();
+            // Sword on back
+            ctx.fillStyle = '#BDC3C7';
+            ctx.strokeStyle = '#8E44AD';
+            ctx.lineWidth = 3;
+            // Blade
+            ctx.beginPath();
+            ctx.moveTo(cx + bodyW / 2 + 4, bodyTop + 10);
+            ctx.lineTo(cx + bodyW / 2 + 4, bodyTop - 25);
+            ctx.stroke();
+            // Hilt
+            ctx.fillStyle = '#F1C40F';
+            ctx.fillRect(cx + bodyW / 2 - 2, bodyTop + 8, 4, 6);
+            // Handle
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(cx + bodyW / 2 + 2, bodyTop + 14, 4, 8);
+            ctx.restore();
+        }
+
+        if (_config.accessory === 'shield') {
+            ctx.save();
+            ctx.fillStyle = '#8B4513';
+            ctx.strokeStyle = '#DAA520';
+            ctx.lineWidth = 2;
+            // Shield on arm
+            const shieldX = cx - bodyW / 2 - armW - 8;
+            const shieldY = bodyTop + armH / 2;
+            ctx.beginPath();
+            ctx.arc(shieldX, shieldY, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            // Emblem
+            ctx.fillStyle = '#DAA520';
+            ctx.beginPath();
+            ctx.arc(shieldX, shieldY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        if (_config.accessory === 'pet') {
+            ctx.save();
+            // Small pet floating beside player
+            ctx.fillStyle = '#FFB6C1';
+            ctx.strokeStyle = '#FF69B4';
+            ctx.lineWidth = 2;
+            const petX = cx + bodyW / 2 + 20;
+            const petY = legBottom - 15;
+            // Pet body (small blob)
+            ctx.beginPath();
+            ctx.ellipse(petX, petY, 10, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            // Pet eyes
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(petX - 3, petY - 2, 2, 0, Math.PI * 2);
+            ctx.arc(petX + 3, petY - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            // Float animation hint
+            ctx.strokeStyle = 'rgba(255,105,180,0.3)';
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(petX, petY + 10);
+            ctx.lineTo(petX, petY + 20);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        if (_config.accessory === 'emote-gear') {
+            ctx.save();
+            // Musical notes floating around
+            ctx.fillStyle = '#9B59B6';
+            ctx.font = '16px Arial';
+            ctx.fillText('♪', cx - bodyW / 2 - 15, headTop - 10);
+            ctx.fillText('♫', cx + bodyW / 2 + 15, headTop + 10);
             ctx.restore();
         }
     }

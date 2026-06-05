@@ -415,7 +415,49 @@ const Lobby = (() => {
             createdAt: Date.now(),
             code,
             createdBy: Auth.getCurrentUser(),
+            // Support for custom network settings from Creator Studio
+            networkSettings: formData.networkSettings || null,
+            // Game stays alive while creator's tab is open
+            persistentUntilTabClose: true,
         };
+
+        // Support for custom ICE/TURN servers from Creator Studio
+        // Creators can set their own TURN server, STUN defaults to Google's
+        if (gameConfig.networkSettings) {
+            if (gameConfig.networkSettings.turnServer) {
+                // Custom TURN server provided by creator
+                const customIceServers = [];
+                
+                // Add default Google STUN servers (always included)
+                customIceServers.push(
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                );
+                
+                // Add custom TURN server
+                if (typeof gameConfig.networkSettings.turnServer === 'string') {
+                    customIceServers.push({ urls: gameConfig.networkSettings.turnServer });
+                } else if (typeof gameConfig.networkSettings.turnServer === 'object') {
+                    customIceServers.push({
+                        urls: gameConfig.networkSettings.turnServer.urls,
+                        username: gameConfig.networkSettings.turnServer.username,
+                        credential: gameConfig.networkSettings.turnServer.credential
+                    });
+                }
+                
+                // Override ICE servers for this game session
+                BV.ICE_SERVERS = customIceServers;
+                console.log('[Lobby] Using custom TURN server for game:', code);
+            } else if (gameConfig.networkSettings.stunServer) {
+                // Custom STUN server (optional, Google is default)
+                const customIceServers = [
+                    { urls: gameConfig.networkSettings.stunServer },
+                    ...BV.DEFAULT_ICE_SERVERS.filter(s => s.urls.startsWith('turn:'))
+                ];
+                BV.ICE_SERVERS = customIceServers;
+                console.log('[Lobby] Using custom STUN server for game:', code);
+            }
+        }
 
         // Persist game config
         const games = _getUserGames();
@@ -444,7 +486,7 @@ const Lobby = (() => {
 
                 if (typeof UI !== 'undefined') UI.updateLoadingBar(60, 'Starting server...');
 
-                // Try to host via multiplayer
+                // Try to host via multiplayer with custom ICE servers
                 if (typeof Multiplayer !== 'undefined') {
                     Multiplayer.hostGame(code, gameConfig).then(() => {
                         if (typeof UI !== 'undefined') UI.updateLoadingBar(90, 'Almost ready...');

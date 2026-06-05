@@ -12,9 +12,9 @@ const BV = {
     PEERJS_SECURE: true,
     MAX_PLAYERS_PER_SERVER: 12,
 
-    // OpenRelay Project (Free TURN/STUN)
-    // Ensures connectivity through strict firewalls and ISPs.
-    ICE_SERVERS: [
+    // Default ICE Servers (OpenRelay + Google STUN)
+    // Creators can override these in Creator Studio with their own TURN/STUN servers
+    DEFAULT_ICE_SERVERS: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
         { 
@@ -33,6 +33,15 @@ const BV = {
             credential: 'openrelayproject' 
         }
     ],
+    
+    // Runtime ICE servers (can be overridden by creator settings)
+    // Initialized to DEFAULT_ICE_SERVERS if not set by creator
+    get ICE_SERVERS() {
+        return this._iceServers || this.DEFAULT_ICE_SERVERS;
+    },
+    set ICE_SERVERS(value) {
+        this._iceServers = value;
+    },
     
     // World
     BLOCK_SIZE: 1,
@@ -94,21 +103,23 @@ const BV = {
     // Default Toolbar
     DEFAULT_TOOLBAR: ['grass', 'stone', 'dirt', 'wood', 'brick', 'sand', 'plank', 'cobble', 'glass', 'iron'],
 
-    // Avatar Part Types
+    // Avatar Part Types - Expanded for more Roblox-like customization
     AVATAR_PARTS: {
-        head: ['default', 'round', 'square', 'pointy', 'cylindrical', 'flat'],
-        body: ['default', 'slim', 'wide', 'tall', 'blocky', 'curved'],
-        arms: ['default', 'short', 'long', 'thick', 'mechanical', 'ghostly'],
-        legs: ['default', 'short', 'long', 'hover', 'quad'],
-        accessory: ['none', 'hat', 'crown', 'wings', 'cape', 'horns', 'halo', 'scarf', 'aura'],
+        head: ['default', 'round', 'square', 'pointy', 'cylindrical', 'flat', 'roblox-classic', 'roblox-modern', 'anime', 'chibi'],
+        body: ['default', 'slim', 'wide', 'tall', 'blocky', 'curved', 'roblox-r6', 'roblox-r15', 'athletic', 'slender'],
+        arms: ['default', 'short', 'long', 'thick', 'mechanical', 'ghostly', 'roblox-classic', 'roblox-detailed', 'winged', 'robotic'],
+        legs: ['default', 'short', 'long', 'hover', 'quad', 'roblox-classic', 'roblox-detailed', 'animal', 'wheeled'],
+        accessory: ['none', 'hat', 'crown', 'wings', 'cape', 'horns', 'halo', 'scarf', 'aura', 'backpack', 'sword', 'shield', 'pet', 'emote-gear'],
     },
 
-    // Avatar Colors
+    // Avatar Colors - Expanded palette
     AVATAR_COLORS: [
         '#E74C3C', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
         '#2196F3', '#00BCD4', '#009688', '#4CAF50', '#8BC34A',
         '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722',
         '#795548', '#9E9E9E', '#607D8B', '#FFFFFF', '#000000',
+        '#FFB6C1', '#FFE4E1', '#F0E68C', '#E6E6FA', '#AFEEEE',
+        '#98FB98', '#FFEFD5', '#FFDAB9', '#DEB887', '#D2691E',
     ],
 
     // Game Categories
