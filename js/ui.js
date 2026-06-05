@@ -28,6 +28,45 @@ const UI = (() => {
     function init() {
         _setupModalDelegation();
         _setupResizeHandler();
+        _setupGitHubLinkButton();
+    }
+    
+    /** Set up GitHub link button in settings */
+    function _setupGitHubLinkButton() {
+        const btn = document.getElementById('btn-link-github');
+        const statusEl = document.getElementById('github-account-status');
+        
+        if (btn) {
+            btn.addEventListener('click', () => {
+                if (typeof Auth !== 'undefined' && Auth.linkGitHubAccount) {
+                    Auth.linkGitHubAccount();
+                } else {
+                    alert('Auth module not loaded yet.');
+                }
+            });
+        }
+        
+        // Update status on screen show
+        const originalOnLobby = _onLobbyScreen;
+        _onLobbyScreen = function() {
+            if (originalOnLobby) originalOnLobby();
+            
+            // Update GitHub status
+            setTimeout(() => {
+                if (statusEl && typeof Auth !== 'undefined' && Auth.getGitHubUsername) {
+                    const ghUser = Auth.getGitHubUsername();
+                    if (ghUser) {
+                        statusEl.textContent = `✅ Linked to @${ghUser}`;
+                        statusEl.style.color = '#4CAF50';
+                        if (btn) btn.textContent = '🔄 Relink Account';
+                    } else {
+                        statusEl.textContent = '❌ Not linked';
+                        statusEl.style.color = '#aaa';
+                        if (btn) btn.textContent = '🔗 Link GitHub Account';
+                    }
+                }
+            }, 100);
+        };
     }
 
     /**

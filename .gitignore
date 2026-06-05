@@ -72,3 +72,20 @@ target/
 *.tar.xz
 *.tar.zst
 ```
+# Security - Secrets and credentials
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets.json
+credentials.json
+*secret*
+*credential*
+
+# GitHub tokens (prevent accidental commits)
+.github_token
+.github_pat
+*github*token*
+*github*secret*
+

@@ -23,6 +23,16 @@ const Auth = (() => {
     };
 
     // ========================================
+    //  GitHub Device Flow Configuration
+    // ========================================
+    const GITHUB_CLIENT_ID = 'Ov23ligIlHtTGVeIIfoC';
+    const GITHUB_CLIENT_SECRET = '40badd746d3d3986327ee8b86d6b70553ebf30cd';
+    
+    // Device Flow state
+    let _deviceCodeData = null;
+    let _githubUsername = null;
+
+    // ========================================
     //  Public API
     // ========================================
 
@@ -32,6 +42,7 @@ const Auth = (() => {
      * - Wire up login / signup tab switching.
      * - Attach form submit handlers.
      * - Set up debounced username-availability checking.
+     * - Check if GitHub linking is needed.
      */
     function init() {
         // Restore session if one exists
@@ -40,7 +51,13 @@ const Auth = (() => {
             const userData = _loadUserData(session.username);
             if (userData) {
                 _currentUser = session.username;
+                _githubUsername = userData.githubUsername || null;
                 _dispatchLogin(session.username);
+                
+                // Check if user needs to link GitHub account
+                if (!_githubUsername && !localStorage.getItem('bv_github_link_dismissed')) {
+                    _showGitHubLinkPrompt();
+                }
             } else {
                 // Session references a deleted user – clear it
                 _clearSession();
@@ -353,6 +370,207 @@ const Auth = (() => {
     }
 
     // ========================================
+    //  GitHub Device Flow Functions
+    // ========================================
+    
+    async function _showGitHubLinkPrompt() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px; text-align: center;">
+                <h2 style="color: #fff; margin-bottom: 20px;">🔗 Link Your GitHub Account</h2>
+                <p style="color: #ccc; margin-bottom: 20px;">
+                    Link your GitHub account to unlock:
+                </p>
+                <ul style="text-align: left; color: #aaa; margin-bottom: 30px; list-style: disc; padding-left: 20px;">
+                    <li>☁️ Cloud game saving</li>
+                    <li>🌍 Publish games to the community</li>
+                    <li>📦 Access to the Community Hub</li>
+                    <li>🔓 Uncopylock your games (optional)</li>
+                </ul>
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <button id="btn-github-link" style="background: #6e5494; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">
+                        🔗 Link GitHub Account
+                    </button>
+                    <button id="btn-github-later" style="background: #444; color: #ccc; border: 1px solid #666; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px;">
+                        Maybe Later
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        document.getElementById('btn-github-link').addEventListener('click', () => {
+            modal.remove();
+            _startDeviceFlow();
+        });
+        
+        document.getElementById('btn-github-later').addEventListener('click', () => {
+            modal.remove();
+            localStorage.setItem('bv_github_link_dismissed', 'true');
+        });
+    }
+    
+    async function _startDeviceFlow() {
+        try {
+            // Step 1: Request device code from GitHub
+            const response = await fetch('https://github.com/login/device/code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                },
+                body: new URLSearchParams({
+                    client_id: GITHUB_CLIENT_ID,
+                    scope: 'public_repo,user'
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to get device code');
+            }
+            
+            const data = await response.json();
+            _deviceCodeData = data;
+            
+            // Show verification UI
+            _showVerificationUI(data);
+            
+            // Start polling for token
+            _pollForToken(data.device_code, data.interval);
+            
+        } catch (error) {
+            console.error('[Auth] Device Flow Error:', error);
+            alert('Failed to start GitHub linking. Please try again.');
+        }
+    }
+    
+    function _showVerificationUI(data) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.id = 'github-verification-modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px; text-align: center;">
+                <h2 style="color: #fff; margin-bottom: 20px;">🔐 Verify Your Device</h2>
+                <p style="color: #ccc; margin-bottom: 20px;">
+                    1. Go to: <a href="${data.verification_uri}" target="_blank" style="color: #6e5494;">${data.verification_uri}</a>
+                </p>
+                <p style="color: #ccc; margin-bottom: 20px;">
+                    2. Enter this code: <strong style="font-size: 24px; color: #fff; background: #333; padding: 10px 20px; border-radius: 8px; display: inline-block;">${data.user_code}</strong>
+                </p>
+                <div id="github-verification-status" style="color: #aaa; margin-top: 20px;">
+                    ⏳ Waiting for verification...
+                </div>
+                <button id="btn-github-cancel" style="margin-top: 20px; background: #444; color: #ccc; border: 1px solid #666; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        document.getElementById('btn-github-cancel').addEventListener('click', () => {
+            modal.remove();
+        });
+    }
+    
+    async function _pollForToken(deviceCode, interval) {
+        const statusEl = document.getElementById('github-verification-status');
+        let attempts = 0;
+        const maxAttempts = 300; // 15 minutes max
+        
+        const poll = async () => {
+            attempts++;
+            
+            if (attempts > maxAttempts) {
+                if (statusEl) statusEl.textContent = '❌ Verification timed out. Please try again.';
+                return;
+            }
+            
+            try {
+                const response = await fetch('https://github.com/login/oauth/access_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json'
+                    },
+                    body: new URLSearchParams({
+                        client_id: GITHUB_CLIENT_ID,
+                        client_secret: GITHUB_CLIENT_SECRET,
+                        device_code: deviceCode,
+                        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error === 'authorization_pending') {
+                    // Still waiting, continue polling
+                    setTimeout(poll, interval * 1000);
+                } else if (data.error === 'expired_token') {
+                    if (statusEl) statusEl.textContent = '❌ Code expired. Please restart the process.';
+                } else if (data.error === 'slow_down') {
+                    // GitHub is asking us to slow down
+                    setTimeout(poll, (interval + 5) * 1000);
+                } else if (data.access_token) {
+                    // Success! Get user info
+                    if (statusEl) statusEl.textContent = '✅ Verified! Fetching your GitHub profile...';
+                    await _fetchGitHubUser(data.access_token);
+                } else {
+                    if (statusEl) statusEl.textContent = '❌ An error occurred. Please try again.';
+                }
+            } catch (error) {
+                console.error('[Auth] Polling error:', error);
+                if (statusEl) statusEl.textContent = '❌ Network error. Please try again.';
+            }
+        };
+        
+        poll();
+    }
+    
+    async function _fetchGitHubUser(accessToken) {
+        try {
+            const response = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `token ${accessToken}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch GitHub user');
+            }
+            
+            const userData = await response.json();
+            _githubUsername = userData.login;
+            
+            // Save to user data
+            const currentUser = _currentUser;
+            if (currentUser) {
+                const existingData = _loadUserData(currentUser) || {};
+                existingData.githubUsername = _githubUsername;
+                existingData.githubAccessToken = accessToken;
+                _saveUserData(currentUser, existingData);
+            }
+            
+            // Close verification modal
+            const modal = document.getElementById('github-verification-modal');
+            if (modal) modal.remove();
+            
+            // Show success message
+            alert(`✅ Successfully linked to @${_githubUsername}!\n\nYou now have access to cloud saving and community features.`);
+            
+        } catch (error) {
+            console.error('[Auth] Failed to fetch GitHub user:', error);
+            alert('Failed to fetch GitHub profile. Please try again.');
+        }
+    }
+    
+    // Public method to manually link GitHub from settings
+    function linkGitHubAccount() {
+        _startDeviceFlow();
+    }
+
+    // ========================================
     //  Return the public interface
     // ========================================
     return {
@@ -366,5 +584,7 @@ const Auth = (() => {
         updateUserData,
         checkUsernameAvailability,
         getUsernameStatus,
+        linkGitHubAccount,
+        getGitHubUsername: () => _githubUsername,
     };
 })();
