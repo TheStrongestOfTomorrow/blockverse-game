@@ -290,6 +290,18 @@ const UI = (() => {
                 e.target.classList.add('hidden');
             }
         });
+
+        // Handle game card PLAY button clicks
+        document.addEventListener('click', (e) => {
+            const playBtn = e.target.closest('.game-card-play-btn');
+            if (playBtn) {
+                const code = playBtn.dataset.code;
+                if (code && typeof Lobby !== 'undefined') {
+                    e.stopPropagation();
+                    Lobby.joinGameByCode(code);
+                }
+            }
+        });
     }
 
     /** Dispatch resize events so World and Player can adapt. */
