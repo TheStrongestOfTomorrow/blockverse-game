@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
+import { createSessionToken, setSessionCookie } from '@/lib/auth';
+import { checkRateLimit, getClientIp, AUTH_RATE_LIMIT } from '@/lib/rate-limit';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -10,6 +12,13 @@ const loginSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    // Rate limit
+    const ip = getClientIp(request);
+    const { allowed } = checkRateLimit(`login:${ip}`, AUTH_RATE_LIMIT);
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
+
     const body = await request.json();
     const result = loginSchema.safeParse(body);
 
@@ -47,14 +56,9 @@ export async function POST(request: Request) {
       settings: user.settings,
     });
 
-    const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64');
-    response.cookies.set('bv_session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
+    // Set signed session cookie
+    const token = createSessionToken(user.id);
+    setSessionCookie(response, token);
 
     return response;
   } catch (error) {

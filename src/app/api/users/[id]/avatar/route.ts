@@ -1,17 +1,7 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { db } from '@/lib/db';
-
-function getUserIdFromRequest(request: Request): string | null {
-  const cookie = request.headers.get('cookie') || '';
-  const match = cookie.match(/bv_session=([^;]+)/);
-  if (!match) return null;
-  try {
-    const token = Buffer.from(match[1], 'base64').toString();
-    return token.split(':')[0] || null;
-  } catch {
-    return null;
-  }
-}
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function GET(
   _request: Request,
@@ -35,6 +25,10 @@ export async function GET(
   }
 }
 
+const updateAvatarSchema = z.object({
+  avatar: z.string().min(1).max(10000), // 10KB max for JSON avatar data
+});
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -51,15 +45,21 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { avatar } = body;
+    const result = updateAvatarSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json({ error: 'Invalid avatar data' }, { status: 400 });
+    }
 
-    if (!avatar || typeof avatar !== 'string') {
-      return NextResponse.json({ error: 'Avatar data required' }, { status: 400 });
+    // Validate that avatar is valid JSON
+    try {
+      JSON.parse(result.data.avatar);
+    } catch {
+      return NextResponse.json({ error: 'Avatar must be valid JSON' }, { status: 400 });
     }
 
     await db.user.update({
       where: { id },
-      data: { avatar },
+      data: { avatar: result.data.avatar },
     });
 
     return NextResponse.json({ success: true });

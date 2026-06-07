@@ -30,26 +30,11 @@ const BV = {
         }
     },
     
-    // Default ICE Servers (OpenRelay + Google STUN)
-    // Creators can override these in Creator Studio with their own TURN/STUN servers
+    // Default ICE Servers (STUN only — no hardcoded TURN credentials)
+    // Creators can configure their own TURN servers in Creator Studio settings
     DEFAULT_ICE_SERVERS: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        { 
-            urls: 'turn:openrelay.metered.ca:80', 
-            username: 'openrelayproject', 
-            credential: 'openrelayproject' 
-        },
-        { 
-            urls: 'turn:openrelay.metered.ca:443', 
-            username: 'openrelayproject', 
-            credential: 'openrelayproject' 
-        },
-        { 
-            urls: 'turn:openrelay.metered.ca:443?transport=tcp', 
-            username: 'openrelayproject', 
-            credential: 'openrelayproject' 
-        }
     ],
     
     // Runtime ICE servers (can be overridden by creator settings)
@@ -248,11 +233,11 @@ const Utils = {
 
     generateId: () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
 
-    hashPassword: async (password) => {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(password + 'blockverse_salt_2024');
-        const hash = await crypto.subtle.digest('SHA-256', data);
-        return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    // DEPRECATED: Password hashing is now handled server-side with bcrypt.
+    // This function is kept for backward compatibility only.
+    hashPassword: async (_password) => {
+        console.warn('[DEPRECATED] hashPassword should not be used client-side. Auth is handled server-side.');
+        return '';
     },
 
     clamp: (val, min, max) => Math.min(Math.max(val, min), max),

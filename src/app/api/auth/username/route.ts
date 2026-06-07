@@ -1,12 +1,26 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { checkRateLimit, getClientIp, API_RATE_LIMIT } from '@/lib/rate-limit';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ username: string }> }
 ) {
   try {
+    // Rate limit to prevent username enumeration
+    const ip = getClientIp(request);
+    const { allowed } = checkRateLimit(`username:${ip}`, API_RATE_LIMIT);
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const { username } = await params;
+
+    // Validate username format before querying
+    if (!username || username.length < 3 || username.length > 20 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      return NextResponse.json({ available: false });
+    }
+
     const existing = await db.user.findUnique({
       where: { username },
       select: { id: true },

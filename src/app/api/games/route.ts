@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { Utils } from '@/lib/constants';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 const createGameSchema = z.object({
   name: z.string().min(1, 'Name is required').max(50),
@@ -12,24 +13,12 @@ const createGameSchema = z.object({
   isPublic: z.boolean().default(true),
 });
 
-function getUserIdFromRequest(request: Request): string | null {
-  const cookie = request.headers.get('cookie') || '';
-  const match = cookie.match(/bv_session=([^;]+)/);
-  if (!match) return null;
-  try {
-    const token = Buffer.from(match[1], 'base64').toString();
-    return token.split(':')[0] || null;
-  } catch {
-    return null;
-  }
-}
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category') || 'all';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1') || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20') || 20));
     const search = searchParams.get('search') || '';
 
     const where: Record<string, unknown> = { isPublic: true };

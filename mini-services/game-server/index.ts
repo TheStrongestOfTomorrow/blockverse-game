@@ -4,12 +4,13 @@
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 
-const PORT = 3001;
+const PORT = parseInt(process.env.GAME_SERVER_PORT || '3001', 10);
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
 
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
-    origin: '*',
+    origin: ALLOWED_ORIGINS,
     methods: ['GET', 'POST'],
   },
 });
@@ -56,10 +57,30 @@ function checkRateLimit(socketId: string): boolean {
 
 // Input validation
 function validatePosition(pos: unknown): pos is { x: number; y: number; z: number } {
-  return typeof pos === 'object' && pos !== null &&
-    typeof (pos as Record<string, unknown>).x === 'number' &&
-    typeof (pos as Record<string, unknown>).y === 'number' &&
-    typeof (pos as Record<string, unknown>).z === 'number';
+  if (typeof pos !== 'object' || pos === null) return false;
+  const p = pos as Record<string, unknown>;
+  return typeof p.x === 'number' && typeof p.y === 'number' && typeof p.z === 'number' &&
+    isFinite(p.x) && isFinite(p.y) && isFinite(p.z) &&
+    Math.abs(p.x) < 10000 && Math.abs(p.y) < 10000 && Math.abs(p.z) < 10000;
+}
+
+function sanitizeString(input: unknown, maxLength: number): string {
+  if (typeof input !== 'string') return '';
+  return input.slice(0, maxLength).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+}
+
+const VALID_BLOCK_TYPES = new Set([
+  'grass', 'stone', 'dirt', 'wood', 'brick', 'sand', 'water', 'lava',
+  'glass', 'gold', 'diamond', 'obsidian', 'snow', 'ice', 'leaf',
+  'plank', 'cobble', 'iron',
+]);
+
+function validateBlockType(type: unknown): boolean {
+  return typeof type === 'string' && VALID_BLOCK_TYPES.has(type);
+}
+
+function validateCoordinate(val: unknown): boolean {
+  return typeof val === 'number' && isFinite(val) && Math.abs(val) < 10000;
 }
 
 io.on('connection', (socket) => {
@@ -81,7 +102,11 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const roomId = data.gameCode;
+    const gameCode = sanitizeString(data.gameCode, 20);
+    const username = sanitizeString(data.username, 30);
+    const name = sanitizeString(data.name || gameCode, 50);
+
+    const roomId = gameCode;
     if (rooms.has(roomId)) {
       socket.emit('error', { message: 'Room already exists' });
       return;
@@ -90,7 +115,7 @@ io.on('connection', (socket) => {
     const playerId = socket.id;
     const player: RoomPlayer = {
       id: playerId,
-      username: data.username,
+      username,
       isHost: true,
       position: { x: 0, y: 5, z: 0 },
       rotation: 0,
@@ -99,10 +124,10 @@ io.on('connection', (socket) => {
 
     const room: Room = {
       id: roomId,
-      gameCode: data.gameCode,
-      name: data.name || data.gameCode,
+      gameCode,
+      name,
       category: data.category || 'sandbox',
-      maxPlayers: data.maxPlayers || 12,
+      maxPlayers: Math.min(50, Math.max(1, data.maxPlayers || 12)),
       players: new Map([[playerId, player]]),
       hostId: playerId,
       createdAt: Date.now(),
@@ -114,7 +139,7 @@ io.on('connection', (socket) => {
 
     socket.join(roomId);
     socket.emit('hosted', { serverId: roomId, hostId: playerId });
-    console.log(`[GameServer] Room hosted: ${roomId} by ${data.username}`);
+    console.log(`[GameServer] Room hosted: ${roomId} by ${username}`);
   });
 
   // Join a room
@@ -124,7 +149,10 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const room = rooms.get(data.gameCode);
+    const gameCode = sanitizeString(data.gameCode, 20);
+    const username = sanitizeString(data.username, 30);
+
+    const room = rooms.get(gameCode);
     if (!room) {
       socket.emit('error', { message: 'Room not found' });
       return;
@@ -135,7 +163,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Check if already in room
     if (room.players.has(socket.id)) {
       socket.emit('error', { message: 'Already in room' });
       return;
@@ -144,7 +171,7 @@ io.on('connection', (socket) => {
     const playerId = socket.id;
     const player: RoomPlayer = {
       id: playerId,
-      username: data.username,
+      username,
       isHost: false,
       position: { x: 0, y: 5, z: 0 },
       rotation: 0,
@@ -152,12 +179,11 @@ io.on('connection', (socket) => {
     };
 
     room.players.set(playerId, player);
-    currentRoomId = data.gameCode;
+    currentRoomId = gameCode;
     currentPlayerId = playerId;
 
-    socket.join(data.gameCode);
+    socket.join(gameCode);
 
-    // Send current players to the joiner
     const playersList = Array.from(room.players.values()).map(p => ({
       id: p.id,
       username: p.username,
@@ -166,19 +192,18 @@ io.on('connection', (socket) => {
     }));
 
     socket.emit('joined', {
-      serverId: data.gameCode,
+      serverId: gameCode,
       players: playersList,
       hostId: room.hostId,
     });
 
-    // Notify others
-    socket.to(data.gameCode).emit('player_join', {
+    socket.to(gameCode).emit('player_join', {
       id: playerId,
-      username: data.username,
+      username,
       position: player.position,
     });
 
-    console.log(`[GameServer] ${data.username} joined room ${data.gameCode}`);
+    console.log(`[GameServer] ${username} joined room ${gameCode}`);
   });
 
   // Player position update
@@ -193,27 +218,29 @@ io.on('connection', (socket) => {
     if (!player) return;
 
     player.position = data.position;
-    player.rotation = data.rotation || 0;
+    player.rotation = typeof data.rotation === 'number' && isFinite(data.rotation) ? data.rotation : 0;
 
     socket.to(currentRoomId).emit('player_pos', {
       id: socket.id,
       position: data.position,
-      rotation: data.rotation,
+      rotation: player.rotation,
     });
   });
 
   // Block place
   socket.on('block_place', (data: { x: number; y: number; z: number; type: string }) => {
     if (!currentRoomId || !checkRateLimit(socket.id)) return;
+    if (!validateCoordinate(data.x) || !validateCoordinate(data.y) || !validateCoordinate(data.z)) return;
+    if (!validateBlockType(data.type)) return;
 
     const room = rooms.get(currentRoomId);
     if (!room) return;
 
     socket.to(currentRoomId).emit('block_place', {
       id: socket.id,
-      x: data.x,
-      y: data.y,
-      z: data.z,
+      x: Math.round(data.x),
+      y: Math.round(data.y),
+      z: Math.round(data.z),
       type: data.type,
     });
   });
@@ -221,15 +248,16 @@ io.on('connection', (socket) => {
   // Block remove
   socket.on('block_remove', (data: { x: number; y: number; z: number }) => {
     if (!currentRoomId || !checkRateLimit(socket.id)) return;
+    if (!validateCoordinate(data.x) || !validateCoordinate(data.y) || !validateCoordinate(data.z)) return;
 
     const room = rooms.get(currentRoomId);
     if (!room) return;
 
     socket.to(currentRoomId).emit('block_remove', {
       id: socket.id,
-      x: data.x,
-      y: data.y,
-      z: data.z,
+      x: Math.round(data.x),
+      y: Math.round(data.y),
+      z: Math.round(data.z),
     });
   });
 
@@ -243,7 +271,7 @@ io.on('connection', (socket) => {
     const player = room.players.get(socket.id);
     if (!player) return;
 
-    const message = typeof data.message === 'string' ? data.message.slice(0, 200) : '';
+    const message = sanitizeString(data.message, 200);
     if (!message) return;
 
     io.to(currentRoomId).emit('chat', {

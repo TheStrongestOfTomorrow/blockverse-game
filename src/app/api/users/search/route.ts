@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q') || '';
 

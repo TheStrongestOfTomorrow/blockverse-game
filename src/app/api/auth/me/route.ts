@@ -1,17 +1,10 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
-    const cookie = request.headers.get('cookie') || '';
-    const match = cookie.match(/bv_session=([^;]+)/);
-    if (!match) {
-      return NextResponse.json({ user: null }, { status: 401 });
-    }
-
-    const token = Buffer.from(match[1], 'base64').toString();
-    const userId = token.split(':')[0];
-
+    const userId = getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ user: null }, { status: 401 });
     }

@@ -1,77 +1,54 @@
-```
-# Compiled and build artifacts
-*.pyc
-__pycache__/
-*.o
-*.obj
-*.class
-*.exe
-*.dll
-*.so
-*.a
-*.out
-
 # Dependencies
 node_modules/
-venv/
-.venv/
+
+# Environment files
 .env
 .env.local
-.env.*
+.env.*.local
 
-# Logs and temp files
+# Build output
+.next/
+out/
+dist/
+standalone/
+
+# Database
+*.db
+*.db-journal
+
+# Logs
 *.log
-*.tmp
+npm-debug.log*
+bun-debug.log*
+
+# Editor / IDE
+.vscode/
+.idea/
 *.swp
 *.swo
 
-# Editors
-.vscode/
-.idea/
-
-# System files
+# OS
 .DS_Store
 Thumbs.db
 
 # Coverage
 coverage/
-htmlcov/
-.coverage
 
-# Build directories
-dist/
-build/
-target/
-.gradle/
-
-# Python cache
+# Python
+__pycache__/
+*.pyc
 .mypy_cache/
 .pytest_cache/
+
+# Verification screenshots
+verification/*.png
 
 # Compressed files
 *.zip
 *.gz
 *.tar
 *.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
-```
+
 # Security - Secrets and credentials
 *.pem
 *.key
@@ -80,12 +57,7 @@ target/
 *.pfx
 secrets.json
 credentials.json
-*secret*
-*credential*
 
-# GitHub tokens (prevent accidental commits)
+# GitHub tokens
 .github_token
 .github_pat
-*github*token*
-*github*secret*
-

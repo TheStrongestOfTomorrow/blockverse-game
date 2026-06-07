@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     const { id } = await params;
     const game = await db.game.findUnique({ where: { id } });
     if (!game) {

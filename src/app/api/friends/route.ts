@@ -1,17 +1,7 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { db } from '@/lib/db';
-
-function getUserIdFromRequest(request: Request): string | null {
-  const cookie = request.headers.get('cookie') || '';
-  const match = cookie.match(/bv_session=([^;]+)/);
-  if (!match) return null;
-  try {
-    const token = Buffer.from(match[1], 'base64').toString();
-    return token.split(':')[0] || null;
-  } catch {
-    return null;
-  }
-}
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
@@ -42,6 +32,10 @@ export async function GET(request: Request) {
   }
 }
 
+const sendRequestSchema = z.object({
+  toId: z.string().min(1),
+});
+
 export async function POST(request: Request) {
   try {
     const userId = getUserIdFromRequest(request);
@@ -50,13 +44,21 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { toId } = body;
-    if (!toId) {
+    const result = sendRequestSchema.safeParse(body);
+    if (!result.success) {
       return NextResponse.json({ error: 'Target user ID required' }, { status: 400 });
     }
 
+    const { toId } = result.data;
+
     if (toId === userId) {
       return NextResponse.json({ error: 'Cannot friend yourself' }, { status: 400 });
+    }
+
+    // Verify target user exists
+    const targetUser = await db.user.findUnique({ where: { id: toId } });
+    if (!targetUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Check if already friends
