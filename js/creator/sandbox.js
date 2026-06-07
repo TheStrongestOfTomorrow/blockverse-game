@@ -1,9 +1,12 @@
 // ============================================
-// BLOCKVERSE - Web Worker Sandbox (sandbox.js)
+// BLOCKVERSE - Web Worker Sandbox (sandbox.js) — LuaU Wrapper
 // ============================================
 // Creates an isolated Web Worker (via Blob URL for GitHub Pages compat)
 // that executes user scripts safely with the Game API injected.
-// Uses Luau-style API naming conventions for game scripting.
+// Uses LuaU (Roblox's typed Lua variant) API naming conventions for game scripting.
+// LuaU extends standard Lua with: type annotations, string interpolation,
+// compound assignments (+=, -=), continue, and generic for-in improvements.
+// The sandbox provides LuaU-compatible globals: Block, Player, Chat, UI, Tween, etc.
 // Enforces execution limits: max iterations, no infinite loops, timeout.
 // ============================================
 

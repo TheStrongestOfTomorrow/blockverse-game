@@ -14,6 +14,7 @@ const CommunityUI = {
     _isLoading: false,
     _itemsPerPage: 12,
     _selectedContent: null,
+    _publishSubTab: 'node-pack',  // node-pack | tutorial
 
     // ─── Initialization ───────────────────────────────────────────────
 
@@ -65,7 +66,7 @@ const CommunityUI = {
                     🏠 Browse
                 </button>
                 <button class="community-tab ${this._currentView === 'publish' ? 'active' : ''}" data-view="publish">
-                    ✏️ Publish Nodes
+                    ✏️ Publish
                 </button>
                 <button class="community-tab ${this._currentView === 'my-content' ? 'active' : ''}" data-view="my-content">
                     📂 My Content
@@ -176,20 +177,28 @@ const CommunityUI = {
                 <div class="community-empty-state">
                     <div class="empty-icon">🔒</div>
                     <h3>Login Required</h3>
-                    <p>Connect your GitHub account to publish node packs.</p>
+                    <p>Connect your GitHub account to publish content.</p>
                     <button class="btn btn-primary" id="publish-login-btn">Connect GitHub</button>
                 </div>
             `;
         }
 
+        const activeTab = this._publishSubTab || 'node-pack';
+
         return `
             <div class="community-publish">
                 <div class="section-header">
-                    <h2>✏️ Publish Node Pack</h2>
+                    <h2>✏️ Publish</h2>
+                </div>
+
+                <!-- Publish Sub-Tabs -->
+                <div class="community-filter-buttons" style="margin-bottom: 1rem;">
+                    <button class="btn btn-sm publish-type-btn ${activeTab === 'node-pack' ? 'btn-primary active' : 'btn-ghost'}" data-publish-type="node-pack">🧩 Node Pack</button>
+                    <button class="btn btn-sm publish-type-btn ${activeTab === 'tutorial' ? 'btn-primary active' : 'btn-ghost'}" data-publish-type="tutorial">📚 Tutorial</button>
                 </div>
 
                 <!-- Node Pack Form -->
-                <div class="publish-form" id="publish-node-pack-form">
+                <div class="publish-form ${activeTab !== 'node-pack' ? 'hidden' : ''}" id="publish-node-pack-form">
                     <div class="form-group">
                         <label>Pack Name *</label>
                         <input type="text" id="publish-pack-name" placeholder="My Awesome Node Pack" maxlength="60">
@@ -220,6 +229,47 @@ const CommunityUI = {
                     <div id="publish-pack-error" class="form-error"></div>
                     <button class="btn btn-primary btn-lg" id="publish-pack-btn">🚀 Publish Node Pack</button>
                     <div id="publish-pack-loading" class="auth-loading" style="display:none;">
+                        <div class="auth-spinner"></div> Publishing...
+                    </div>
+                </div>
+
+                <!-- Tutorial Form -->
+                <div class="publish-form ${activeTab !== 'tutorial' ? 'hidden' : ''}" id="publish-tutorial-form">
+                    <div class="form-group">
+                        <label>Title *</label>
+                        <input type="text" id="publish-tutorial-name" placeholder="Getting Started with BlockVerse" maxlength="80">
+                    </div>
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="publish-tutorial-desc" placeholder="Describe what this tutorial covers..." maxlength="500" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="publish-tutorial-category">
+                            <option value="Getting Started">📖 Getting Started</option>
+                            <option value="Building">🏗️ Building</option>
+                            <option value="Scripting">💻 Scripting</option>
+                            <option value="Multiplayer">👥 Multiplayer</option>
+                            <option value="Advanced">🎓 Advanced</option>
+                            <option value="General">📦 General</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Difficulty</label>
+                        <select id="publish-tutorial-difficulty">
+                            <option value="Beginner">🟢 Beginner</option>
+                            <option value="Intermediate">🟡 Intermediate</option>
+                            <option value="Advanced">🔴 Advanced</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Content / Steps *</label>
+                        <textarea id="publish-tutorial-steps" placeholder="Write your tutorial content in Markdown...&#10;&#10;## Step 1: Getting Started&#10;First, open the Creator Studio...&#10;&#10;## Step 2: Create a Node&#10;Click on the + button..." rows="12" style="font-family: var(--font-mono); font-size: 0.82rem;"></textarea>
+                        <small class="form-hint">Write your tutorial steps in Markdown. Use ## for step headings and code blocks for examples.</small>
+                    </div>
+                    <div id="publish-tutorial-error" class="form-error"></div>
+                    <button class="btn btn-primary btn-lg" id="publish-tutorial-btn">📚 Publish Tutorial</button>
+                    <div id="publish-tutorial-loading" class="auth-loading" style="display:none;">
                         <div class="auth-spinner"></div> Publishing...
                     </div>
                 </div>
@@ -667,11 +717,10 @@ const CommunityUI = {
                 items = await CommunityHub.browseContent(type, null, this._sortBy, this._currentPage);
             }
 
-            // If "all", also load games and merge
+            // If "all", also load tutorials and merge
             if (this._contentType === 'all' && !this._searchQuery) {
-                const games = await CommunityHub.browseContent('game', null, this._sortBy, this._currentPage);
                 const tutorials = await CommunityHub.browseContent('tutorial', null, this._sortBy, this._currentPage);
-                items = [...items, ...games, ...tutorials];
+                items = [...items, ...tutorials];
                 // Sort by updatedAt desc
                 items.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
                 // Deduplicate
@@ -842,6 +891,12 @@ const CommunityUI = {
                 return;
             }
 
+            // Publish tutorial
+            if (e.target.id === 'publish-tutorial-btn') {
+                this._publishTutorial();
+                return;
+            }
+
             // Import
             if (e.target.id === 'import-btn') {
                 this._importShareCode();
@@ -873,9 +928,11 @@ const CommunityUI = {
 
     _switchPublishType(type) {
         const nodeForm = document.getElementById('publish-node-pack-form');
-        const gameForm = document.getElementById('publish-game-form');
+        const tutorialForm = document.getElementById('publish-tutorial-form');
         const buttons = this._container.querySelectorAll('.publish-type-btn');
-        if (!nodeForm || !gameForm) return;
+        if (!nodeForm || !tutorialForm) return;
+
+        this._publishSubTab = type;
 
         buttons.forEach(b => {
             b.classList.remove('btn-primary', 'active');
@@ -889,10 +946,10 @@ const CommunityUI = {
 
         if (type === 'node-pack') {
             nodeForm.classList.remove('hidden');
-            gameForm.classList.add('hidden');
+            tutorialForm.classList.add('hidden');
         } else {
             nodeForm.classList.add('hidden');
-            gameForm.classList.remove('hidden');
+            tutorialForm.classList.remove('hidden');
         }
     },
 
@@ -978,6 +1035,63 @@ const CommunityUI = {
             nameEl.value = '';
             descEl.value = '';
             if (dataEl) dataEl.value = '';
+            CommunityHub._clearCache();
+        } else {
+            errorEl.textContent = result.error;
+            errorEl.style.display = 'block';
+        }
+    },
+
+    async _publishTutorial() {
+        const nameEl = document.getElementById('publish-tutorial-name');
+        const descEl = document.getElementById('publish-tutorial-desc');
+        const catEl = document.getElementById('publish-tutorial-category');
+        const diffEl = document.getElementById('publish-tutorial-difficulty');
+        const stepsEl = document.getElementById('publish-tutorial-steps');
+        const errorEl = document.getElementById('publish-tutorial-error');
+        const loadingEl = document.getElementById('publish-tutorial-loading');
+        const btn = document.getElementById('publish-tutorial-btn');
+
+        if (!nameEl || !descEl || !catEl || !diffEl || !stepsEl || !errorEl || !loadingEl || !btn) return;
+
+        errorEl.style.display = 'none';
+
+        // Validate required fields
+        if (!nameEl.value.trim()) {
+            errorEl.textContent = 'Title is required.';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (!descEl.value.trim()) {
+            errorEl.textContent = 'Description is required.';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (!stepsEl.value.trim()) {
+            errorEl.textContent = 'Content/Steps is required.';
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        loadingEl.style.display = 'flex';
+        btn.disabled = true;
+
+        const result = await CommunityHub.publishTutorial(
+            nameEl.value.trim(),
+            descEl.value.trim(),
+            stepsEl.value.trim(),
+            catEl.value,
+            diffEl.value
+        );
+
+        loadingEl.style.display = 'none';
+        btn.disabled = false;
+
+        if (result.success) {
+            this._showToast(`Tutorial published! Issue #${result.issueNumber}`, 'success');
+            nameEl.value = '';
+            descEl.value = '';
+            stepsEl.value = '';
             CommunityHub._clearCache();
         } else {
             errorEl.textContent = result.error;

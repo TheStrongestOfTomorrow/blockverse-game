@@ -25,15 +25,34 @@ const DeviceFlow = {
     // The client_secret is ONLY used server-side in the token exchange
     // to avoid CORS issues — client-side we use the device flow which
     // doesn't require the secret.
-    _clientId: 'Ov23ligIlHtTGVeIIfoC',
+    // The client_id is fetched from /api/github-oauth so it can be
+    // configured via the GITHUB_OAUTH_CLIENT_ID environment variable.
+    _clientId: null, // Loaded dynamically from API
 
     /**
-     * Initialize: use the built-in OAuth credentials.
+     * Initialize: fetch the OAuth client_id from the server API.
+     * If the API is unavailable, fall back to the built-in default.
      * Device Flow is now available out of the box — no setup needed!
      */
-    init() {
-        // Built-in client_id is always available
-        // No need for user configuration anymore
+    async init() {
+        if (this._clientId) return; // Already loaded
+
+        try {
+            const response = await fetch('/api/github-oauth');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.clientId) {
+                    this._clientId = data.clientId;
+                    console.log('[DeviceFlow] Loaded client_id from API:', this._clientId);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('[DeviceFlow] Could not fetch client_id from API, using default');
+        }
+
+        // Fallback to built-in default
+        this._clientId = 'Ov23ligIlHtTGVeIIfoC';
     },
 
     /**
@@ -244,10 +263,10 @@ const DeviceFlow = {
      * @param {HTMLElement} containerEl - DOM element to render into
      * @param {function} onSuccess - Callback(user) on successful auth
      */
-    renderAuthUI(containerEl, onSuccess) {
+    async renderAuthUI(containerEl, onSuccess) {
         if (!containerEl) return;
         this._onSuccessCallback = onSuccess;
-        this.init(); // Load built-in client_id
+        await this.init(); // Load client_id from API (async now)
 
         containerEl.innerHTML = `
             <div class="device-flow-ui">

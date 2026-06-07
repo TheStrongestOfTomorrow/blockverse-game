@@ -1,10 +1,12 @@
 // ============================================
-// BLOCKVERSE - Scripting Engine (engine.js)
+// BLOCKVERSE - Scripting Engine (engine.js) — LuaU Wrapper
 // ============================================
 // Core engine that bridges the visual node editor,
 // Monaco code editor, Web Worker sandbox, and Game API.
 // Manages script lifecycle: load, compile, run, stop.
-// Uses Luau-style scripting conventions for game logic.
+// Uses LuaU (Roblox's typed Lua variant) scripting conventions for game logic.
+// LuaU adds type safety, compound operators, string interpolation, and continue
+// over standard Lua, providing a familiar Roblox-like scripting experience.
 // ============================================
 
 const ScriptEngine = {
@@ -168,13 +170,13 @@ const ScriptEngine = {
     },
 
     // =============================================
-    // NODE COMPILER (Visual -> JavaScript)
+    // NODE COMPILER (Visual -> LuaU)
     // =============================================
 
     /**
-     * Compile a visual node graph to executable JavaScript.
+     * Compile a visual node graph to executable LuaU code.
      * @param {Object|string} nodeGraph - JSON node graph or string
-     * @returns {string} Executable JavaScript code
+     * @returns {string} Executable LuaU code string
      */
     compileNodesToJS(nodeGraph) {
         // If it's a string, try to parse it
@@ -182,17 +184,17 @@ const ScriptEngine = {
             try {
                 nodeGraph = JSON.parse(nodeGraph);
             } catch (e) {
-                return nodeGraph; // Already JS code
+                return nodeGraph; // Already code
             }
         }
 
         if (!nodeGraph || !nodeGraph.nodes) {
-            return '// No visual nodes to compile\n';
+            return '-- No visual nodes to compile\n';
         }
 
-        let code = '// Auto-generated from visual node editor\n\n';
-        code += '// Node events\n';
-        code += 'Events.on("gameStart", async function() {\n';
+        let code = '-- Auto-generated from visual node editor (LuaU)\n\n';
+        code += '-- Node events\n';
+        code += 'Events.On("gameStart", function()\n';
 
         // Process nodes in order
         const sortedNodes = (nodeGraph.nodes || []).sort((a, b) => (a.y || 0) - (b.y || 0));
@@ -203,37 +205,37 @@ const ScriptEngine = {
                     // Already wrapped in gameStart
                     break;
                 case 'block_place':
-                    code += '    Block.place(' + (node.x || 0) + ', ' + (node.y_pos || 0) + ', ' + (node.z || 0) + ', "' + (node.blockType || 'grass') + '");\n';
+                    code += '    Block.Place(' + (node.x || 0) + ', ' + (node.y_pos || 0) + ', ' + (node.z || 0) + ', "' + (node.blockType || 'grass') + '")\n';
                     break;
                 case 'block_remove':
-                    code += '    Block.remove(' + (node.x || 0) + ', ' + (node.y_pos || 0) + ', ' + (node.z || 0) + ');\n';
+                    code += '    Block.Remove(' + (node.x || 0) + ', ' + (node.y_pos || 0) + ', ' + (node.z || 0) + ')\n';
                     break;
                 case 'player_message':
-                    code += '    UI.showHint("' + (node.text || 'Hello!') + '", ' + (node.duration || 3) + ');\n';
+                    code += '    UI.ShowHint("' + (node.text || 'Hello!') + '", ' + (node.duration || 3) + ')\n';
                     break;
                 case 'play_sound':
-                    code += '    Sound.play("' + (node.soundName || 'click') + '");\n';
+                    code += '    Sound.Play("' + (node.soundName || 'click') + '")\n';
                     break;
                 case 'wait':
-                    code += '    await Tween.wait(' + (node.seconds || 1) + ');\n';
+                    code += '    task.wait(' + (node.seconds || 1) + ')\n';
                     break;
                 case 'set_score':
-                    code += '    UI.showScore(' + (node.score || 0) + ');\n';
+                    code += '    UI.ShowScore(' + (node.score || 0) + ')\n';
                     break;
                 case 'timer':
-                    code += '    Timer.' + (node.repeat ? 'every' : 'after') + '(' + (node.seconds || 1) + ', function() {\n';
-                    code += '        // Timer callback\n';
-                    code += '    });\n';
+                    code += '    Timer.' + (node.repeat ? 'Every' : 'After') + '(' + (node.seconds || 1) + ', function()\n';
+                    code += '        -- Timer callback\n';
+                    code += '    end)\n';
                     break;
                 case 'custom_code':
                     code += '    ' + (node.code || '') + '\n';
                     break;
                 default:
-                    code += '    // Unknown node type: ' + node.type + '\n';
+                    code += '    -- Unknown node type: ' + node.type + '\n';
             }
         }
 
-        code += '});\n';
+        code += 'end)\n';
         return code;
     },
 

@@ -643,25 +643,34 @@
             },
 
             _initWorld() {
-                // Initialize World with a dummy canvas so BlockRenderer works
-                World.init(document.getElementById('creator-canvas'));
+                // IMPORTANT: Do NOT call World.init(canvas) — it creates a second
+                // WebGLRenderer on the same canvas, causing a black screen conflict.
+                // Instead, manually wire World to use the creator's Three.js objects.
 
-                // Set up World to use our creator scene/camera
+                // Point World at our scene/camera/renderer (no second renderer created)
                 World.scene = this.scene;
                 World.camera = this.camera;
                 World.renderer = this.renderer;
 
-                // Generate default terrain
+                // Initialize groups that World methods expect
+                World._groundGroup = new THREE.Group();
+                World._groundGroup.name = 'terrain';
+                this.scene.add(World._groundGroup);
+
+                World.playerGroup = new THREE.Group();
+                World.playerGroup.name = 'players';
+                this.scene.add(World.playerGroup);
+
+                // Initialize BlockRenderer with the CREATOR's scene (not World's)
+                if (typeof BlockRenderer !== 'undefined') {
+                    BlockRenderer.init(this.scene);
+                }
+
+                // Generate default terrain (now adds to the correct scene)
                 World.generateTerrain('flat');
 
-                // Override renderer to use our canvas
-                window.addEventListener('resize', () => {
-                    const viewport = document.getElementById('creator-viewport');
-                    if (!viewport) return;
-                    this.renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-                    this.camera.aspect = viewport.clientWidth / viewport.clientHeight;
-                    this.camera.updateProjectionMatrix();
-                });
+                // Update UI block count after terrain generation
+                this._updateBlockCount();
             },
 
             _initUI() {

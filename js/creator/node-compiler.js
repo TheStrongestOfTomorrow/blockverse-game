@@ -1,10 +1,11 @@
 /**
- * BlockVerse Node Compiler
- * Compiles visual node graphs (from NodeEditor) into executable Luau-style scripts.
+ * BlockVerse Node Compiler — LuaU Wrapper
+ * Compiles visual node graphs (from NodeEditor) into executable LuaU-style scripts.
  * Traverses block trees starting from event (hat) blocks and generates
- * equivalent Luau code with proper nesting, parameters, and safety.
- * Luau is used as the scripting language (similar to Roblox's Luau),
- * providing a familiar game scripting experience.
+ * equivalent LuaU code with proper nesting, parameters, and safety.
+ * LuaU is Roblox's typed Lua variant — it adds type annotations, string interpolation,
+ * compound assignment operators, and continue support over standard Lua.
+ * All generated code follows LuaU conventions for a familiar Roblox-like scripting experience.
  */
 
 const NodeCompiler = {
@@ -19,7 +20,7 @@ const NodeCompiler = {
      */
     compile(blocks, context) {
         if (!blocks || blocks.length === 0) {
-            return '// No blocks to compile.';
+            return '-- No blocks to compile.';
         }
 
         const ctx = {
@@ -34,23 +35,24 @@ const NodeCompiler = {
         const hatBlocks = blocks.filter(b => b.isHat);
 
         if (hatBlocks.length === 0) {
-            ctx.errors.push('No event blocks found. Scripts need at least one event block (green) to start.');
+            ctx.errors.push('No event blocks found. LuaU scripts need at least one event block (green) to start.');
         }
 
         let code = '';
-        code += '// ==========================================\n';
-        code += '// BlockVerse — Generated Script\n';
-        code += '// Compiled at: ' + new Date().toISOString() + '\n';
-        code += '// Blocks: ' + blocks.length + ' | Events: ' + hatBlocks.length + '\n';
-        code += '// ==========================================\n\n';
+        code += '-- ==========================================\n';
+        code += '-- BlockVerse — Generated LuaU Script\n';
+        code += '-- Compiled at: ' + new Date().toISOString() + '\n';
+        code += '-- Blocks: ' + blocks.length + ' | Events: ' + hatBlocks.length + '\n';
+        code += '-- Runtime: LuaU (Roblox-compatible)\n';
+        code += '-- ==========================================\n\n';
 
-        // Variable declarations
+        // Variable declarations (LuaU uses local)
         const varNames = Object.keys(ctx.variables);
         if (varNames.length > 0) {
-            code += '// Variables\n';
+            code += '-- Variables\n';
             for (const name of varNames) {
                 const safeName = this._sanitizeVarName(name);
-                code += `var ${safeName} = ${this._sanitizeLiteral(ctx.variables[name], 'number')};\n`;
+                code += `local ${safeName} = ${this._sanitizeLiteral(ctx.variables[name], 'number')}\n`;
             }
             code += '\n';
         }
@@ -65,18 +67,18 @@ const NodeCompiler = {
 
         // Warnings
         if (ctx.warnings.length > 0) {
-            code += '// Warnings:\n';
+            code += '-- Warnings:\n';
             for (const w of ctx.warnings) {
-                code += '// ⚠ ' + w + '\n';
+                code += '-- Warning: ' + w + '\n';
             }
             code += '\n';
         }
 
         // Errors
         if (ctx.errors.length > 0) {
-            code += '// ERRORS:\n';
+            code += '-- ERRORS:\n';
             for (const e of ctx.errors) {
-                code += '// ❌ ' + e + '\n';
+                code += '-- ERROR: ' + e + '\n';
             }
         }
 
@@ -121,7 +123,7 @@ const NodeCompiler = {
                 break;
             default:
                 ctx.warnings.push(`Unknown block category: "${category}" (block: ${block.label})`);
-                code = this._indent(`// Unknown block: ${block.label}`, indent);
+                code = this._indent(`-- Unknown block: ${block.label}`, indent);
         }
 
         // Compile next block in sequence
@@ -174,59 +176,59 @@ const NodeCompiler = {
 
         switch (block.type) {
             case 'event_game_start':
-                code = this._indent('Events.on("gameStart", function() {', indent);
-                code += eventBody ? '\n' + eventBody : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('});', indent);
+                code = this._indent('Events.On("gameStart", function()', indent);
+                code += eventBody ? '\n' + eventBody : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('end)', indent);
                 break;
 
             case 'event_player_touches': {
                 const type = this._sanitizeLiteral(p.type || 'any', 'text');
-                code = this._indent(`Player.onTouched(${type}, function() {`, indent);
-                code += eventBody ? '\n' + eventBody : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('});', indent);
+                code = this._indent(`Player.OnTouched(${type}, function()`, indent);
+                code += eventBody ? '\n' + eventBody : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('end)', indent);
                 break;
             }
 
             case 'event_block_placed': {
                 const type = this._sanitizeLiteral(p.type || 'grass', 'text');
-                code = this._indent(`Block.onPlaced(${type}, function(x, y, z) {`, indent);
-                code += eventBody ? '\n' + eventBody : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('});', indent);
+                code = this._indent(`Block.OnPlaced(${type}, function(x, y, z)`, indent);
+                code += eventBody ? '\n' + eventBody : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('end)', indent);
                 break;
             }
 
             case 'event_timer': {
                 const seconds = this._sanitizeLiteral(p.seconds || '10', 'number');
-                code = this._indent(`Timer.after(${seconds}, function() {`, indent);
-                code += eventBody ? '\n' + eventBody : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('});', indent);
+                code = this._indent(`Timer.After(${seconds}, function()`, indent);
+                code += eventBody ? '\n' + eventBody : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('end)', indent);
                 break;
             }
 
             case 'event_player_joins':
-                code = this._indent('Events.on("playerJoin", function(player) {', indent);
-                code += eventBody ? '\n' + eventBody : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('});', indent);
+                code = this._indent('Events.On("playerJoin", function(player)', indent);
+                code += eventBody ? '\n' + eventBody : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('end)', indent);
                 break;
 
             case 'event_key_pressed': {
                 const key = this._sanitizeLiteral(p.key || 'E', 'text');
-                code = this._indent(`Input.onKey(${key}, function() {`, indent);
-                code += eventBody ? '\n' + eventBody : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('});', indent);
+                code = this._indent(`Input.OnKey(${key}, function()`, indent);
+                code += eventBody ? '\n' + eventBody : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('end)', indent);
                 break;
             }
 
             case 'control_receive': {
                 const eventName = this._sanitizeLiteral(p.event || 'my event', 'text');
-                code = this._indent(`Events.on("broadcast_${this._sanitizeEventName(p.event || 'my event')}", function() {`, indent);
-                code += eventBody ? '\n' + eventBody : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('});', indent);
+                code = this._indent(`Events.On("broadcast_${this._sanitizeEventName(p.event || 'my event')}", function()`, indent);
+                code += eventBody ? '\n' + eventBody : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('end)', indent);
                 break;
             }
 
             default:
-                code = this._indent(`// Unknown event: ${block.label}`, indent);
+                code = this._indent(`-- Unknown event: ${block.label}`, indent);
         }
 
         return code;
@@ -242,19 +244,19 @@ const NodeCompiler = {
                 const x = this._sanitizeLiteral(p.x || '0', 'number');
                 const y = this._sanitizeLiteral(p.y || '5', 'number');
                 const z = this._sanitizeLiteral(p.z || '0', 'number');
-                return this._indent(`Player.setPosition(${x}, ${y}, ${z});`, indent);
+                return this._indent(`Player.SetPosition(${x}, ${y}, ${z})`, indent);
             }
 
             case 'motion_move_by': {
                 const dx = this._sanitizeLiteral(p.dx || '0', 'number');
                 const dy = this._sanitizeLiteral(p.dy || '0', 'number');
                 const dz = this._sanitizeLiteral(p.dz || '0', 'number');
-                return this._indent('Player.moveRelative(' + dx + ', ' + dy + ', ' + dz + ');', indent);
+                return this._indent('Player.MoveRelative(' + dx + ', ' + dy + ', ' + dz + ')', indent);
             }
 
             case 'motion_set_speed': {
                 const speed = this._sanitizeLiteral(p.speed || '16', 'number');
-                return this._indent('Player.setSpeed(' + speed + ');', indent);
+                return this._indent('Player.SetSpeed(' + speed + ')', indent);
             }
 
             case 'motion_tween_to': {
@@ -262,11 +264,11 @@ const NodeCompiler = {
                 const y = this._sanitizeLiteral(p.y || '5', 'number');
                 const z = this._sanitizeLiteral(p.z || '0', 'number');
                 const seconds = this._sanitizeLiteral(p.seconds || '1', 'number');
-                return this._indent(`Tween.to(Player, { x: ${x}, y: ${y}, z: ${z} }, ${seconds});`, indent);
+                return this._indent(`Tween.To(Player, {x = ${x}, y = ${y}, z = ${z}}, ${seconds})`, indent);
             }
 
             default:
-                return this._indent(`// Unknown motion: ${block.label}`, indent);
+                return this._indent(`-- Unknown motion: ${block.label}`, indent);
         }
     },
 
@@ -281,14 +283,14 @@ const NodeCompiler = {
                 const y = this._sanitizeLiteral(p.y || '0', 'number');
                 const z = this._sanitizeLiteral(p.z || '0', 'number');
                 const type = this._sanitizeLiteral(p.type || 'stone', 'text');
-                return this._indent(`Block.place(${x}, ${y}, ${z}, ${type});`, indent);
+                return this._indent(`Block.Place(${x}, ${y}, ${z}, ${type})`, indent);
             }
 
             case 'block_remove': {
                 const x = this._sanitizeLiteral(p.x || '0', 'number');
                 const y = this._sanitizeLiteral(p.y || '0', 'number');
                 const z = this._sanitizeLiteral(p.z || '0', 'number');
-                return this._indent(`Block.remove(${x}, ${y}, ${z});`, indent);
+                return this._indent(`Block.Remove(${x}, ${y}, ${z})`, indent);
             }
 
             case 'block_if_is': {
@@ -298,20 +300,20 @@ const NodeCompiler = {
                 const type = this._sanitizeLiteral(p.type || 'gold', 'text');
                 const ind = indent + 1;
 
-                let code = this._indent(`if (Block.at(${x}, ${y}, ${z}) === ${type}) {`, indent);
+                let code = this._indent(`if Block.At(${x}, ${y}, ${z}) == ${type} then`, indent);
                 const bodyCode = this._compileChildren(block.children, ctx, ind);
-                code += bodyCode ? '\n' + bodyCode : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('}', indent);
+                code += bodyCode ? '\n' + bodyCode : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('end', indent);
                 return code;
             }
 
             case 'block_find_all': {
                 const type = this._sanitizeLiteral(p.type || 'gold', 'text');
-                return this._indent(`var foundBlocks = Block.findAll(${type});`, indent);
+                return this._indent(`local foundBlocks = Block.FindAll(${type})`, indent);
             }
 
             default:
-                return this._indent(`// Unknown blocks: ${block.label}`, indent);
+                return this._indent(`-- Unknown blocks: ${block.label}`, indent);
         }
     },
 
@@ -324,42 +326,42 @@ const NodeCompiler = {
         switch (block.type) {
             case 'control_wait': {
                 const seconds = this._sanitizeLiteral(p.seconds || '1', 'number');
-                return this._indent(`yield Tween.wait(${seconds});`, indent);
+                return this._indent(`task.wait(${seconds})`, indent);
             }
 
             case 'control_repeat': {
                 const times = this._sanitizeLiteral(p.times || '10', 'number');
-                let code = this._indent(`for (var _i = 0; _i < ${times}; _i++) {`, indent);
+                let code = this._indent(`for _i = 1, ${times} do`, indent);
                 const bodyCode = this._compileChildren(block.children, ctx, ind);
-                code += bodyCode ? '\n' + bodyCode : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('}', indent);
+                code += bodyCode ? '\n' + bodyCode : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('end', indent);
                 return code;
             }
 
             case 'control_forever': {
-                let code = this._indent('while (true) {', indent);
+                let code = this._indent('while true do', indent);
                 const bodyCode = this._compileChildren(block.children, ctx, ind);
-                code += bodyCode ? '\n' + bodyCode : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('    yield; // prevent infinite loop', ind);
-                code += '\n' + this._indent('}', indent);
-                ctx.warnings.push('"forever" loop detected. Ensure yield is called to prevent freezing.');
+                code += bodyCode ? '\n' + bodyCode : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('    task.wait() -- prevent infinite loop', ind);
+                code += '\n' + this._indent('end', indent);
+                ctx.warnings.push('"forever" loop detected. Ensure task.wait() is called to prevent freezing.');
                 return code;
             }
 
             case 'control_if': {
                 const condition = this._compileCondition(p.condition || 'true', ctx);
-                let code = this._indent(`if (${condition}) {`, indent);
+                let code = this._indent(`if ${condition} then`, indent);
                 const bodyCode = this._compileChildren(block.children, ctx, ind);
-                code += bodyCode ? '\n' + bodyCode : this._indent('// (empty)', ind);
+                code += bodyCode ? '\n' + bodyCode : this._indent('-- (empty)', ind);
 
                 // else body
                 if (block.elseChildren && block.elseChildren.length > 0) {
-                    code += '\n' + this._indent('} else {', indent);
+                    code += '\n' + this._indent('else', indent);
                     const elseCode = this._compileChildren(block.elseChildren, ctx, ind);
-                    code += elseCode ? '\n' + elseCode : this._indent('// (empty)', ind);
+                    code += elseCode ? '\n' + elseCode : this._indent('-- (empty)', ind);
                 }
 
-                code += '\n' + this._indent('}', indent);
+                code += '\n' + this._indent('end', indent);
                 return code;
             }
 
@@ -369,16 +371,16 @@ const NodeCompiler = {
             }
 
             case 'control_stop': {
-                return this._indent('return; // stop script', indent);
+                return this._indent('return -- stop script', indent);
             }
 
             case 'control_broadcast': {
                 const eventName = this._sanitizeLiteral(p.event || 'my event', 'text');
-                return this._indent(`Events.emit("broadcast_${this._sanitizeEventName(p.event || 'my event')}");`, indent);
+                return this._indent(`Events:Broadcast("broadcast_${this._sanitizeEventName(p.event || 'my event')}")`, indent);
             }
 
             default:
-                return this._indent(`// Unknown control: ${block.label}`, indent);
+                return this._indent(`-- Unknown control: ${block.label}`, indent);
         }
     },
 
@@ -390,30 +392,30 @@ const NodeCompiler = {
         switch (block.type) {
             case 'looks_show_hint': {
                 const text = this._sanitizeLiteral(p.text || 'Hello!', 'text');
-                return this._indent(`UI.showHint(${text});`, indent);
+                return this._indent(`UI.ShowHint(${text})`, indent);
             }
 
             case 'looks_show_score': {
                 const value = this._sanitizeLiteral(p.value || '0', 'text');
-                return this._indent(`UI.showScore(${value});`, indent);
+                return this._indent(`UI.ShowScore(${value})`, indent);
             }
 
             case 'looks_show_timer': {
                 const seconds = this._sanitizeLiteral(p.seconds || '60', 'number');
-                return this._indent(`UI.showTimer(${seconds});`, indent);
+                return this._indent(`UI.ShowTimer(${seconds})`, indent);
             }
 
             case 'looks_hide_ui': {
-                return this._indent('UI.hideAll();', indent);
+                return this._indent('UI.HideAll()', indent);
             }
 
             case 'looks_sky_color': {
                 const color = this._sanitizeLiteral(p.color || '#87CEEB', 'color');
-                return this._indent(`World.setSkyColor(${color});`, indent);
+                return this._indent(`World.SetSkyColor(${color})`, indent);
             }
 
             default:
-                return this._indent(`// Unknown looks: ${block.label}`, indent);
+                return this._indent(`-- Unknown looks: ${block.label}`, indent);
         }
     },
 
@@ -425,20 +427,20 @@ const NodeCompiler = {
         switch (block.type) {
             case 'sound_play': {
                 const name = this._sanitizeLiteral(p.name || 'coin', 'text');
-                return this._indent(`Sound.play(${name});`, indent);
+                return this._indent(`Sound.Play(${name})`, indent);
             }
 
             case 'sound_stop_all': {
-                return this._indent('Sound.stopAll();', indent);
+                return this._indent('Sound.StopAll()', indent);
             }
 
             case 'sound_set_volume': {
                 const volume = this._sanitizeLiteral(p.volume || '100', 'number');
-                return this._indent(`Sound.setVolume(${volume} / 100);`, indent);
+                return this._indent(`Sound.SetVolume(${volume} / 100)`, indent);
             }
 
             default:
-                return this._indent(`// Unknown sound: ${block.label}`, indent);
+                return this._indent(`-- Unknown sound: ${block.label}`, indent);
         }
     },
 
@@ -451,18 +453,18 @@ const NodeCompiler = {
             case 'var_set': {
                 const varName = this._sanitizeVarName(p.variable || 'myVar');
                 const value = this._resolveValue(p.value || '0', ctx);
-                return this._indent(`${varName} = ${value};`, indent);
+                return this._indent(`${varName} = ${value}`, indent);
             }
 
             case 'var_change': {
                 const varName = this._sanitizeVarName(p.variable || 'myVar');
                 const value = this._resolveValue(p.value || '1', ctx);
-                return this._indent(`${varName} += ${value};`, indent);
+                return this._indent(`${varName} += ${value}`, indent);
             }
 
             case 'var_show': {
                 const varName = this._sanitizeVarName(p.variable || 'myVar');
-                return this._indent(`UI.showVariable("${p.variable || 'myVar'}", ${varName});`, indent);
+                return this._indent(`UI.ShowVariable("${p.variable || 'myVar'}", ${varName})`, indent);
             }
 
             case 'var_if_equals': {
@@ -470,15 +472,15 @@ const NodeCompiler = {
                 const value = this._resolveValue(p.value || '0', ctx);
                 const ind = indent + 1;
 
-                let code = this._indent(`if (${varName} === ${value}) {`, indent);
+                let code = this._indent(`if ${varName} == ${value} then`, indent);
                 const bodyCode = this._compileChildren(block.children, ctx, ind);
-                code += bodyCode ? '\n' + bodyCode : this._indent('// (empty)', ind);
-                code += '\n' + this._indent('}', indent);
+                code += bodyCode ? '\n' + bodyCode : this._indent('-- (empty)', ind);
+                code += '\n' + this._indent('end', indent);
                 return code;
             }
 
             default:
-                return this._indent(`// Unknown variable: ${block.label}`, indent);
+                return this._indent(`-- Unknown variable: ${block.label}`, indent);
         }
     },
 
@@ -503,7 +505,7 @@ const NodeCompiler = {
         }
 
         if (!customDef) {
-            return this._indent(`// Custom block not found: "${block.label}"`, indent);
+            return this._indent(`-- Custom block not found: "${block.label}"`, indent);
         }
 
         // Use CustomNodes to generate code with input substitution
@@ -719,7 +721,7 @@ const NodeCompiler = {
      */
     compileWithBlocks(allBlocks, context) {
         if (!allBlocks || allBlocks.length === 0) {
-            return '// No blocks to compile.';
+            return '-- No blocks to compile.';
         }
 
         const ctx = {

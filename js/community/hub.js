@@ -364,6 +364,54 @@ const CommunityHub = {
         }
     },
 
+    /**
+     * Publish a tutorial as a GitHub Issue.
+     * @param {string} name - Tutorial title
+     * @param {string} description - Short description
+     * @param {string} steps - Markdown content/steps
+     * @param {string} category - Tutorial category
+     * @param {string} difficulty - Beginner | Intermediate | Advanced
+     */
+    async publishTutorial(name, description, steps, category, difficulty) {
+        if (!this.isAuthenticated()) {
+            return { success: false, error: 'You must be logged in to publish content.' };
+        }
+        if (!name || name.trim().length === 0) {
+            return { success: false, error: 'Title is required.' };
+        }
+        if (!steps || steps.trim().length === 0) {
+            return { success: false, error: 'Content/Steps is required.' };
+        }
+
+        const labels = ['tutorial'];
+        if (category) labels.push(category.toLowerCase());
+        if (difficulty) labels.push(difficulty.toLowerCase());
+
+        const title = `[TUTORIAL] ${name.trim()}`;
+        const body = this._contentToIssueBody({
+            type: 'tutorial',
+            name: name.trim(),
+            description: description || '',
+            author: this._username,
+            version: '1.0',
+            category: category || 'General',
+            steps: steps.trim(),
+            difficulty: difficulty || 'Beginner',
+        });
+
+        try {
+            const issue = await this._fetch(`/repos/${this._repoOwner}/${this._repoName}/issues`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, body, labels }),
+            });
+            this._clearCache();
+            return { success: true, issueNumber: issue.number, url: issue.html_url };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
     // ─── Download / Import Content ────────────────────────────────────
 
     /**
@@ -594,6 +642,18 @@ const CommunityHub = {
                 metadata.description = descMatch[1].trim();
             }
 
+            // Extract difficulty (tutorial-specific)
+            const difficultyMatch = body.match(/\*\*Difficulty:\*\*\s*(.+)/i);
+            if (difficultyMatch) {
+                metadata.difficulty = difficultyMatch[1].trim();
+            }
+
+            // Extract tutorial content section
+            const tutorialContentMatch = body.match(/###\s*Tutorial Content\s*\n([\s\S]*?)(?=\n###|\n---|$)/i);
+            if (tutorialContentMatch) {
+                metadata.steps = tutorialContentMatch[1].trim();
+            }
+
             // Extract JSON nodes if present
             const jsonMatch = body.match(/```json\s*\n([\s\S]*?)\n```/);
             if (jsonMatch) {
@@ -634,6 +694,8 @@ const CommunityHub = {
             nodes: metadata.nodes || null,
             nodeCount: metadata.nodeCount,
             shareCode: metadata.shareCode,
+            difficulty: metadata.difficulty || null,
+            steps: metadata.steps || null,
             ratings,
             comments: issue.comments || 0,
             verified: labels.includes('verified'),
@@ -649,7 +711,7 @@ const CommunityHub = {
     // ─── Content → Issue Body ─────────────────────────────────────────
 
     _contentToIssueBody(content) {
-        const { type, name, description, author, version, category, nodes, shareCode } = content;
+        const { type, name, description, author, version, category, nodes, shareCode, steps, difficulty } = content;
         const typeLabel = type === 'node-pack' ? 'Node Pack' : type === 'game' ? 'Game' : 'Tutorial';
         const nodeCount = nodes ? nodes.length : 0;
 
@@ -662,10 +724,18 @@ const CommunityHub = {
             body += `**Nodes:** ${nodeCount}\n`;
         }
 
+        if (type === 'tutorial' && difficulty) {
+            body += `**Difficulty:** ${difficulty}\n`;
+        }
+
         body += `\n### Description\n${description}\n`;
 
         if (type === 'node-pack' && nodes && nodes.length > 0) {
             body += `\n### Nodes\n\`\`\`json\n${JSON.stringify(nodes, null, 2)}\n\`\`\`\n`;
+        }
+
+        if (type === 'tutorial' && steps) {
+            body += `\n### Tutorial Content\n${steps}\n`;
         }
 
         if (shareCode) {

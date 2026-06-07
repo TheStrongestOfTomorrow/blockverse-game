@@ -2402,6 +2402,12 @@ img {
   transform: translateY(-2px);
 }
 
+.btn-rate.active {
+  background: var(--primary);
+  color: var(--primary-contrast, #fff);
+  border-color: var(--primary);
+}
+
 /* --- Main --- */
 .gd-main {
   padding: 2rem;

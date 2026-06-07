@@ -686,18 +686,18 @@
                                 </div>
                                 <div class="gd-stat-box">
                                     <span class="gd-stat-label">Visits</span>
-                                    <span class="gd-stat-value">1.2K+</span>
+                                    <span id="gd-visits" class="gd-stat-value">0</span>
                                 </div>
                                 <div class="gd-stat-box">
                                     <span class="gd-stat-label">Rating</span>
-                                    <span class="gd-stat-value">88%</span>
+                                    <span id="gd-rating" class="gd-stat-value">0%</span>
                                 </div>
                             </div>
 
                             <div class="gd-rating-actions">
-                                <button class="btn-rate" title="Like">👍 142</button>
-                                <button class="btn-rate" title="Dislike">👎 12</button>
-                                <button class="btn-rate" title="Favorite">⭐</button>
+                                <button id="gd-btn-like" class="btn-rate" title="Like">👍 <span id="gd-likes">0</span></button>
+                                <button id="gd-btn-dislike" class="btn-rate" title="Dislike">👎 <span id="gd-dislikes">0</span></button>
+                                <button id="gd-btn-favorite" class="btn-rate" title="Favorite">⭐</button>
                             </div>
                         </div>
 
@@ -761,9 +761,16 @@
                     <button class="modal-close">&times;</button>
                 </div>
                 <div class="form-group">
+                    <label>Privacy</label>
+                    <select id="create-private-privacy" style="width:100%;padding:0.6rem;border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border);">
+                        <option value="friends">Friends-Only — Friends can join freely</option>
+                        <option value="invite">Invite-Only — Only players with the code can join</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Set Password (Optional)</label>
-                    <input type="text" id="create-private-password" placeholder="Leave empty for No Password (Friends Only)">
-                    <small class="form-hint">Friends can always join. Others need the password.</small>
+                    <input type="text" id="create-private-password" placeholder="Leave empty for no password">
+                    <small class="form-hint">Adds an extra layer of protection for your room.</small>
                 </div>
                 <button id="btn-confirm-private-server" class="btn btn-primary btn-full">Launch Private World</button>
             </div>

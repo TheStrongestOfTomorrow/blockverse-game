@@ -15,6 +15,9 @@ const Lobby = (() => {
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
             color: '#4CAF50',
             players: 0,
+            visits: 3420,
+            likes: 287,
+            dislikes: 14,
         },
         {
             name: 'Sky Island',
@@ -25,6 +28,9 @@ const Lobby = (() => {
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
             color: '#00BCD4',
             players: 0,
+            visits: 2180,
+            likes: 195,
+            dislikes: 22,
         },
         {
             name: 'Tower of Doom',
@@ -35,6 +41,9 @@ const Lobby = (() => {
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
             color: '#E74C3C',
             players: 0,
+            visits: 5600,
+            likes: 412,
+            dislikes: 31,
         },
         {
             name: 'City Tycoon',
@@ -45,6 +54,9 @@ const Lobby = (() => {
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
             color: '#FFD700',
             players: 0,
+            visits: 1890,
+            likes: 156,
+            dislikes: 18,
         },
         {
             name: 'Pirate Adventure',
@@ -55,6 +67,9 @@ const Lobby = (() => {
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
             color: '#1565C0',
             players: 0,
+            visits: 970,
+            likes: 83,
+            dislikes: 9,
         },
         {
             name: 'Castle Siege',
@@ -65,6 +80,9 @@ const Lobby = (() => {
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
             color: '#9C27B0',
             players: 0,
+            visits: 4100,
+            likes: 340,
+            dislikes: 27,
         },
         {
             name: 'Speed Builder',
@@ -75,6 +93,9 @@ const Lobby = (() => {
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
             color: '#FF9800',
             players: 0,
+            visits: 2750,
+            likes: 210,
+            dislikes: 15,
         },
         {
             name: 'Village Life',
@@ -85,6 +106,9 @@ const Lobby = (() => {
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
             color: '#8D6E63',
             players: 0,
+            visits: 1340,
+            likes: 112,
+            dislikes: 8,
         },
         {
             name: 'Battle Arena',
@@ -95,6 +119,9 @@ const Lobby = (() => {
             maxPlayers: BV.MAX_PLAYERS_PER_SERVER,
             color: '#673AB7',
             players: 0,
+            visits: 3200,
+            likes: 265,
+            dislikes: 20,
         },
     ];
 
@@ -218,37 +245,116 @@ const Lobby = (() => {
         });
     }
 
+    function _formatStatNumber(n) {
+        if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M+';
+        if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K+';
+        return String(n);
+    }
+
     function _showGameDetails(game) {
         const modal = document.getElementById('game-detail-modal');
         if (!modal) return;
 
+        // Populate basic info
         document.getElementById('gd-name').textContent = game.name;
         document.getElementById('gd-desc').textContent = game.description;
         document.getElementById('gd-category').textContent = game.category.toUpperCase();
         document.getElementById('gd-players').textContent = game.players || 0;
 
+        // Populate thumbnail
         const thumb = document.getElementById('gd-thumb');
         const heroIcon = document.getElementById('gd-hero-icon');
         if (heroIcon) heroIcon.textContent = game.icon || '🎮';
         thumb.style.background = game.color || 'var(--primary)';
 
-        const playBtn = document.getElementById('gd-btn-play');
-        playBtn.onclick = () => {
-            if (game.isPrivate && !Friends.isFriend(game.host)) {
-                _showPasswordModal(game.serverId);
-            } else {
-                modal.classList.add('hidden');
-                joinGameByCode(game.serverId);
+        // Populate dynamic stats from game object (no hardcoded values)
+        const visits = game.visits || 0;
+        const likes = game.likes || 0;
+        const dislikes = game.dislikes || 0;
+        const totalVotes = likes + dislikes;
+        const ratingPercent = totalVotes > 0 ? Math.round((likes / totalVotes) * 100) : 0;
+
+        document.getElementById('gd-visits').textContent = _formatStatNumber(visits);
+        document.getElementById('gd-rating').textContent = ratingPercent + '%';
+        document.getElementById('gd-likes').textContent = likes;
+        document.getElementById('gd-dislikes').textContent = dislikes;
+
+        // Like / Dislike / Favorite buttons
+        const likeBtn = document.getElementById('gd-btn-like');
+        const dislikeBtn = document.getElementById('gd-btn-dislike');
+        const favoriteBtn = document.getElementById('gd-btn-favorite');
+
+        // Read user's past vote from localStorage so it persists per-game
+        const voteKey = 'bv-vote-' + game.code;
+        const favKey = 'bv-fav-' + game.code;
+        const savedVote = localStorage.getItem(voteKey);
+        const isFav = localStorage.getItem(favKey) === '1';
+
+        const _updateVoteUI = () => {
+            likeBtn.classList.toggle('active', savedVote === 'like');
+            dislikeBtn.classList.toggle('active', savedVote === 'dislike');
+            favoriteBtn.classList.toggle('active', isFav);
+        };
+        _updateVoteUI();
+
+        likeBtn.onclick = () => {
+            if (savedVote === 'like') return; // already voted
+            const lEl = document.getElementById('gd-likes');
+            const dEl = document.getElementById('gd-dislikes');
+            if (savedVote === 'dislike') {
+                game.dislikes = Math.max(0, (game.dislikes || 0) - 1);
+                dEl.textContent = game.dislikes;
             }
+            game.likes = (game.likes || 0) + 1;
+            lEl.textContent = game.likes;
+            localStorage.setItem(voteKey, 'like');
+            savedVote = 'like';
+            // Recalculate rating
+            const t = game.likes + game.dislikes;
+            document.getElementById('gd-rating').textContent = (t > 0 ? Math.round((game.likes / t) * 100) : 0) + '%';
+            _updateVoteUI();
+            Utils.showToast('Liked!', 'success');
         };
 
+        dislikeBtn.onclick = () => {
+            if (savedVote === 'dislike') return;
+            const lEl = document.getElementById('gd-likes');
+            const dEl = document.getElementById('gd-dislikes');
+            if (savedVote === 'like') {
+                game.likes = Math.max(0, (game.likes || 0) - 1);
+                lEl.textContent = game.likes;
+            }
+            game.dislikes = (game.dislikes || 0) + 1;
+            dEl.textContent = game.dislikes;
+            localStorage.setItem(voteKey, 'dislike');
+            savedVote = 'dislike';
+            const t = game.likes + game.dislikes;
+            document.getElementById('gd-rating').textContent = (t > 0 ? Math.round((game.likes / t) * 100) : 0) + '%';
+            _updateVoteUI();
+        };
+
+        favoriteBtn.onclick = () => {
+            const newFav = !isFav;
+            localStorage.setItem(favKey, newFav ? '1' : '0');
+            isFav = newFav;
+            _updateVoteUI();
+            Utils.showToast(newFav ? 'Added to favorites!' : 'Removed from favorites', 'success');
+        };
+
+        // PLAY button → creates a PUBLIC server (not private)
+        const playBtn = document.getElementById('gd-btn-play');
+        playBtn.onclick = () => {
+            modal.classList.add('hidden');
+            hostGame(game.code);
+        };
+
+        // Create Private → always available to any player
         const createPrivateBtn = document.getElementById('gd-btn-create-private');
+        createPrivateBtn.style.display = 'inline-block'; // always visible
         createPrivateBtn.onclick = () => {
             modal.classList.add('hidden');
             _showCreatePrivateModal(game);
         };
-        // Show create button only if user owns the game
-        createPrivateBtn.style.display = (game.createdBy === Auth.getCurrentUser()) ? 'inline-block' : 'none';
 
         const refreshBtn = document.getElementById('gd-refresh-servers');
         if (refreshBtn) {
@@ -275,13 +381,18 @@ const Lobby = (() => {
 
     function _showCreatePrivateModal(game) {
         const modal = document.getElementById('create-private-modal');
-        const input = document.getElementById('create-private-password');
+        const passwordInput = document.getElementById('create-private-password');
+        const privacySelect = document.getElementById('create-private-privacy');
         const btn = document.getElementById('btn-confirm-private-server');
 
+        passwordInput.value = '';
+        if (privacySelect) privacySelect.value = 'friends';
+
         btn.onclick = () => {
-            const password = input.value.trim();
+            const password = passwordInput.value.trim();
+            const privacy = privacySelect ? privacySelect.value : 'friends';
             modal.classList.add('hidden');
-            hostGame(game.code, { ...game, password, isPrivate: true });
+            hostGame(game.code, { ...game, password, isPrivate: true, privacy });
         };
         modal.classList.remove('hidden');
     }
