@@ -7,7 +7,7 @@
 const CommunityUI = {
     _container: null,
     _currentView: 'browse',   // browse | publish | my-content | tutorials | import
-    _contentType: 'all',      // all | node-pack | game | tutorial
+    _contentType: 'all',      // all | node-pack | tutorial
     _sortBy: 'newest',        // newest | popular | recently-updated
     _searchQuery: '',
     _currentPage: 1,
@@ -65,7 +65,7 @@ const CommunityUI = {
                     🏠 Browse
                 </button>
                 <button class="community-tab ${this._currentView === 'publish' ? 'active' : ''}" data-view="publish">
-                    ✏️ Publish
+                    ✏️ Publish Nodes
                 </button>
                 <button class="community-tab ${this._currentView === 'my-content' ? 'active' : ''}" data-view="my-content">
                     📂 My Content
@@ -128,7 +128,7 @@ const CommunityUI = {
             <div class="community-browse-controls">
                 <div class="community-search-box">
                     <span class="search-icon">🔍</span>
-                    <input type="text" id="community-search" placeholder="Search node packs, games, tutorials..." 
+                    <input type="text" id="community-search" placeholder="Search node packs, tutorials..." 
                            value="${this._escapeHtml(this._searchQuery)}" maxlength="100">
                 </div>
                 <div class="community-filters">
@@ -137,7 +137,6 @@ const CommunityUI = {
                         <div class="community-filter-buttons">
                             <button class="btn btn-sm ${this._contentType === 'all' ? 'btn-primary' : 'btn-ghost'}" data-filter-type="all">All</button>
                             <button class="btn btn-sm ${this._contentType === 'node-pack' ? 'btn-primary' : 'btn-ghost'}" data-filter-type="node-pack">🧩 Nodes</button>
-                            <button class="btn btn-sm ${this._contentType === 'game' ? 'btn-primary' : 'btn-ghost'}" data-filter-type="game">🎮 Games</button>
                             <button class="btn btn-sm ${this._contentType === 'tutorial' ? 'btn-primary' : 'btn-ghost'}" data-filter-type="tutorial">📚 Tutorials</button>
                         </div>
                     </div>
@@ -177,7 +176,7 @@ const CommunityUI = {
                 <div class="community-empty-state">
                     <div class="empty-icon">🔒</div>
                     <h3>Login Required</h3>
-                    <p>Connect your GitHub account to publish content.</p>
+                    <p>Connect your GitHub account to publish node packs.</p>
                     <button class="btn btn-primary" id="publish-login-btn">Connect GitHub</button>
                 </div>
             `;
@@ -186,13 +185,7 @@ const CommunityUI = {
         return `
             <div class="community-publish">
                 <div class="section-header">
-                    <h2>✏️ Publish Content</h2>
-                </div>
-
-                <!-- Publish Type Selector -->
-                <div class="publish-type-selector">
-                    <button class="btn btn-primary publish-type-btn active" data-publish-type="node-pack">🧩 Node Pack</button>
-                    <button class="btn btn-ghost publish-type-btn" data-publish-type="game">🎮 Game</button>
+                    <h2>✏️ Publish Node Pack</h2>
                 </div>
 
                 <!-- Node Pack Form -->
@@ -227,40 +220,6 @@ const CommunityUI = {
                     <div id="publish-pack-error" class="form-error"></div>
                     <button class="btn btn-primary btn-lg" id="publish-pack-btn">🚀 Publish Node Pack</button>
                     <div id="publish-pack-loading" class="auth-loading" style="display:none;">
-                        <div class="auth-spinner"></div> Publishing...
-                    </div>
-                </div>
-
-                <!-- Game Form -->
-                <div class="publish-form hidden" id="publish-game-form">
-                    <div class="form-group">
-                        <label>Game Name *</label>
-                        <input type="text" id="publish-game-name" placeholder="My Shared Game" maxlength="60">
-                    </div>
-                    <div class="form-group">
-                        <label>Description *</label>
-                        <textarea id="publish-game-desc" placeholder="Describe your game..." maxlength="500" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Category</label>
-                        <select id="publish-game-category">
-                            <option value="sandbox">🏗️ Sandbox</option>
-                            <option value="obby">🏃 Obby</option>
-                            <option value="tycoon">💰 Tycoon</option>
-                            <option value="racing">🏎️ Racing</option>
-                            <option value="adventure">⚔️ Adventure</option>
-                            <option value="roleplay">🎭 Roleplay</option>
-                            <option value="minigame">🎯 Minigame</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Game Data (JSON)</label>
-                        <textarea id="publish-game-data" placeholder='{"category":"obby","blocks":[...]}' rows="6" style="font-family: var(--font-mono); font-size: 0.82rem;"></textarea>
-                        <small class="form-hint">Optional: Export your game data from the Creator Studio and paste it here.</small>
-                    </div>
-                    <div id="publish-game-error" class="form-error"></div>
-                    <button class="btn btn-primary btn-lg" id="publish-game-btn">🚀 Publish Game</button>
-                    <div id="publish-game-loading" class="auth-loading" style="display:none;">
                         <div class="auth-spinner"></div> Publishing...
                     </div>
                 </div>

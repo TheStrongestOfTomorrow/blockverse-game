@@ -4,6 +4,7 @@
 // Core engine that bridges the visual node editor,
 // Monaco code editor, Web Worker sandbox, and Game API.
 // Manages script lifecycle: load, compile, run, stop.
+// Uses Luau-style scripting conventions for game logic.
 // ============================================
 
 const ScriptEngine = {

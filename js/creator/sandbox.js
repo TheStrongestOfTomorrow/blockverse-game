@@ -3,6 +3,7 @@
 // ============================================
 // Creates an isolated Web Worker (via Blob URL for GitHub Pages compat)
 // that executes user scripts safely with the Game API injected.
+// Uses Luau-style API naming conventions for game scripting.
 // Enforces execution limits: max iterations, no infinite loops, timeout.
 // ============================================
 

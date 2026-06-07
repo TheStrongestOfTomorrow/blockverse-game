@@ -1,8 +1,10 @@
 /**
  * BlockVerse Node Compiler
- * Compiles visual node graphs (from NodeEditor) into executable JavaScript.
+ * Compiles visual node graphs (from NodeEditor) into executable Luau-style scripts.
  * Traverses block trees starting from event (hat) blocks and generates
- * equivalent JavaScript code with proper nesting, parameters, and safety.
+ * equivalent Luau code with proper nesting, parameters, and safety.
+ * Luau is used as the scripting language (similar to Roblox's Luau),
+ * providing a familiar game scripting experience.
  */
 
 const NodeCompiler = {

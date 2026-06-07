@@ -19,40 +19,35 @@ const DeviceFlow = {
     _activeAuthTab: 'device-flow', // 'device-flow' | 'pat'
     _onSuccessCallback: null,
 
+    // ── OAuth App Credentials ──
+    // These are the BlockVerse Community GitHub OAuth App credentials.
+    // The client_id is safe to expose publicly (it's not a secret).
+    // The client_secret is ONLY used server-side in the token exchange
+    // to avoid CORS issues — client-side we use the device flow which
+    // doesn't require the secret.
+    _clientId: 'Ov23ligIlHtTGVeIIfoC',
+
     /**
-     * Initialize: load saved client_id from localStorage.
+     * Initialize: use the built-in OAuth credentials.
+     * Device Flow is now available out of the box — no setup needed!
      */
     init() {
-        const saved = localStorage.getItem('bv_oauth_client_id');
-        if (saved) {
-            this._clientId = saved;
-        }
+        // Built-in client_id is always available
+        // No need for user configuration anymore
     },
 
     /**
-     * Get the current client_id (may be null if not configured).
+     * Get the current client_id.
      */
     getClientId() {
-        return this._clientId || null;
+        return this._clientId;
     },
 
     /**
-     * Set the OAuth App client_id and persist it.
-     */
-    setClientId(clientId) {
-        this._clientId = clientId ? clientId.trim() : null;
-        if (this._clientId) {
-            localStorage.setItem('bv_oauth_client_id', this._clientId);
-        } else {
-            localStorage.removeItem('bv_oauth_client_id');
-        }
-    },
-
-    /**
-     * Check if device flow is available (has a client_id configured).
+     * Device Flow is always available now (built-in credentials).
      */
     isAvailable() {
-        return !!this._clientId;
+        return true;
     },
 
     /**
@@ -252,9 +247,7 @@ const DeviceFlow = {
     renderAuthUI(containerEl, onSuccess) {
         if (!containerEl) return;
         this._onSuccessCallback = onSuccess;
-        this.init(); // Load saved client_id
-
-        const hasClientId = this.isAvailable();
+        this.init(); // Load built-in client_id
 
         containerEl.innerHTML = `
             <div class="device-flow-ui">
@@ -278,10 +271,10 @@ const DeviceFlow = {
                     </button>
                 </div>
 
-                <!-- Device Flow Panel -->
+                <!-- Device Flow Panel (always ready now) -->
                 <div class="auth-panel ${this._activeAuthTab === 'device-flow' ? 'active' : ''}" 
                      id="auth-panel-device-flow">
-                    ${hasClientId ? this._renderDeviceFlowReady() : this._renderDeviceFlowSetup()}
+                    ${this._renderDeviceFlowReady()}
                 </div>
 
                 <!-- PAT Panel -->
@@ -297,7 +290,6 @@ const DeviceFlow = {
             tab.addEventListener('click', () => {
                 const tabName = tab.dataset.tab;
                 this._activeAuthTab = tabName;
-                // Update active states
                 containerEl.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 containerEl.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
@@ -305,12 +297,8 @@ const DeviceFlow = {
             });
         });
 
-        // Bind Device Flow events
-        if (hasClientId) {
-            this._bindDeviceFlowEvents(containerEl);
-        } else {
-            this._bindSetupEvents(containerEl);
-        }
+        // Bind Device Flow events (always available now)
+        this._bindDeviceFlowEvents(containerEl);
 
         // Bind PAT events
         this._bindPATEvents(containerEl);

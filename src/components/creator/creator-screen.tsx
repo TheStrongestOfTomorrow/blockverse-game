@@ -23,7 +23,7 @@ export function CreatorScreen() {
   const { setScreen, setCurrentGame, createGame } = useGameStore();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('build');
-  const [scriptContent, setScriptContent] = useState('-- BlockVerse Script Editor\n-- Write Lua-like scripts here\n\nfunction onPlayerJoin(player)\n  print("Welcome, " .. player.name)\nend\n');
+  const [scriptContent, setScriptContent] = useState('-- BlockVerse Script Editor\n-- Write Luau-style scripts here\n-- Luau is the scripting language used in BlockVerse (similar to Roblox Luau)\n\nfunction onPlayerJoin(player)\n  print("Welcome, " .. player.name)\nend\n');
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
 
   const buildTools = [
@@ -38,15 +38,38 @@ export function CreatorScreen() {
   ];
 
   const handlePlayTest = async () => {
-    const game = await createGame({
-      name: 'Test Game',
-      description: 'Creator Studio test',
-      category: 'sandbox',
-      template: 'flat',
-    });
-    if (game) {
-      setCurrentGame(game);
-      setScreen('game');
+    // Play Test: Initialize the 3D world and enter game mode
+    // This bridges the Creator Studio to the actual game engine
+    try {
+      const canvas = document.getElementById('creator-canvas') as HTMLCanvasElement;
+      if (typeof World !== 'undefined' && canvas) {
+        // Initialize the world with the canvas
+        if (!World.scene) {
+          World.init(canvas);
+        }
+        // Generate flat terrain for testing
+        World.generateTerrain('flat');
+        // Enter game mode
+        if (typeof App !== 'undefined') {
+          App.enterGame();
+        }
+        toast.success('Play test started! Press ESC to return.');
+      } else {
+        // Fallback: create game through store and switch to game screen
+        const game = await createGame({
+          name: 'Play Test',
+          description: 'Creator Studio play test',
+          category: 'sandbox',
+          template: 'flat',
+        });
+        if (game) {
+          setCurrentGame(game);
+          setScreen('game');
+        }
+      }
+    } catch (err) {
+      console.error('[Creator] Play test failed:', err);
+      toast.error('Failed to start play test. Try again.');
     }
   };
 
@@ -164,18 +187,20 @@ export function CreatorScreen() {
           </Tabs>
         </div>
 
-        {/* Main viewport */}
-        <div className="flex-1 bg-[#1a1a2e] flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-20 h-20 rounded-2xl bg-[#2d2d44] mx-auto mb-4 flex items-center justify-center">
-              <TreePine className="w-10 h-10 text-[#6c5ce7]" />
-            </div>
-            <h3 className="text-white font-semibold mb-1">Creator Studio</h3>
-            <p className="text-[#a0a0b0] text-sm mb-4">3D viewport would render here</p>
-            <p className="text-[#666] text-xs max-w-sm">
-              In the full version, this area shows a live 3D preview of your game world
-              where you can place blocks, adjust lighting, and test gameplay.
-            </p>
+        {/* Main viewport - 3D Canvas */}
+        <div className="flex-1 bg-[#1a1a2e] relative" id="creator-viewport">
+          <canvas id="creator-canvas" className="w-full h-full" />
+          {/* Viewport overlay controls */}
+          <div className="absolute top-2 right-2 flex gap-1">
+            <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-[#2d2d44] h-8 w-8" onClick={() => {
+              if (typeof World !== 'undefined') World.onResize?.();
+            }}>
+              <Maximize className="w-3 h-3" />
+            </Button>
+          </div>
+          {/* Viewport info */}
+          <div className="absolute bottom-2 left-2 text-[#666] text-xs">
+            {selectedBlock ? `Selected: ${BV.BLOCK_TYPES[selectedBlock]?.name || selectedBlock}` : 'Select a block to place'}
           </div>
         </div>
 
