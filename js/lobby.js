@@ -421,20 +421,16 @@ const Lobby = (() => {
             persistentUntilTabClose: true,
         };
 
-        // Support for custom ICE/TURN servers from Creator Studio
-        // Creators can set their own TURN server, STUN defaults to Google's
+        // Support for custom ICE/TURN servers from Creator Studio (OPTIONAL)
+        // Creators can set their own TURN server in addition to the default ones.
+        // The default TURN servers (from .env via /api/ice-servers) are ALWAYS included
+        // so multiplayer works out of the box. Custom TURN servers are ADDED on top.
         if (gameConfig.networkSettings) {
             if (gameConfig.networkSettings.turnServer) {
-                // Custom TURN server provided by creator
-                const customIceServers = [];
+                // Start with the existing ICE servers (includes default TURN from env)
+                const customIceServers = [...BV.ICE_SERVERS];
                 
-                // Add default Google STUN servers (always included)
-                customIceServers.push(
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                );
-                
-                // Add custom TURN server
+                // Add the creator's custom TURN server ON TOP of defaults
                 if (typeof gameConfig.networkSettings.turnServer === 'string') {
                     customIceServers.push({ urls: gameConfig.networkSettings.turnServer });
                 } else if (typeof gameConfig.networkSettings.turnServer === 'object') {
@@ -445,17 +441,17 @@ const Lobby = (() => {
                     });
                 }
                 
-                // Override ICE servers for this game session
+                // Override ICE servers for this game session (defaults + custom)
                 BV.ICE_SERVERS = customIceServers;
-                console.log('[Lobby] Using custom TURN server for game:', code);
+                console.log('[Lobby] Added custom TURN server on top of defaults for game:', code);
             } else if (gameConfig.networkSettings.stunServer) {
-                // Custom STUN server (optional, Google is default)
+                // Custom STUN server — add on top of existing ICE servers
                 const customIceServers = [
                     { urls: gameConfig.networkSettings.stunServer },
-                    ...BV.DEFAULT_ICE_SERVERS.filter(s => s.urls.startsWith('turn:'))
+                    ...BV.ICE_SERVERS,
                 ];
                 BV.ICE_SERVERS = customIceServers;
-                console.log('[Lobby] Using custom STUN server for game:', code);
+                console.log('[Lobby] Added custom STUN server for game:', code);
             }
         }
 

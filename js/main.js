@@ -33,9 +33,10 @@ const App = (() => {
     function init() {
         console.log(`[App] ${BV.NAME} v${BV.VERSION} starting... (tab: ${_TAB_ID})`);
 
-        // Initialize network settings (WebSocket only on localhost)
+        // Initialize network settings (WebSocket + fetch TURN servers from API)
+        // This is CRITICAL — without TURN servers, multiplayer is broken for most users.
         if (typeof BV.initNetworkSettings === 'function') {
-            BV.initNetworkSettings();
+            BV.initNetworkSettings(); // Fire and forget — ICE servers load async
         }
 
         _registerServiceWorker();
@@ -258,6 +259,9 @@ const App = (() => {
         try { if (typeof Friends !== 'undefined') Friends.init(); } catch (err) { console.error('[App] Friends.init failed:', err); }
         try { if (typeof Lobby !== 'undefined') Lobby.init(); } catch (err) { console.error('[App] Lobby.init failed:', err); }
         try { if (typeof Multiplayer !== 'undefined') Multiplayer.init(); } catch (err) { console.error('[App] Multiplayer.init failed:', err); }
+        // Note: Multiplayer.init() is now async and fetches TURN servers.
+        // It's called without await here so the lobby loads immediately.
+        // The ICE servers will be ready by the time a user clicks Host/Join.
 
         // Check for Device Flow Login prompt
         checkDeviceFlowLogin();

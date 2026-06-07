@@ -22,28 +22,91 @@ const BV = {
         return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     },
     
-    // Initialize WebSocket settings based on environment
-    initNetworkSettings: function() {
+    // Initialize network settings based on environment
+    // Call this once on app startup — it fetches TURN credentials and sets up WebSocket
+    initNetworkSettings: async function() {
         if (this.isLocalhost()) {
             this.USE_WEBSOCKET_RELAY = true;
             this.WEBSOCKET_RELAY_URL = 'ws://localhost:3000';
         }
+        
+        // Fetch TURN server credentials from the server API.
+        // This is CRITICAL for multiplayer — without TURN servers,
+        // most users behind NATs/firewalls cannot connect to peers.
+        await this.fetchIceServers();
     },
     
-    // Default ICE Servers (STUN only — no hardcoded TURN credentials)
-    // Creators can configure their own TURN servers in Creator Studio settings
+    // Default ICE Servers (STUN only — fallback if API fetch fails)
+    // TURN servers are fetched at runtime from /api/ice-servers to keep
+    // credentials out of the source code. STUN is included as a bare minimum.
     DEFAULT_ICE_SERVERS: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
     ],
     
-    // Runtime ICE servers (can be overridden by creator settings)
-    // Initialized to DEFAULT_ICE_SERVERS if not set by creator
+    // Runtime ICE servers (fetched from server + can be overridden by creator)
+    // On init, fetchIceServers() is called to populate this with TURN servers
+    // from environment variables. Creator Studio can also add custom TURN servers.
+    _iceServers: null,
+    _iceServersReady: false,
+    _iceServersPromise: null,
+    
     get ICE_SERVERS() {
         return this._iceServers || this.DEFAULT_ICE_SERVERS;
     },
     set ICE_SERVERS(value) {
         this._iceServers = value;
+    },
+    
+    /**
+     * Fetch ICE server configuration (including TURN) from the server API.
+     * TURN credentials are stored in environment variables on the server,
+     * never hardcoded in the client bundle.
+     * 
+     * This is called automatically during init. If the fetch fails, we
+     * fall back to STUN-only (which still works on some networks but
+     * will fail for users behind symmetric NATs).
+     * 
+     * @returns {Promise<Array>} The ICE servers array
+     */
+    fetchIceServers: async function() {
+        // Return cached result if already fetched
+        if (this._iceServersReady && this._iceServers) {
+            return this._iceServers;
+        }
+        
+        // Deduplicate concurrent calls
+        if (this._iceServersPromise) {
+            return this._iceServersPromise;
+        }
+        
+        this._iceServersPromise = (async () => {
+            try {
+                const response = await fetch('/api/ice-servers');
+                if (!response.ok) {
+                    throw new Error(`ICE API returned ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.iceServers && Array.isArray(data.iceServers) && data.iceServers.length > 0) {
+                    this._iceServers = data.iceServers;
+                    this._iceServersReady = true;
+                    
+                    const turnCount = data.iceServers.filter(s => s.urls && s.urls.startsWith('turn')).length;
+                    console.log(`[BV] ICE servers loaded: ${turnCount} TURN + ${data.iceServers.length - turnCount} STUN`);
+                    return this._iceServers;
+                }
+            } catch (err) {
+                console.warn('[BV] Failed to fetch ICE servers from API, using STUN-only fallback:', err);
+            }
+            
+            // Fallback to STUN-only — multiplayer may not work for all users
+            this._iceServers = this.DEFAULT_ICE_SERVERS;
+            this._iceServersReady = true;
+            console.warn('[BV] Using STUN-only fallback. Multiplayer may fail for users behind NAT/firewalls.');
+            return this._iceServers;
+        })();
+        
+        return this._iceServersPromise;
     },
     
     // Swear word filter list (configurable)

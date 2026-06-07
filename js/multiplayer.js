@@ -45,16 +45,21 @@ const Multiplayer = (() => {
 
     /**
      * Initialize the multiplayer module.
+     * Fetches TURN server credentials from the API before any connections are made.
      * Reuses the identity peer if Friends already created one.
      */
-    function init() {
+    async function init() {
+        // CRITICAL: Fetch ICE servers (including TURN) before any PeerJS connections.
+        // Without TURN servers, users behind NAT/firewalls cannot connect.
+        await BV.fetchIceServers();
+
         // Initialize WebSocket URL based on config (only enabled on localhost)
         if (BV.USE_WEBSOCKET_RELAY && BV.WEBSOCKET_RELAY_URL) {
             WS_URL = BV.WEBSOCKET_RELAY_URL;
         }
         
         // Share the identity peer with Friends if available
-        if (Friends.identityPeer && !Friends.identityPeer.destroyed) {
+        if (typeof Friends !== 'undefined' && Friends.identityPeer && !Friends.identityPeer.destroyed) {
             identityPeer = Friends.identityPeer;
         }
 
@@ -72,6 +77,10 @@ const Multiplayer = (() => {
         document.addEventListener('auth:logout', () => {
             leaveGame();
         });
+
+        console.log('[Multiplayer] Initialized with ICE servers:', BV.ICE_SERVERS.length,
+            BV.ICE_SERVERS.filter(s => s.urls && s.urls.startsWith('turn')).length, 'TURN +',
+            BV.ICE_SERVERS.filter(s => s.urls && s.urls.startsWith('stun')).length, 'STUN');
     }
 
     function _connectWebSocket() {
@@ -254,6 +263,10 @@ const Multiplayer = (() => {
                 host: BV.PEERJS_HOST,
                 port: BV.PEERJS_PORT,
                 secure: BV.PEERJS_SECURE,
+                config: {
+                    iceServers: BV.ICE_SERVERS || [],
+                    iceTransportPolicy: 'all'
+                }
             });
 
             newPeer.on('open', (id) => resolve(id));
@@ -795,6 +808,10 @@ const Multiplayer = (() => {
                 host: BV.PEERJS_HOST,
                 port: BV.PEERJS_PORT,
                 secure: BV.PEERJS_SECURE,
+                config: {
+                    iceServers: BV.ICE_SERVERS || [],
+                    iceTransportPolicy: 'all'
+                }
             });
 
             let resolved = false;
