@@ -19,10 +19,17 @@ const LobbyRegistry = (() => {
             return;
         }
 
-        // Use public Gun relays for discovery
-        gun = Gun([
+        const configuredPeers = window.BLOCKVERSE_GUN_PEERS ||
+            (localStorage.getItem('bv_gun_peers') || '')
+                .split(',')
+                .map((peer) => peer.trim())
+                .filter(Boolean);
+
+        // Use maintained public Gun relays for discovery by default; allow operators
+        // to override them without editing source for production deployments.
+        gun = Gun(configuredPeers.length ? configuredPeers : [
             'https://gun-manhattan.herokuapp.com/gun',
-            'https://libera.miraheze.org/gun'
+            'https://gun-relay.wallie.io/gun'
         ]);
 
         console.log('[LobbyRegistry] Initialized decentralized discovery');
@@ -41,7 +48,7 @@ const LobbyRegistry = (() => {
                 serverId: serverId,
                 gameCode: gameCode,
                 name: metadata.name || 'Public Server',
-                playerCount: metadata.playerCount || 0,
+                playerCount: Number.isFinite(metadata.playerCount) ? metadata.playerCount : 0,
                 maxPlayers: metadata.maxPlayers || 12,
                 lastSeen: Date.now(),
                 isPrivate: !!metadata.isPrivate,

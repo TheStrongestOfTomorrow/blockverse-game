@@ -47,7 +47,7 @@ export class PlayerController {
   private walkAnimTime = 0;
   private isActive = false;
 
-  private boundHandlers: Record<string, EventListener> = {};
+  private boundHandlers: Record<string, any> = {};
 
   bodyColor = '#3F51B5';
 

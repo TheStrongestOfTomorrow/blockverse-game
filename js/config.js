@@ -22,6 +22,13 @@ const BV = {
         return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     },
     
+    getApiUrl: function(path) {
+        if (path.startsWith('http')) return path;
+        const explicitBase = window.BLOCKVERSE_API_BASE || localStorage.getItem('bv_api_base') || '';
+        if (explicitBase) return `${explicitBase.replace(/\/$/, '')}${path}`;
+        return path;
+    },
+
     // Initialize network settings based on environment
     // Call this once on app startup — it fetches TURN credentials and sets up WebSocket
     initNetworkSettings: async function() {
@@ -82,7 +89,7 @@ const BV = {
         
         this._iceServersPromise = (async () => {
             try {
-                const response = await fetch('/api/ice-servers');
+                const response = await fetch(this.getApiUrl('/api/ice-servers'), { cache: 'no-store' });
                 if (!response.ok) {
                     throw new Error(`ICE API returned ${response.status}`);
                 }

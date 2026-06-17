@@ -11,7 +11,7 @@ export class ToolsEngine {
   private currentBlockType = 'grass';
   private currentPaintColor = '#4CAF50';
   private activeSlot = 0;
-  private toolbarSlots = [...BV.DEFAULT_TOOLBAR];
+  private toolbarSlots: string[] = [...BV.DEFAULT_TOOLBAR];
 
   private grabbedBlock: {
     key: string; x: number; y: number; z: number;
@@ -212,7 +212,8 @@ export class ToolsEngine {
     if (this.grabbedBlock.mesh.parent) {
       this.grabbedBlock.mesh.parent.remove(this.grabbedBlock.mesh);
     }
-    this.grabbedBlock.mesh.material.dispose();
+    if (Array.isArray(this.grabbedBlock.mesh.material)) this.grabbedBlock.mesh.material.forEach((material) => material.dispose());
+    else this.grabbedBlock.mesh.material.dispose();
 
     this.scene.addBlock(placeX, placeY, placeZ, this.grabbedBlock.type, true);
     if (this.grabbedBlock.customColor) {
@@ -231,7 +232,8 @@ export class ToolsEngine {
     if (this.grabbedBlock.mesh.parent) {
       this.grabbedBlock.mesh.parent.remove(this.grabbedBlock.mesh);
     }
-    this.grabbedBlock.mesh.material.dispose();
+    if (Array.isArray(this.grabbedBlock.mesh.material)) this.grabbedBlock.mesh.material.forEach((material) => material.dispose());
+    else this.grabbedBlock.mesh.material.dispose();
 
     this.scene.addBlock(this.grabbedBlock.x, this.grabbedBlock.y, this.grabbedBlock.z, this.grabbedBlock.type, false);
     this.grabbedBlock = null;
