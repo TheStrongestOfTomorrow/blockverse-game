@@ -38,7 +38,7 @@ const DeviceFlow = {
         if (this._clientId) return; // Already loaded
 
         try {
-            const response = await fetch('/api/github-oauth');
+            const response = await fetch((window.BV && BV.getApiUrl) ? BV.getApiUrl('/api/github-oauth') : '/api/github-oauth');
             if (response.ok) {
                 const data = await response.json();
                 if (data.clientId) {

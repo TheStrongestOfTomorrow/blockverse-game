@@ -313,7 +313,8 @@ export class ThreeScene {
     const mesh = this.customMeshes.get(key);
     if (mesh) {
       this.customGroup.remove(mesh);
-      mesh.material.dispose();
+      if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose());
+      else mesh.material.dispose();
       this.customMeshes.delete(key);
     }
   }
@@ -323,7 +324,8 @@ export class ThreeScene {
     const existing = this.customMeshes.get(key);
     if (existing) {
       this.customGroup.remove(existing);
-      existing.material.dispose();
+      if (Array.isArray(existing.material)) existing.material.forEach((material) => material.dispose());
+      else existing.material.dispose();
     }
     const mesh = new THREE.Mesh(this.geo, material);
     mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
@@ -422,7 +424,7 @@ export class ThreeScene {
       paint: 0x6c5ce7,
       grab: 0xffc107,
     };
-    this.highlightMesh.material.color.setHex(colors[mode] || 0x00ff00);
+    (this.highlightMesh.material as THREE.MeshBasicMaterial).color.setHex(colors[mode] || 0x00ff00);
 
     if (mode === 'place' && normal) {
       this.highlightMesh.position.set(
@@ -533,7 +535,7 @@ export class ThreeScene {
       }
       if (stage.checkpoint) {
         const [cx, cy, cz, ctype] = stage.checkpoint;
-        this.addBlock(cx, cy, cz, ctype);
+        this.addBlock(cx as number, cy as number, cz as number, ctype as string);
       }
     }
     for (let x = -20; x <= 25; x++)
@@ -704,7 +706,8 @@ export class ThreeScene {
     }
     for (const [, mesh] of this.customMeshes) {
       this.customGroup.remove(mesh);
-      mesh.material.dispose();
+      if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose());
+      else mesh.material.dispose();
     }
     this.customMeshes.clear();
   }
@@ -728,7 +731,7 @@ export class ThreeScene {
     // Highlight pulse
     if (this.highlightMesh && this.highlightMesh.visible) {
       const pulse = 0.5 + 0.3 * Math.sin(performance.now() * 0.006);
-      this.highlightMesh.material.opacity = pulse;
+      (this.highlightMesh.material as THREE.MeshBasicMaterial).opacity = pulse;
     }
   }
 

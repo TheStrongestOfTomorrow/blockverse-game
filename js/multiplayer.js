@@ -51,7 +51,11 @@ const Multiplayer = (() => {
     async function init() {
         // CRITICAL: Fetch ICE servers (including TURN) before any PeerJS connections.
         // Without TURN servers, users behind NAT/firewalls cannot connect.
-        await BV.fetchIceServers();
+        try {
+            await BV.fetchIceServers();
+        } catch (err) {
+            console.warn('[Multiplayer] ICE discovery failed; continuing with fallback STUN servers:', err);
+        }
 
         // Initialize WebSocket URL based on config (only enabled on localhost)
         if (BV.USE_WEBSOCKET_RELAY && BV.WEBSOCKET_RELAY_URL) {
@@ -336,6 +340,7 @@ const Multiplayer = (() => {
             gamePeer.on('open', () => {
                 // Connect to the host (WebRTC fallback)
                 const conn = gamePeer.connect(targetId, { reliable: true });
+                _setupConnectionHandlers(conn, targetId);
 
                 conn.on('open', () => {
                     connections.set(targetId, conn);
@@ -343,7 +348,7 @@ const Multiplayer = (() => {
 
                     // Send our info to the host
                     const myUsername = Auth.getCurrentUser();
-                    const myAvatar = Avatar ? Avatar.getConfig() : {};
+                    const myAvatar = (typeof Avatar !== 'undefined' && Avatar.getConfig) ? Avatar.getConfig() : {};
                     conn.send({
                         type: BV.MSG.PLAYER_JOIN,
                         payload: {
@@ -353,13 +358,6 @@ const Multiplayer = (() => {
                             password: password,
                         },
                     });
-
-                    // Set up data handler
-                    _setupConnectionHandlers(conn, targetId);
-                });
-
-                conn.on('data', (data) => {
-                    handleMessage(targetId, data);
                 });
 
                 conn.on('error', (err) => {
@@ -388,15 +386,24 @@ const Multiplayer = (() => {
 
             // Mark game as joined once we receive world state
             _joinResolve = resolve;
+            _joinReject = reject;
 
             // Timeout for join if neither works
-            setTimeout(() => {
-                if (!serverId && !useWebSocket) reject(new Error('Join timeout'));
-            }, 5000);
+            if (_joinTimeoutId) clearTimeout(_joinTimeoutId);
+            _joinTimeoutId = setTimeout(() => {
+                if (!serverId && !useWebSocket) {
+                    const err = new Error('Join timeout');
+                    _joinReject = null;
+                    _joinResolve = null;
+                    reject(err);
+                }
+            }, 8000);
         });
     }
 
     let _joinResolve = null;
+    let _joinReject = null;
+    let _joinTimeoutId = null;
 
     /**
      * Join a specific server (alias for joinGame).
@@ -438,7 +445,7 @@ const Multiplayer = (() => {
                     type: BV.MSG.PLAYER_JOIN,
                     payload: {
                         username: myUsername,
-                        avatar: Avatar ? Avatar.getConfig() : {},
+                        avatar: (typeof Avatar !== 'undefined' && Avatar.getConfig) ? Avatar.getConfig() : {},
                         peerId: gamePeer.id,
                     },
                 });
@@ -507,8 +514,11 @@ const Multiplayer = (() => {
             case BV.MSG.WORLD_STATE:
                 _onWorldState(payload);
                 if (_joinResolve) {
+                    if (_joinTimeoutId) clearTimeout(_joinTimeoutId);
+                    _joinTimeoutId = null;
                     _joinResolve();
                     _joinResolve = null;
+                    _joinReject = null;
                 }
                 break;
 
@@ -518,6 +528,21 @@ const Multiplayer = (() => {
                 document.dispatchEvent(
                     new CustomEvent('multiplayer:settings', { detail: { settings: payload } })
                 );
+                break;
+
+            // ---- Lobby probe from browser/server list ----
+            case BV.MSG.LOBBY_LIST_SERVERS:
+                if (amIHost) {
+                    sendToPeer(peerId, {
+                        type: BV.MSG.LOBBY_INFO,
+                        payload: {
+                            serverId: gamePeer ? gamePeer.id : serverId,
+                            playerCount: players.size + 1,
+                            maxPlayers: gameSettings.maxPlayers || BV.MAX_PLAYERS_PER_SERVER,
+                            gameSettings,
+                        },
+                    });
+                }
                 break;
 
             // ---- Lobby info response ----
@@ -535,6 +560,16 @@ const Multiplayer = (() => {
             // ---- Connect to peers (host tells client about other players) ----
             case 'connect_to_peers':
                 _onConnectToPeers(payload);
+                break;
+
+            case 'join_rejected':
+                if (_joinTimeoutId) clearTimeout(_joinTimeoutId);
+                _joinTimeoutId = null;
+                if (_joinReject) {
+                    _joinReject(new Error(payload.reason || 'Join rejected'));
+                    _joinReject = null;
+                    _joinResolve = null;
+                }
                 break;
 
             // ---- Host migration ----
@@ -838,7 +873,7 @@ const Multiplayer = (() => {
                     clearTimeout(timeout);
                     if (data && data.type === BV.MSG.LOBBY_INFO) {
                         finish({
-                            serverId,
+                            serverId: data.payload.serverId || serverPeerId,
                             playerCount: data.payload.playerCount || 0,
                             maxPlayers: data.payload.maxPlayers || BV.MAX_PLAYERS_PER_SERVER,
                         });
@@ -1018,6 +1053,9 @@ const Multiplayer = (() => {
             if (!isFriend && payload.password !== serverPassword) {
                 console.warn(`[Multiplayer] Unauthorized join attempt from ${payload.username}`);
                 const conn = connections.get(peerId);
+                if (conn && conn.open) {
+                    conn.send({ type: 'join_rejected', payload: { reason: 'Invalid password or permission denied' } });
+                }
                 if (conn) conn.close();
                 return;
             }

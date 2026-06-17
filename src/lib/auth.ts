@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { NextResponse } from 'next/server';
 
 // Session token format: userId.timestamp.hmac
 // Uses HMAC-SHA256 with a server secret to prevent forgery
@@ -69,7 +70,7 @@ export function getUserIdFromRequest(request: Request): string | null {
   }
 }
 
-export function setSessionCookie(response: Response | import('next/server').NextResponse, token: string): void {
+export function setSessionCookie(response: NextResponse, token: string): void {
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -79,7 +80,7 @@ export function setSessionCookie(response: Response | import('next/server').Next
   });
 }
 
-export function clearSessionCookie(response: Response | import('next/server').NextResponse): void {
+export function clearSessionCookie(response: NextResponse): void {
   response.cookies.set(SESSION_COOKIE_NAME, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

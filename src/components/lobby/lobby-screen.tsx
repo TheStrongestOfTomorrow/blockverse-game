@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { useGameStore, type LobbySection } from '@/lib/stores/game-store';
-import { BV, Utils } from '@/lib/constants';
+import { BV, Utils, type GameData } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -417,7 +417,7 @@ export function LobbyScreen() {
 }
 
 // Game Card Component
-function GameCard({ game, onPlay }: { game: { id: string; name: string; description: string; category: string; thumbnailColor: string; visits: number; activePlayers: number; maxPlayers: number; creator?: { username: string }; code: string }; onPlay: (game: typeof game) => void }) {
+function GameCard({ game, onPlay }: { game: GameData; onPlay: (game: GameData) => void }) {
   return (
     <Card className="glass-card game-card-hover overflow-hidden border-0">
       {/* Thumbnail */}
