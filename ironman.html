@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iron Man Free Sandbox</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { overflow:hidden; background:#0a0a1a; font-family:'Segoe UI',system-ui,sans-serif; }
+  canvas { display:block; }
+  #start-screen {
+    position:fixed; inset:0; z-index:100;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at center,#1a1a2e 0%,#0a0a1a 100%);
+    transition:opacity 0.5s;
+  }
+  #start-screen.hidden { opacity:0; pointer-events:none; }
+  #start-screen h1 {
+    font-size:48px; font-weight:800;
+    background:linear-gradient(135deg,#ffd700,#ff6b35,#ff4444);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    margin-bottom:8px;
+  }
+  #start-screen .subtitle { color:#6a6a8a; font-size:16px; margin-bottom:40px; letter-spacing:3px; text-transform:uppercase; }
+  #start-btn {
+    pointer-events:all; cursor:pointer; padding:14px 48px; font-size:18px; font-weight:700;
+    border:2px solid #ffd700; background:transparent; color:#ffd700;
+    border-radius:8px; text-transform:uppercase; letter-spacing:3px;
+    transition:all 0.2s;
+  }
+  #start-btn:hover { background:#ffd700; color:#0a0a1a; box-shadow:0 0 30px rgba(255,215,0,0.3); }
+  #start-screen .controls-info { color:#5a5a7a; font-size:12px; margin-top:24px; text-align:center; line-height:1.8; }
+  #start-screen .controls-info strong { color:#8a8aaa; }
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:10; }
+  #crosshair {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    z-index:11; pointer-events:none; width:24px; height:24px;
+  }
+  #crosshair-dot {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:4px; height:4px; border-radius:50%; background:#ff4444; box-shadow:0 0 6px #ff4444;
+  }
+</style>
+</head>
+<body>
+
+<div id="start-screen">
+  <h1>IRON MAN</h1>
+  <div class="subtitle">Free Sandbox</div>
+  <button id="start-btn">SUIT UP</button>
+  <div class="controls-info">
+    <strong>WASD</strong> &mdash; Fly &nbsp;|&nbsp; <strong>Mouse</strong> &mdash; Look &nbsp;|&nbsp; <strong>Space</strong> &mdash; Ascend<br>
+    <strong>Shift</strong> &mdash; Descend &nbsp;|&nbsp; <strong>Click</strong> &mdash; Fire Repulsors
+  </div>
+</div>
+
+<div id="hud">
+  <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);color:#ffd700;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 10px rgba(255,215,0,0.3)">IRON MAN &mdash; MARK I</div>
+  <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;gap:40px;align-items:center">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="color:#8a8a9a;font-size:10px;text-transform:uppercase;letter-spacing:1px">Suit Power</div>
+      <div style="width:160px;height:12px;background:rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)">
+        <div id="power-bar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,#ff4444,#ffd700);width:100%"></div>
+      </div>
+      <div style="color:#ffd700;font-size:12px;font-weight:600;margin-top:2px"><span id="hud-power-val">100</span>%</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="color:#8a8a9a;font-size:10px;text-transform:uppercase;letter-spacing:1px">Flight Speed</div>
+      <div style="width:160px;height:12px;background:rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)">
+        <div id="speed-bar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,#4488ff,#44ff88);width:10%"></div>
+      </div>
+      <div style="color:#44ff88;font-size:12px;font-weight:600;margin-top:2px"><span id="hud-speed-val">0</span> m/s</div>
+    </div>
+  </div>
+</div>
+
+<div id="crosshair"><div id="crosshair-dot"></div></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// =============================================
+// IRON MAN FREE SANDBOX
+// =============================================
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a1a);
+scene.fog = new THREE.Fog(0x0a0a1a, 120, 250);
+
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 300);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.prepend(renderer.domElement);
+
+// Lighting
+const ambient = new THREE.AmbientLight(0x222244, 0.5);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xffeedd, 2);
+sun.position.set(50, 80, 30);
+sun.castShadow = true;
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 200;
+sun.shadow.camera.left = -100;
+sun.shadow.camera.right = 100;
+sun.shadow.camera.top = 100;
+sun.shadow.camera.bottom = -100;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x4488ff, 0.3);
+fill.position.set(-30, 20, -40);
+scene.add(fill);
+
+// Geometry
+const geo = new THREE.BoxGeometry(1, 1, 1);
+const worldGroup = new THREE.Group();
+scene.add(worldGroup);
+
+// Build world from voxel assets
+const groundMat = new THREE.MeshLambertMaterial({ color: 0x4e7d34 });
+const groundMat2 = new THREE.MeshLambertMaterial({ color: 0x5a8c3e });
+const waterMat = new THREE.MeshLambertMaterial({ color: 0x1a3a6a, transparent: true, opacity: 0.5 });
+const buildMat = new THREE.MeshLambertMaterial({ color: 0x3a3a5a });
+const buildMat2 = new THREE.MeshLambertMaterial({ color: 0x4a3a4a });
+const towerMat = new THREE.MeshLambertMaterial({ color: 0x5a5a7a });
+
+async function buildWorld() {
+  try {
+    const gRes = await fetch('/art/voxel/tile-ground.json');
+    const gData = await gRes.json();
+    for (let gx = -2; gx <= 2; gx++) {
+      for (let gz = -2; gz <= 2; gz++) {
+        for (const v of gData.voxels) {
+          const m = new THREE.Mesh(geo, (gx + gz) % 2 === 0 ? groundMat : groundMat2);
+          m.position.set(gx * 16 + v.x, v.y - 0.5, gz * 16 + v.z);
+          m.receiveShadow = true;
+          worldGroup.add(m);
+        }
+      }
+    }
+  } catch(e) { console.warn('ground', e); }
+
+  try {
+    const bRes = await fetch('/art/voxel/tile-building.json');
+    const bData = await bRes.json();
+    const positions = [[-20,-20],[15,-18],[-15,22],[25,10],[-30,-5],[5,-30],[30,-15],[-25,15],[-35,-25],[20,25]];
+    for (const [bx,bz] of positions) {
+      const mat = Math.random() > 0.5 ? buildMat : buildMat2;
+      for (const v of bData.voxels) {
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set(bx + v.x, v.y, bz + v.z);
+        m.castShadow = true; m.receiveShadow = true;
+        worldGroup.add(m);
+      }
+    }
+  } catch(e) { console.warn('buildings', e); }
+
+  try {
+    const wRes = await fetch('/art/voxel/tile-water.json');
+    const wData = await wRes.json();
+    for (let wx = -3; wx <= 3; wx++) {
+      for (let wz = -3; wz <= 3; wz++) {
+        if (Math.abs(wx) <= 2 && Math.abs(wz) <= 2) continue;
+        for (const v of wData.voxels) {
+          const m = new THREE.Mesh(geo, waterMat);
+          m.position.set(wx * 16 + v.x, -0.3, wz * 16 + v.z);
+          worldGroup.add(m);
+        }
+      }
+    }
+  } catch(e) { console.warn('water', e); }
+
+  try {
+    const tRes = await fetch('/art/voxel/tile-tower.json');
+    const tData = await tRes.json();
+    for (const [tx,tz] of [[-40,-40],[40,40],[-40,40],[40,-40]]) {
+      for (const v of tData.voxels) {
+        const m = new THREE.Mesh(geo, towerMat);
+        m.position.set(tx + v.x, v.y, tz + v.z);
+        m.castShadow = true;
+        worldGroup.add(m);
+      }
+    }
+  } catch(e) { console.warn('towers', e); }
+}
+
+// Player character
+const playerGroup = new THREE.Group();
+let playerLoaded = false;
+
+async function loadPlayer() {
+  try {
+    const res = await fetch('/art/voxel/mark-i-suit.json');
+    const data = await res.json();
+    for (const v of data.voxels) {
+      const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(v.color) });
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(v.x, v.y, v.z);
+      playerGroup.add(m);
+    }
+    const size = data.gridSize || [16, 16, 16];
+    playerGroup.position.set(-size[0]/2, 0, -size[2]/2);
+    playerGroup.scale.set(0.8, 0.8, 0.8);
+    playerLoaded = true;
+  } catch(e) {
+    console.warn('Suit not loaded, using fallback', e);
+    const body = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0xc41e3a }));
+    body.scale.set(1, 1.5, 0.6);
+    body.position.y = 1.5;
+    playerGroup.add(body);
+    const head = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0xffd700 }));
+    head.scale.set(0.6, 0.6, 0.6);
+    head.position.y = 2.5;
+    playerGroup.add(head);
+    playerLoaded = true;
+  }
+  scene.add(playerGroup);
+}
+
+// Player state
+const player = {
+  pos: new THREE.Vector3(0, 5, 0),
+  vel: new THREE.Vector3(0, 0, 0),
+  yaw: 0, pitch: 0,
+  maxSpeed: 30, accel: 0.4, drag: 0.92,
+  power: 100,
+};
+
+// Controls
+const keys = {};
+document.addEventListener('keydown', e => keys[e.code] = true);
+document.addEventListener('keyup', e => keys[e.code] = false);
+let locked = false, mx = 0, my = 0;
+renderer.domElement.addEventListener('click', () => {
+  if (!locked) { renderer.domElement.requestPointerLock(); }
+});
+document.addEventListener('pointerlockchange', () => {
+  locked = document.pointerLockElement === renderer.domElement;
+});
+document.addEventListener('mousemove', e => {
+  if (locked) { mx += e.movementX; my += e.movementY; }
+});
+
+// Start
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('start-screen').classList.add('hidden');
+  renderer.domElement.requestPointerLock();
+});
+
+// HUD refs
+const powerBar = document.getElementById('power-bar');
+const speedBar = document.getElementById('speed-bar');
+const powerVal = document.getElementById('hud-power-val');
+const speedVal = document.getElementById('hud-speed-val');
+
+// Game loop
+const clock = new THREE.Clock();
+
+async function init() {
+  await buildWorld();
+  await loadPlayer();
+
+  function loop() {
+    requestAnimationFrame(loop);
+    const dt = Math.min(clock.getDelta(), 0.05);
+
+    if (locked) {
+      player.yaw -= mx * 0.002;
+      player.pitch -= my * 0.002;
+      player.pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, player.pitch));
+      mx = 0; my = 0;
+    }
+
+    const fwd = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+    const rgt = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+    const dir = new THREE.Vector3(0, 0, 0);
+    if (keys['KeyW']) dir.add(fwd);
+    if (keys['KeyS']) dir.sub(fwd);
+    if (keys['KeyA']) dir.sub(rgt);
+    if (keys['KeyD']) dir.add(rgt);
+    if (keys['Space']) dir.y += 1;
+    if (keys['ShiftLeft'] || keys['ShiftRight']) dir.y -= 1;
+
+    if (dir.length() > 0) {
+      dir.normalize();
+      const a = player.accel * 60 * dt;
+      player.vel.x += dir.x * a;
+      player.vel.z += dir.z * a;
+      player.vel.y += dir.y * a;
+    }
+    player.vel.multiplyScalar(Math.pow(player.drag, 60 * dt));
+    const spd = player.vel.length();
+    if (spd > player.maxSpeed) player.vel.multiplyScalar(player.maxSpeed / spd);
+
+    player.pos.x += player.vel.x * dt;
+    player.pos.y += player.vel.y * dt;
+    player.pos.z += player.vel.z * dt;
+    if (player.pos.y < 0.5) { player.pos.y = 0.5; player.vel.y = 0; }
+
+    playerGroup.position.copy(player.pos);
+    playerGroup.rotation.y = player.yaw;
+
+    const cd = 8;
+    const cam = new THREE.Vector3(
+      player.pos.x + Math.sin(player.yaw) * cd * Math.cos(player.pitch),
+      player.pos.y + 2 + Math.sin(player.pitch) * cd,
+      player.pos.z + Math.cos(player.yaw) * cd * Math.cos(player.pitch)
+    );
+    camera.position.lerp(cam, 0.1);
+    camera.lookAt(player.pos.x, player.pos.y + 1, player.pos.z);
+
+    player.power = Math.min(100, player.power + 0.05);
+    const sp = Math.min(spd / player.maxSpeed * 100, 100);
+    if (powerBar) powerBar.style.width = player.power + '%';
+    if (speedBar) speedBar.style.width = sp + '%';
+    if (powerVal) powerVal.textContent = Math.round(player.power);
+    if (speedVal) speedVal.textContent = Math.round(spd * 3.6);
+
+    renderer.render(scene, camera);
+  }
+  loop();
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+init();
+</script>
+</body>
+</html>

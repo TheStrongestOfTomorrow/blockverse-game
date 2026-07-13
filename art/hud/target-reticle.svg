@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="hud_glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00ffff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#0044ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Full reticle crosshair -->
+  <circle cx="32" cy="32" r="28" fill="url(#hud_glow)"/>
+  <circle cx="32" cy="32" r="24" fill="none" stroke="#00bfff" stroke-width="1.5" opacity="0.4"/>
+  <circle cx="32" cy="32" r="16" fill="none" stroke="#00bfff" stroke-width="1" opacity="0.3"/>
+  <!-- Crosshair lines -->
+  <line x1="32" y1="8" x2="32" y2="14" stroke="#00ffff" stroke-width="2"/>
+  <line x1="32" y1="50" x2="32" y2="56" stroke="#00ffff" stroke-width="2"/>
+  <line x1="8" y1="32" x2="14" y2="32" stroke="#00ffff" stroke-width="2"/>
+  <line x1="50" y1="32" x2="56" y2="32" stroke="#00ffff" stroke-width="2"/>
+  <!-- Inner target cross -->
+  <line x1="24" y1="32" x2="28" y2="32" stroke="#00ffff" stroke-width="1.5" opacity="0.6"/>
+  <line x1="36" y1="32" x2="40" y2="32" stroke="#00ffff" stroke-width="1.5" opacity="0.6"/>
+  <line x1="32" y1="24" x2="32" y2="28" stroke="#00ffff" stroke-width="1.5" opacity="0.6"/>
+  <line x1="32" y1="36" x2="32" y2="40" stroke="#00ffff" stroke-width="1.5" opacity="0.6"/>
+  <!-- Corner brackets -->
+  <path d="M12,18 L12,14 L16,14" fill="none" stroke="#00ffff" stroke-width="2" opacity="0.7"/>
+  <path d="M52,14 L48,14 L48,18" fill="none" stroke="#00ffff" stroke-width="2" opacity="0.7"/>
+  <path d="M48,50 L48,46 L52,46" fill="none" stroke="#00ffff" stroke-width="2" opacity="0.7"/>
+  <path d="M16,46 L16,50 L12,50" fill="none" stroke="#00ffff" stroke-width="2" opacity="0.7"/>
+  <!-- Center dot -->
+  <circle cx="32" cy="32" r="2" fill="#ff4444"/>
+</svg>
