@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iron Man Free Sandbox</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { overflow: hidden; background: #0a0a1a; font-family: 'Segoe UI', system-ui, sans-serif; }
+  canvas { display: block; }
+
+  /* HUD */
+  #hud {
+    position: fixed; inset: 0; pointer-events: none; z-index: 10;
+  }
+  #hud-top {
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    color: #ffd700; font-size: 14px; font-weight: 600; text-shadow: 0 0 10px rgba(255,215,0,0.3);
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  #hud-bottom {
+    position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 40px; align-items: center;
+  }
+  .hud-bar-container {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .hud-label { color: #8a8a9a; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  .hud-bar-bg {
+    width: 160px; height: 12px; background: rgba(255,255,255,0.08);
+    border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);
+  }
+  .hud-bar-fill {
+    height: 100%; border-radius: 6px; transition: width 0.3s ease;
+  }
+  .hud-bar-fill.power { background: linear-gradient(90deg, #ff4444, #ffd700); }
+  .hud-bar-fill.speed { background: linear-gradient(90deg, #4488ff, #44ff88); }
+  .hud-value { color: #fff; font-size: 12px; font-weight: 600; margin-top: 2px; }
+  #hud-speed-val { color: #44ff88; }
+  #hud-power-val { color: #ffd700; }
+
+  /* Crosshair */
+  #crosshair {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 11; pointer-events: none;
+    width: 24px; height: 24px;
+  }
+  #crosshair::before, #crosshair::after {
+    content: ''; position: absolute; background: rgba(255,255,255,0.6);
+  }
+  #crosshair::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+  #crosshair::after { width: 100%; height: 2px; top: 50%; transform: translateY(-50%); }
+  #crosshair-dot {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 4px; height: 4px; border-radius: 50%; background: #ff4444;
+    box-shadow: 0 0 6px #ff4444;
+  }
+
+  /* Start screen */
+  #start-screen {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a1a 100%);
+    transition: opacity 0.5s ease;
+  }
+  #start-screen.hidden { opacity: 0; pointer-events: none; }
+  #start-screen h1 {
+    font-size: 48px; font-weight: 800;
+    background: linear-gradient(135deg, #ffd700, #ff6b35, #ff4444);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px; text-shadow: none;
+  }
+  #start-screen .subtitle {
+    color: #6a6a8a; font-size: 16px; margin-bottom: 40px;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  #start-btn {
+    pointer-events: all; cursor: pointer;
+    padding: 14px 48px; font-size: 18px; font-weight: 700;
+    border: 2px solid #ffd700; background: transparent; color: #ffd700;
+    border-radius: 8px; text-transform: uppercase; letter-spacing: 3px;
+    transition: all 0.2s;
+  }
+  #start-btn:hover { background: #ffd700; color: #0a0a1a; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
+  #start-screen .controls-info {
+    color: #5a5a7a; font-size: 12px; margin-top: 24px; text-align: center; line-height: 1.8;
+  }
+  #start-screen .controls-info strong { color: #8a8aaa; }
+
+  /* Repulsor flash */
+  .repulsor-flash {
+    position: fixed; inset: 0; z-index: 20;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(255,200,50,0.3), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  .repulsor-flash.active { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="start-screen">
+  <h1>IRON MAN</h1>
+  <div class="subtitle">Free Sandbox</div>
+  <button id="start-btn">SUIT UP</button>
+  <div class="controls-info">
+    <strong>WASD</strong> — Fly &nbsp;|&nbsp; <strong>Mouse</strong> — Look &nbsp;|&nbsp; <strong>Space</strong> — Ascend &nbsp;|&nbsp; <strong>Shift</strong> — Descend<br>
+    <strong>Click</strong> — Fire Repulsors &nbsp;|&nbsp; <strong>Tab</strong> — Toggle Flight Mode
+  </div>
+</div>
+
+<div id="hud">
+  <div id="hud-top">IRON MAN MARK I — READY</div>
+  <div id="hud-bottom">
+    <div class="hud-bar-container">
+      <div class="hud-label">Suit Power</div>
+      <div class="hud-bar-bg"><div class="hud-bar-fill power" id="power-bar" style="width:100%"></div></div>
+      <div class="hud-value"><span id="hud-power-val">100</span>%</div>
+    </div>
+    <div class="hud-bar-container">
+      <div class="hud-label">Flight Speed</div>
+      <div class="hud-bar-bg"><div class="hud-bar-fill speed" id="speed-bar" style="width:10%"></div></div>
+      <div class="hud-value"><span id="hud-speed-val">0</span> m/s</div>
+    </div>
+  </div>
+</div>
+
+<div id="crosshair"><div id="crosshair-dot"></div></div>
+<div class="repulsor-flash" id="repulsor-flash"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// =============================================
+// IRON MAN FREE SANDBOX - Voxel Game Engine
+// =============================================
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a1a);
+scene.fog = new THREE.Fog(0x0a0a1a, 80, 200);
+
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 300);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.prepend(renderer.domElement);
+
+// =============================================
+// LIGHTING
+// =============================================
+const ambientLight = new THREE.AmbientLight(0x222244, 0.5);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xffeedd, 2);
+sunLight.position.set(50, 80, 30);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+sunLight.shadow.camera.near = 1;
+sunLight.shadow.camera.far = 200;
+sunLight.shadow.camera.left = -100;
+sunLight.shadow.camera.right = 100;
+sunLight.shadow.camera.top = 100;
+sunLight.shadow.camera.bottom = -100;
+scene.add(sunLight);
+
+const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+fillLight.position.set(-30, 20, -40);
+scene.add(fillLight);
+
+// =============================================
+// VOXEL WORLD
+// =============================================
+const worldGroup = new THREE.Group();
+scene.add(worldGroup);
+
+// Ground plane (voxel grid)
+const GROUND_SIZE = 40;
+const groundGeo = new THREE.BoxGeometry(1, 1, 1);
+const groundMatGround = new THREE.MeshLambertMaterial({ color: 0x2a2a3a });
+const groundMatAlt = new THREE.MeshLambertMaterial({ color: 0x22223a });
+const groundMatGrid = new THREE.MeshLambertMaterial({ color: 0x1a1a2a, transparent: true, opacity: 0.3 });
+const groundMatWater = new THREE.MeshLambertMaterial({ color: 0x1a2a4a, transparent: true, opacity: 0.6 });
+
+for (let x = -GROUND_SIZE; x <= GROUND_SIZE; x++) {
+  for (let z = -GROUND_SIZE; z <= GROUND_SIZE; z++) {
+    const mat = (x + z) % 2 === 0 ? groundMatGround : groundMatAlt;
+    const mesh = new THREE.Mesh(groundGeo, mat);
+    mesh.position.set(x, -0.5, z);
+    mesh.receiveShadow = true;
+    worldGroup.add(mesh);
+  }
+}
+
+// Build some voxel buildings
+function createBuilding(cx, cz, w, d, h, color) {
+  const mat = new THREE.MeshLambertMaterial({ color });
+  for (let x = 0; x < w; x++) {
+    for (let z = 0; z < d; z++) {
+      for (let y = 0; y < h; y++) {
+        const mesh = new THREE.Mesh(groundGeo, mat);
+        mesh.position.set(cx + x, y + 0.5, cz + z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        worldGroup.add(mesh);
+      }
+    }
+  }
+}
+
+// Skyline buildings
+const buildings = [
+  { x: -15, z: -15, w: 4, d: 4, h: 12, c: 0x3a2a4a },
+  { x: -8, z: -20, w: 3, d: 3, h: 20, c: 0x2a3a4a },
+  { x: 5, z: -18, w: 5, d: 3, h: 15, c: 0x4a3a2a },
+  { x: 18, z: -12, w: 3, d: 5, h: 10, c: 0x3a3a5a },
+  { x: -22, z: 8, w: 4, d: 3, h: 18, c: 0x4a2a3a },
+  { x: -12, z: 15, w: 3, d: 4, h: 8, c: 0x2a4a3a },
+  { x: 10, z: 20, w: 5, d: 4, h: 25, c: 0x3a3a4a },
+  { x: 22, z: 5, w: 3, d: 3, h: 14, c: 0x5a3a2a },
+  { x: 0, z: -25, w: 6, d: 2, h: 6, c: 0x2a2a4a },
+  { x: -25, z: -8, w: 2, d: 6, h: 10, c: 0x3a2a3a },
+  { x: 15, z: -8, w: 4, d: 4, h: 8, c: 0x2a3a3a },
+  { x: -5, z: 22, w: 3, d: 3, h: 16, c: 0x4a4a2a },
+  { x: 20, z: -22, w: 3, d: 3, h: 12, c: 0x3a4a4a },
+  { x: -18, z: -25, w: 5, d: 3, h: 7, c: 0x4a2a2a },
+  { x: 25, z: 15, w: 2, d: 4, h: 20, c: 0x2a4a4a },
+  { x: -20, z: 20, w: 4, d: 2, h: 9, c: 0x3a2a4a },
+  { x: 8, z: -8, w: 3, d: 3, h: 6, c: 0x4a3a3a },
+  { x: -30, z: 0, w: 2, d: 2, h: 30, c: 0x5a5a6a },
+  { x: 30, z: -5, w: 2, d: 2, h: 28, c: 0x4a4a5a },
+  { x: 0, z: -30, w: 2, d: 2, h: 22, c: 0x4a3a4a },
+];
+
+buildings.forEach(b => createBuilding(b.x, b.z, b.w, b.d, b.h, b.c));
+
+// Glowing building windows (small emissive blocks)
+const windowColors = [0xffaa44, 0x44aaff, 0xff6644, 0x44ffaa];
+for (let i = 0; i < 80; i++) {
+  const b = buildings[Math.floor(Math.random() * buildings.length)];
+  const wx = b.x + Math.floor(Math.random() * b.w);
+  const wz = b.z + Math.floor(Math.random() * b.d);
+  const wy = 1 + Math.floor(Math.random() * (b.h - 1));
+  const mesh = new THREE.Mesh(groundGeo, new THREE.MeshLambertMaterial({
+    color: windowColors[Math.floor(Math.random() * windowColors.length)],
+    emissive: 0xffaa44,
+    emissiveIntensity: 0.3 + Math.random() * 0.4
+  }));
+  mesh.position.set(wx, wy + 0.5, wz);
+  worldGroup.add(mesh);
+}
+
+// =============================================
+// PLAYER (THIRD PERSON FLIGHT)
+// =============================================
+const player = {
+  position: new THREE.Vector3(0, 15, 0),
+  velocity: new THREE.Vector3(0, 0, 0),
+  yaw: 0,
+  pitch: 0,
+  speed: 0,
+  maxSpeed: 30,
+  acceleration: 0.4,
+  drag: 0.92,
+  lift: 0.2,
+  isFlying: true,
+  power: 100,
+  repulsorCooldown: 0,
+};
+
+// Iron Man suit model (voxel based)
+function createIronManSuit() {
+  const group = new THREE.Group();
+
+  // Body colors
+  const red = new THREE.MeshLambertMaterial({ color: 0xcc2222, emissive: 0x441111, emissiveIntensity: 0.2 });
+  const gold = new THREE.MeshLambertMaterial({ color: 0xffd700, emissive: 0x664400, emissiveIntensity: 0.1 });
+  const dark = new THREE.MeshLambertMaterial({ color: 0x222233 });
+  const glow = new THREE.MeshLambertMaterial({ color: 0x44aaff, emissive: 0x4488ff, emissiveIntensity: 0.8 });
+  const white = new THREE.MeshLambertMaterial({ color: 0xeeeeff });
+
+  const geo = new THREE.BoxGeometry(1, 1, 1);
+
+  // Torso (red)
+  const torso = new THREE.Mesh(geo, red);
+  torso.scale.set(1.0, 1.2, 0.6);
+  torso.position.y = 1.2;
+  torso.castShadow = true;
+  group.add(torso);
+
+  // Chest arc reactor (glowing circle)
+  const reactorMat = new THREE.MeshLambertMaterial({ color: 0x44aaff, emissive: 0x44aaff, emissiveIntensity: 1.0 });
+  const reactor = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), reactorMat);
+  reactor.position.set(0, 1.2, 0.35);
+  group.add(reactor);
+
+  // Head
+  const headMat = new THREE.MeshLambertMaterial({ color: 0xcc2222, emissive: 0x441111, emissiveIntensity: 0.2 });
+  const head = new THREE.Mesh(geo, headMat);
+  head.scale.set(0.7, 0.7, 0.7);
+  head.position.y = 2.0;
+  head.castShadow = true;
+  group.add(head);
+
+  // Face mask (gold)
+  const face = new THREE.Mesh(geo, gold);
+  face.scale.set(0.5, 0.3, 0.15);
+  face.position.set(0, 2.0, 0.4);
+  group.add(face);
+
+  // Eyes (glowing)
+  const eyeMat = new THREE.MeshLambertMaterial({ color: 0x88ccff, emissive: 0x88ddff, emissiveIntensity: 1.0 });
+  const eyeGeo = new THREE.BoxGeometry(0.12, 0.06, 0.05);
+  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeL.position.set(-0.15, 2.05, 0.45);
+  group.add(eyeL);
+  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeR.position.set(0.15, 2.05, 0.45);
+  group.add(eyeR);
+
+  // Shoulders (gold)
+  const shoulderL = new THREE.Mesh(geo, gold);
+  shoulderL.scale.set(0.35, 0.2, 0.5);
+  shoulderL.position.set(-0.7, 1.7, 0);
+  group.add(shoulderL);
+  const shoulderR = new THREE.Mesh(geo, gold);
+  shoulderR.scale.set(0.35, 0.2, 0.5);
+  shoulderR.position.set(0.7, 1.7, 0);
+  group.add(shoulderR);
+
+  // Arms (red)
+  const armMat = new THREE.MeshLambertMaterial({ color: 0xcc2222 });
+  const armL = new THREE.Mesh(geo, armMat);
+  armL.scale.set(0.3, 0.8, 0.4);
+  armL.position.set(-0.85, 1.0, 0);
+  group.add(armL);
+  const armR = new THREE.Mesh(geo, armMat);
+  armR.scale.set(0.3, 0.8, 0.4);
+  armR.position.set(0.85, 1.0, 0);
+  group.add(armR);
+
+  // Hands (gold - repulsor emitters)
+  const handMat = new THREE.MeshLambertMaterial({ color: 0xffd700, emissive: 0xff8800, emissiveIntensity: 0.3 });
+  const handL = new THREE.Mesh(geo, handMat);
+  handL.scale.set(0.25, 0.15, 0.25);
+  handL.position.set(-0.85, 0.5, 0);
+  group.add(handL);
+  const handR = new THREE.Mesh(geo, handMat);
+  handR.scale.set(0.25, 0.15, 0.25);
+  handR.position.set(0.85, 0.5, 0);
+  group.add(handR);
+
+  // Legs (red)
+  const legMat = new THREE.MeshLambertMaterial({ color: 0xcc2222 });
+  const legL = new THREE.Mesh(geo, legMat);
+  legL.scale.set(0.3, 0.6, 0.4);
+  legL.position.set(-0.3, 0.2, 0);
+  group.add(legL);
+  const legR = new THREE.Mesh(geo, legMat);
+  legR.scale.set(0.3, 0.6, 0.4);
+  legR.position.set(0.3, 0.2, 0);
+  group.add(legR);
+
+  // Boots (gold)
+  const bootMat = new THREE.MeshLambertMaterial({ color: 0xffd700, emissive: 0xff8800, emissiveIntensity: 0.2 });
+  const bootL = new THREE.Mesh(geo, bootMat);
+  bootL.scale.set(0.3, 0.1, 0.4);
+  bootL.position.set(-0.3, -0.15, 0);
+  group.add(bootL);
+  const bootR = new THREE.Mesh(geo, bootMat);
+  bootR.scale.set(0.3, 0.1, 0.4);
+  bootR.position.set(0.3, -0.15, 0);
+  group.add(bootR);
+
+  // Boot jets (glow)
+  const jetMat = new THREE.MeshLambertMaterial({ color: 0x4499ff, emissive: 0x4488ff, emissiveIntensity: 1.0 });
+  const jetL = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 0.1, 6), jetMat);
+  jetL.position.set(-0.3, -0.3, 0);
+  group.add(jetL);
+  const jetR = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 0.1, 6), jetMat);
+  jetR.position.set(0.3, -0.3, 0);
+  group.add(jetR);
+
+  group.scale.set(1.2, 1.2, 1.2);
+  return group;
+}
+
+const playerMesh = createIronManSuit();
+playerMesh.position.copy(player.position);
+scene.add(playerMesh);
+
+// Jet particles
+const particleGeo = new THREE.BufferGeometry();
+const particleCount = 200;
+const positions = new Float32Array(particleCount * 3);
+const colors = new Float32Array(particleCount * 3);
+const sizes = new Float32Array(particleCount);
+const lifetimes = new Float32Array(particleCount);
+for (let i = 0; i < particleCount; i++) {
+  positions[i*3] = 0;
+  positions[i*3+1] = 0;
+  positions[i*3+2] = 0;
+  colors[i*3] = 0.3; colors[i*3+1] = 0.6; colors[i*3+2] = 1.0;
+  sizes[i] = 0.1 + Math.random() * 0.15;
+  lifetimes[i] = Math.random();
+}
+particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+particleGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+const particleMat = new THREE.PointsMaterial({
+  size: 0.15,
+  transparent: true,
+  opacity: 0.8,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  color: 0x4488ff,
+});
+const particles = new THREE.Points(particleGeo, particleMat);
+scene.add(particles);
+
+// Repulsor beams
+const repulsorBeams = [];
+
+function createRepulsorBeam(origin, direction) {
+  const beamGroup = new THREE.Group();
+
+  const beamMat = new THREE.MeshBasicMaterial({
+    color: 0x44aaff,
+    transparent: true,
+    opacity: 0.7,
+  });
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.2, 3, 6), beamMat);
+  beam.rotation.x = Math.PI / 2;
+  beamGroup.add(beam);
+
+  // Glow
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0x4488ff,
+    transparent: true,
+    opacity: 0.3,
+    side: THREE.DoubleSide,
+  });
+  const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.4, 3.5, 8), glowMat);
+  glow.rotation.x = Math.PI / 2;
+  beamGroup.add(glow);
+
+  beamGroup.position.copy(origin);
+  // Point in direction
+  beamGroup.lookAt(origin.clone().add(direction));
+  beamGroup.rotateX(Math.PI / 2);
+
+  scene.add(beamGroup);
+  repulsorBeams.push({
+    group: beamGroup,
+    life: 0.3,
+    maxLife: 0.3,
+  });
+
+  // Flash effect
+  const flash = document.getElementById('repulsor-flash');
+  flash.classList.add('active');
+  setTimeout(() => flash.classList.remove('active'), 80);
+}
+
+// =============================================
+// CONTROLS
+// =============================================
+const keys = {};
+document.addEventListener('keydown', e => { keys[e.code] = true; });
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+let isPointerLocked = false;
+let mouseDX = 0, mouseDY = 0;
+
+renderer.domElement.addEventListener('click', () => {
+  if (!isPointerLocked && !document.getElementById('start-screen').classList.contains('hidden')) return;
+  if (!isPointerLocked) {
+    renderer.domElement.requestPointerLock();
+    return;
+  }
+  // Fire repulsor
+  if (player.repulsorCooldown <= 0) {
+    const dir = new THREE.Vector3(0, 0, -1);
+    dir.applyQuaternion(camera.quaternion);
+    const origin = player.position.clone().add(dir.clone().multiplyScalar(2));
+    createRepulsorBeam(origin, dir);
+    player.repulsorCooldown = 0.2;
+  }
+});
+
+document.addEventListener('pointerlockchange', () => {
+  isPointerLocked = document.pointerLockElement === renderer.domElement;
+});
+
+document.addEventListener('mousemove', e => {
+  if (isPointerLocked) {
+    mouseDX += e.movementX;
+    mouseDY += e.movementY;
+  }
+});
+
+// Start button
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('start-screen').classList.add('hidden');
+  renderer.domElement.requestPointerLock();
+});
+
+// Tab to toggle flight mode
+document.addEventListener('keydown', e => {
+  if (e.code === 'Tab') {
+    e.preventDefault();
+    player.isFlying = !player.isFlying;
+  }
+});
+
+// =============================================
+// HUD UPDATE
+// =============================================
+const powerBar = document.getElementById('power-bar');
+const speedBar = document.getElementById('speed-bar');
+const powerVal = document.getElementById('hud-power-val');
+const speedVal = document.getElementById('hud-speed-val');
+
+function updateHUD() {
+  player.speed = player.velocity.length();
+  const speedPct = Math.min(player.speed / player.maxSpeed * 100, 100);
+  speedBar.style.width = speedPct + '%';
+  speedVal.textContent = Math.round(player.speed * 3.6);
+
+  // Regen power (simplified)
+  if (player.power < 100) {
+    player.power = Math.min(100, player.power + 0.05);
+  }
+  powerBar.style.width = player.power + '%';
+  powerVal.textContent = Math.round(player.power);
+}
+
+// =============================================
+// GAME LOOP
+// =============================================
+const clock = new THREE.Clock();
+
+function gameLoop() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  // Camera look
+  if (isPointerLocked) {
+    const lookSpeed = 0.002;
+    player.yaw -= mouseDX * lookSpeed;
+    player.pitch -= mouseDY * lookSpeed;
+    player.pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, player.pitch));
+    mouseDX = 0;
+    mouseDY = 0;
+  }
+
+  // Flight movement
+  const forward = new THREE.Vector3(
+    -Math.sin(player.yaw),
+    0,
+    -Math.cos(player.yaw)
+  );
+  const right = new THREE.Vector3(
+    Math.cos(player.yaw),
+    0,
+    -Math.sin(player.yaw)
+  );
+  const up = new THREE.Vector3(0, 1, 0);
+
+  const moveDir = new THREE.Vector3(0, 0, 0);
+
+  if (keys['KeyW']) moveDir.add(forward);
+  if (keys['KeyS']) moveDir.sub(forward);
+  if (keys['KeyA']) moveDir.sub(right);
+  if (keys['KeyD']) moveDir.add(right);
+  if (keys['Space']) {
+    if (player.isFlying) {
+      moveDir.y += 1;
+    } else if (player.position.y <= 1) {
+      player.velocity.y = 5; // Jump
+    }
+  }
+  if (keys['ShiftLeft'] || keys['ShiftRight']) {
+    if (player.isFlying) moveDir.y -= 1;
+  }
+
+  if (moveDir.length() > 0) {
+    moveDir.normalize();
+    const accel = player.acceleration * 60 * dt;
+    player.velocity.x += moveDir.x * accel;
+    player.velocity.z += moveDir.z * accel;
+    if (player.isFlying) {
+      player.velocity.y += moveDir.y * accel;
+    }
+  }
+
+  // Drag
+  player.velocity.multiplyScalar(Math.pow(player.drag, 60 * dt));
+
+  // Clamp speed
+  const speed = player.velocity.length();
+  if (speed > player.maxSpeed) {
+    player.velocity.multiplyScalar(player.maxSpeed / speed);
+  }
+
+  // Gravity (only when not flying)
+  if (!player.isFlying) {
+    player.velocity.y -= 20 * dt;
+  }
+
+  // Ground collision
+  const groundLevel = 0.5;
+  if (player.position.y + player.velocity.y * dt < groundLevel) {
+    player.position.y = groundLevel;
+    player.velocity.y = 0;
+  }
+
+  // Update position
+  player.position.x += player.velocity.x * dt;
+  player.position.y += player.velocity.y * dt;
+  player.position.z += player.velocity.z * dt;
+
+  // Player mesh follows with smooth rotation
+  playerMesh.position.copy(player.position);
+  const targetYaw = player.yaw;
+  // Smooth rotation
+  let diff = targetYaw - playerMesh.rotation.y;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  playerMesh.rotation.y += diff * 0.1;
+
+  // Slight tilt when moving
+  const moveTilt = new THREE.Vector3(player.velocity.x, 0, player.velocity.z).length() > 0.5;
+  const targetTilt = moveTilt ? -0.15 : 0;
+  playerMesh.rotation.z += (targetTilt - playerMesh.rotation.z) * 0.05;
+
+  // Third-person camera
+  const camDistance = 8;
+  const camHeight = 3;
+  const idealPos = new THREE.Vector3(
+    player.position.x + Math.sin(player.yaw) * camDistance,
+    player.position.y + camHeight + Math.sin(player.pitch) * camDistance * 0.5,
+    player.position.z + Math.cos(player.yaw) * camDistance
+  );
+  // Adjust for pitch
+  const pitchOffset = new THREE.Vector3(0, Math.sin(player.pitch) * camDistance * 0.5, -Math.cos(player.pitch) * camDistance);
+  pitchOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+  idealPos.copy(player.position);
+  idealPos.x += Math.sin(player.yaw) * camDistance * Math.cos(player.pitch);
+  idealPos.y += camHeight + Math.sin(player.pitch) * camDistance;
+  idealPos.z += Math.cos(player.yaw) * camDistance * Math.cos(player.pitch);
+
+  camera.position.lerp(idealPos, 0.1);
+  camera.lookAt(player.position.x, player.position.y + 1.5, player.position.z);
+
+  // Jet particles
+  const particlePositions = particles.geometry.attributes.position.array;
+  for (let i = 0; i < particleCount; i++) {
+    lifetimes[i] -= dt * 2;
+    if (lifetimes[i] <= 0) {
+      // Reset particle at boot position
+      const bootOffset = new THREE.Vector3(
+        (Math.random() - 0.5) * 0.3 - 0.3,
+        -0.5 - Math.random() * 0.3,
+        (Math.random() - 0.5) * 0.3
+      );
+      const worldOffset = bootOffset.clone();
+      worldOffset.applyQuaternion(playerMesh.quaternion);
+      particlePositions[i*3] = player.position.x + worldOffset.x;
+      particlePositions[i*3+1] = player.position.y + worldOffset.y;
+      particlePositions[i*3+2] = player.position.z + worldOffset.z;
+      lifetimes[i] = 0.5 + Math.random() * 0.5;
+    } else {
+      // Move downward
+      const down = new THREE.Vector3(0, -1, 0);
+      down.applyQuaternion(playerMesh.quaternion);
+      particlePositions[i*3] += down.x * dt * 3;
+      particlePositions[i*3+1] += down.y * dt * 3;
+      particlePositions[i*3+2] += down.z * dt * 3;
+    }
+  }
+  particles.geometry.attributes.position.needsUpdate = true;
+  particles.material.opacity = 0.6 + Math.sin(Date.now() * 0.005) * 0.2;
+
+  // Update repulsor beams
+  for (let i = repulsorBeams.length - 1; i >= 0; i--) {
+    const beam = repulsorBeams[i];
+    beam.life -= dt;
+    if (beam.life <= 0) {
+      scene.remove(beam.group);
+      repulsorBeams.splice(i, 1);
+    } else {
+      const scale = beam.life / beam.maxLife;
+      beam.group.scale.set(scale, scale, scale);
+    }
+  }
+
+  // Repulsor cooldown
+  if (player.repulsorCooldown > 0) {
+    player.repulsorCooldown -= dt;
+  }
+
+  updateHUD();
+  renderer.render(scene, camera);
+  requestAnimationFrame(gameLoop);
+}
+
+// =============================================
+// RESIZE
+// =============================================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// =============================================
+// START
+// =============================================
+gameLoop();
+</script>
+</body>
+</html>
