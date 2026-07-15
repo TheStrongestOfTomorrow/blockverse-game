@@ -8,73 +8,305 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   body { overflow:hidden; background:#0a0a1a; font-family:'Segoe UI',system-ui,sans-serif; }
   canvas { display:block; }
+
+  /* === START SCREEN === */
   #start-screen {
     position:fixed; inset:0; z-index:100;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     background:radial-gradient(ellipse at center,#1a1a2e 0%,#0a0a1a 100%);
-    transition:opacity 0.5s;
+    transition:opacity 0.8s;
   }
   #start-screen.hidden { opacity:0; pointer-events:none; }
   #start-screen h1 {
-    font-size:48px; font-weight:800;
+    font-size:52px; font-weight:900; letter-spacing:4px;
     background:linear-gradient(135deg,#ffd700,#ff6b35,#ff4444);
     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    margin-bottom:8px;
+    margin-bottom:4px;
   }
-  #start-screen .subtitle { color:#6a6a8a; font-size:16px; margin-bottom:40px; letter-spacing:3px; text-transform:uppercase; }
-  #start-btn {
-    pointer-events:all; cursor:pointer; padding:14px 48px; font-size:18px; font-weight:700;
-    border:2px solid #ffd700; background:transparent; color:#ffd700;
-    border-radius:8px; text-transform:uppercase; letter-spacing:3px;
-    transition:all 0.2s;
-  }
-  #start-btn:hover { background:#ffd700; color:#0a0a1a; box-shadow:0 0 30px rgba(255,215,0,0.3); }
-  #start-screen .controls-info { color:#5a5a7a; font-size:12px; margin-top:24px; text-align:center; line-height:1.8; }
+  #start-screen .subtitle { color:#6a6a8a; font-size:15px; margin-bottom:12px; letter-spacing:4px; text-transform:uppercase; }
+  #start-screen .controls-info { color:#5a5a7a; font-size:12px; margin-top:20px; text-align:center; line-height:1.9; }
   #start-screen .controls-info strong { color:#8a8aaa; }
+  .mode-btn {
+    pointer-events:all; cursor:pointer; padding:12px 40px; font-size:16px; font-weight:700;
+    border:2px solid #ffd700; background:transparent; color:#ffd700;
+    border-radius:8px; text-transform:uppercase; letter-spacing:2px;
+    transition:all 0.2s; margin:6px; min-width:200px;
+  }
+  .mode-btn:hover { background:#ffd700; color:#0a0a1a; box-shadow:0 0 30px rgba(255,215,0,0.3); }
+  .mode-btn.secondary { border-color:#4488ff; color:#4488ff; }
+  .mode-btn.secondary:hover { background:#4488ff; color:#0a0a1a; box-shadow:0 0 30px rgba(68,136,255,0.3); }
+  #start-screen .suit-preview { margin:16px 0; color:#4a4a6a; font-size:13px; letter-spacing:1px; }
+
+  /* === BOOT SEQUENCE OVERLAY === */
+  #boot-screen {
+    position:fixed; inset:0; z-index:90;
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at center,#0a0a1a 0%,#050510 100%);
+    transition:opacity 0.5s;
+  }
+  #boot-screen.active { display:flex; }
+  #boot-screen .boot-title { font-size:28px; font-weight:700; color:#4488ff; letter-spacing:6px; text-transform:uppercase; margin-bottom:20px; text-shadow:0 0 30px rgba(68,136,255,0.4); }
+  #boot-screen .boot-status { color:#6a6a8a; font-size:14px; letter-spacing:2px; margin-top:20px; }
+  #boot-screen .boot-progress { width:200px; height:3px; background:rgba(255,255,255,0.05); border-radius:2px; margin-top:8px; overflow:hidden; }
+  #boot-screen .boot-progress-bar { height:100%; width:0%; background:linear-gradient(90deg,#4488ff,#00ff88); border-radius:2px; transition:width 0.3s; }
+  /* Boot suit container */
+  #boot-suit-container { width:120px; height:200px; position:relative; }
+
+  /* === HUD === */
   #hud { position:fixed; inset:0; pointer-events:none; z-index:10; }
+
+  /* Suit name + wave info */
+  #hud-top {
+    position:absolute; top:20px; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+  }
+  #hud-suit-name {
+    color:#ffd700; font-size:14px; font-weight:600; letter-spacing:2px;
+    text-transform:uppercase; text-shadow:0 0 10px rgba(255,215,0,0.3);
+  }
+  #hud-wave-info {
+    color:#4488ff; font-size:12px; letter-spacing:1px;
+    text-shadow:0 0 8px rgba(68,136,255,0.3);
+  }
+
+  /* Suit switch hint */
+  #suit-switch-hint {
+    position:absolute; top:60px; left:50%; transform:translateX(-50%);
+    color:#4a4a6a; font-size:10px; letter-spacing:1px;
+    opacity:1; transition:opacity 1s;
+  }
+  #suit-switch-hint.fade { opacity:0; }
+
+  /* Arc reactor indicator (top-left area) */
+  #reactor-indicator {
+    position:absolute; top:20px; left:20px;
+    width:48px; height:48px;
+    transition:opacity 1s;
+  }
+  #reactor-indicator svg { width:100%; height:100%; }
+  #reactor-indicator .core-fill { fill:#00ffff; transition:fill 0.3s; }
+  #reactor-indicator.low .core-fill { fill:#ff4444; }
+
+  /* Left side: health / power */
+  #hud-left {
+    position:absolute; left:80px; top:20px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .hud-stat { display:flex; flex-direction:column; gap:2px; }
+  .hud-stat-label { color:#5a5a7a; font-size:9px; text-transform:uppercase; letter-spacing:1px; }
+  .hud-stat-bar { width:140px; height:10px; background:rgba(255,255,255,0.06); border-radius:5px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); }
+  .hud-stat-bar-fill { height:100%; border-radius:5px; transition:width 0.3s, background 0.3s; }
+  .hud-stat-val { color:#aaaaaa; font-size:11px; font-weight:600; margin-top:1px; }
+  #health-bar-fill { background:linear-gradient(90deg,#ff4444,#ff6b35,#44ff88); }
+  #health-bar-fill.low { background:linear-gradient(90deg,#ff2222,#ff4444); }
+  #power-bar-fill { background:linear-gradient(90deg,#ff4444,#ffd700); }
+  #repulsor-bar-fill { background:linear-gradient(90deg,#4488ff,#00ffff); }
+
+  /* Bottom center: speed, altitude */
+  #hud-bottom {
+    position:absolute; bottom:30px; left:50%; transform:translateX(-50%);
+    display:flex; gap:30px; align-items:center;
+  }
+  #hud-bottom .hud-stat-bar { width:120px; }
+
+  /* Crosshair */
   #crosshair {
     position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-    z-index:11; pointer-events:none; width:24px; height:24px;
+    z-index:11; pointer-events:none;
+    width:28px; height:28px;
   }
+  #crosshair-ring {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:24px; height:24px; border-radius:50%;
+    border:2px solid rgba(255,68,68,0.7); box-shadow:0 0 8px rgba(255,68,68,0.3);
+    transition:border-color 0.2s;
+  }
+  #crosshair-ring.firing { border-color:#00ffff; box-shadow:0 0 12px rgba(0,255,255,0.5); }
   #crosshair-dot {
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    width:4px; height:4px; border-radius:50%; background:#ff4444; box-shadow:0 0 6px #ff4444;
+    width:3px; height:3px; border-radius:50%; background:#ffffff; box-shadow:0 0 4px #ffffff;
   }
+
+  /* Low health warning */
+  #low-health-overlay {
+    position:fixed; inset:0; z-index:9;
+    pointer-events:none;
+    border:4px solid transparent;
+    transition:border-color 0.5s;
+  }
+  #low-health-overlay.active {
+    border-color:rgba(255,0,0,0.3);
+    box-shadow:inset 0 0 60px rgba(255,0,0,0.1);
+  }
+
+  /* Damage flash */
+  #damage-flash {
+    position:fixed; inset:0; z-index:12;
+    pointer-events:none;
+    background:rgba(255,0,0,0.15);
+    opacity:0; transition:opacity 0.1s;
+  }
+  #damage-flash.hit { opacity:1; }
+
+  /* Score display (wave mode) */
+  #score-display {
+    position:absolute; top:85px; right:20px;
+    color:#ffd700; font-size:16px; font-weight:700; text-align:right;
+    text-shadow:0 0 10px rgba(255,215,0,0.3);
+  }
+  #score-display .score-label { color:#5a5a7a; font-size:10px; letter-spacing:1px; text-transform:uppercase; }
+  #score-display .score-num { font-size:28px; }
+
+  /* Kill count */
+  #kill-count {
+    position:absolute; top:85px; left:20px;
+    color:#ff4444; font-size:12px; font-weight:600; text-align:left;
+    text-shadow:0 0 8px rgba(255,68,68,0.3);
+  }
+  #kill-count .kc-label { color:#5a5a7a; font-size:10px; letter-spacing:1px; text-transform:uppercase; }
+  #kill-count .kc-num { font-size:20px; }
+
+  /* Mode tag */
+  #mode-tag {
+    position:absolute; top:110px; left:50%; transform:translateX(-50%);
+    color:#4a4a5a; font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  }
+
+  /* Game Over overlay */
+  #game-over {
+    position:fixed; inset:0; z-index:50;
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.7);
+  }
+  #game-over.active { display:flex; }
+  #game-over h2 { font-size:36px; font-weight:800; color:#ff4444; letter-spacing:4px; margin-bottom:8px; }
+  #game-over .go-sub { color:#8a8aaa; font-size:14px; margin-bottom:20px; }
+  #game-over .go-score { color:#ffd700; font-size:24px; font-weight:700; margin-bottom:20px; }
+  #restart-btn {
+    pointer-events:all; cursor:pointer; padding:10px 32px; font-size:14px; font-weight:700;
+    border:2px solid #ffd700; background:transparent; color:#ffd700;
+    border-radius:6px; text-transform:uppercase; letter-spacing:2px;
+    transition:all 0.2s;
+  }
+  #restart-btn:hover { background:#ffd700; color:#0a0a1a; }
 </style>
 </head>
 <body>
 
+<!-- ====== START SCREEN ====== -->
 <div id="start-screen">
   <h1>IRON MAN</h1>
   <div class="subtitle">Free Sandbox</div>
-  <button id="start-btn">SUIT UP</button>
+  <div style="display:flex;gap:12px;margin-top:10px">
+    <button class="mode-btn" id="btn-freefly">FREE FLY</button>
+    <button class="mode-btn secondary" id="btn-wavemode">WAVE MODE</button>
+  </div>
+  <div class="suit-preview">All suits unlocked &mdash; Mark I &bull; Mark II &bull; Mark III &bull; Mark V</div>
   <div class="controls-info">
-    <strong>WASD</strong> &mdash; Fly &nbsp;|&nbsp; <strong>Mouse</strong> &mdash; Look &nbsp;|&nbsp; <strong>Space</strong> &mdash; Ascend<br>
-    <strong>Shift</strong> &mdash; Descend &nbsp;|&nbsp; <strong>Click</strong> &mdash; Fire Repulsors
+    <strong>WASD</strong> &mdash; Fly &nbsp;|&nbsp; <strong>Mouse</strong> &mdash; Look &nbsp;|&nbsp; <strong>Space/Shift</strong> &mdash; Up/Down<br>
+    <strong>Click</strong> &mdash; Fire Repulsor &nbsp;|&nbsp; <strong>1-4</strong> &mdash; Switch Suit
   </div>
 </div>
 
+<!-- ====== BOOT SCREEN ====== -->
+<div id="boot-screen">
+  <div class="boot-title">SUIT ASSEMBLY</div>
+  <div id="boot-suit-container"></div>
+  <div class="boot-status" id="boot-status-text">Initializing systems...</div>
+  <div class="boot-progress"><div class="boot-progress-bar" id="boot-progress-bar"></div></div>
+</div>
+
+<!-- ====== HUD ====== -->
 <div id="hud">
-  <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);color:#ffd700;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 10px rgba(255,215,0,0.3)">IRON MAN &mdash; MARK I</div>
-  <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;gap:40px;align-items:center">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-      <div style="color:#8a8a9a;font-size:10px;text-transform:uppercase;letter-spacing:1px">Suit Power</div>
-      <div style="width:160px;height:12px;background:rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)">
-        <div id="power-bar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,#ff4444,#ffd700);width:100%"></div>
-      </div>
-      <div style="color:#ffd700;font-size:12px;font-weight:600;margin-top:2px"><span id="hud-power-val">100</span>%</div>
+  <!-- Top -->
+  <div id="hud-top">
+    <div id="hud-suit-name">IRON MAN &mdash; MARK I</div>
+    <div id="hud-wave-info"></div>
+  </div>
+  <div id="suit-switch-hint">[ 1 ] Mark I &nbsp; [ 2 ] Mark II &nbsp; [ 3 ] Mark III &nbsp; [ 4 ] Mark V</div>
+  <div id="mode-tag">FREE FLY</div>
+
+  <!-- Reactor indicator (top-left) -->
+  <div id="reactor-indicator">
+    <svg viewBox="0 0 64 64" width="48" height="48">
+      <defs>
+        <radialGradient id="reactorGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#00bfff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle cx="32" cy="32" r="30" fill="url(#reactorGlow)"/>
+      <circle cx="32" cy="32" r="26" fill="none" stroke="#c41e3a" stroke-width="2.5"/>
+      <circle cx="32" cy="32" r="23" fill="none" stroke="#ffd700" stroke-width="1.2"/>
+      <circle cx="32" cy="32" r="18" fill="none" stroke="#00d4ff" stroke-width="2" stroke-dasharray="4,3"/>
+      <circle cx="32" cy="32" r="12" fill="#00ffff" class="core-fill"/>
+      <circle cx="32" cy="32" r="4" fill="#ffffff"/>
+    </svg>
+  </div>
+
+  <!-- Left stats -->
+  <div id="hud-left">
+    <div class="hud-stat">
+      <div class="hud-stat-label">Suit Integrity</div>
+      <div class="hud-stat-bar"><div class="hud-stat-bar-fill" id="health-bar-fill" style="width:100%"></div></div>
+      <div class="hud-stat-val"><span id="hud-health-val">100</span>%</div>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-      <div style="color:#8a8a9a;font-size:10px;text-transform:uppercase;letter-spacing:1px">Flight Speed</div>
-      <div style="width:160px;height:12px;background:rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)">
-        <div id="speed-bar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,#4488ff,#44ff88);width:10%"></div>
-      </div>
-      <div style="color:#44ff88;font-size:12px;font-weight:600;margin-top:2px"><span id="hud-speed-val">0</span> m/s</div>
+    <div class="hud-stat">
+      <div class="hud-stat-label">Arc Power</div>
+      <div class="hud-stat-bar"><div class="hud-stat-bar-fill" id="power-bar-fill" style="width:100%"></div></div>
+      <div class="hud-stat-val"><span id="hud-power-val">100</span>%</div>
+    </div>
+    <div class="hud-stat">
+      <div class="hud-stat-label">Repulsor Charge</div>
+      <div class="hud-stat-bar"><div class="hud-stat-bar-fill" id="repulsor-bar-fill" style="width:100%"></div></div>
+      <div class="hud-stat-val"><span id="hud-repulsor-val">Ready</span></div>
+    </div>
+  </div>
+
+  <!-- Score / kills (wave mode) -->
+  <div id="score-display">
+    <div class="score-label">Score</div>
+    <div class="score-num" id="score-num">0</div>
+  </div>
+  <div id="kill-count">
+    <div class="kc-label">Kills</div>
+    <div class="kc-num" id="kc-num">0</div>
+  </div>
+
+  <!-- Bottom stats -->
+  <div id="hud-bottom">
+    <div class="hud-stat">
+      <div class="hud-stat-label">Speed</div>
+      <div class="hud-stat-bar"><div class="hud-stat-bar-fill" id="speed-bar-fill" style="width:10%;background:linear-gradient(90deg,#4488ff,#00ff88)"></div></div>
+      <div class="hud-stat-val"><span id="hud-speed-val">0</span> m/s</div>
+    </div>
+    <div class="hud-stat">
+      <div class="hud-stat-label">Altitude</div>
+      <div class="hud-stat-bar"><div class="hud-stat-bar-fill" id="alt-bar-fill" style="width:5%;background:linear-gradient(90deg,#8888ff,#aa88ff)"></div></div>
+      <div class="hud-stat-val"><span id="hud-alt-val">0</span> m</div>
     </div>
   </div>
 </div>
 
-<div id="crosshair"><div id="crosshair-dot"></div></div>
+<!-- Crosshair -->
+<div id="crosshair">
+  <div id="crosshair-ring"></div>
+  <div id="crosshair-dot"></div>
+</div>
+
+<!-- Damage flash -->
+<div id="damage-flash"></div>
+
+<!-- Low health overlay -->
+<div id="low-health-overlay"></div>
+
+<!-- Game Over -->
+<div id="game-over">
+  <h2>SUIT DESTROYED</h2>
+  <div class="go-sub">Your suit took too much damage</div>
+  <div class="go-score" id="final-score">Score: 0</div>
+  <button id="restart-btn">SUIT UP AGAIN</button>
+</div>
 
 <script type="importmap">
 {
@@ -87,9 +319,67 @@
 <script type="module">
 import * as THREE from 'three';
 
-// =============================================
-// IRON MAN FREE SANDBOX
-// =============================================
+// ============================================================
+// IRON MAN FREE SANDBOX — v0.2
+// ============================================================
+
+// ---------- Constants ----------
+const SUITS = {
+  'mark-i': {
+    id: 'mark-i', name: 'Mark I',
+    modelFile: '/art/voxel/mark-i-suit.json',
+    health: 150, maxHealth: 150,
+    speed: 22, accel: 0.4, drag: 0.94,
+    colorTint: null, // no tint, use original colors
+    // Mark I design: dark iron-grey with amber glow
+    palette: { primary: '#5A5A5A', accent: '#FF8C00', secondary: '#3A3A3A' },
+  },
+  'mark-ii': {
+    id: 'mark-ii', name: 'Mark II',
+    modelFile: '/art/voxel/mark-i-suit.json', // placeholder - reuses Mark I model with tint
+    health: 120, maxHealth: 120,
+    speed: 30, accel: 0.55, drag: 0.92,
+    colorTint: 0xC0C0C0, // silver tint
+    palette: { primary: '#C0C0C0', accent: '#00BFFF', secondary: '#7A7A7A' },
+  },
+  'mark-iii': {
+    id: 'mark-iii', name: 'Mark III',
+    modelFile: '/art/voxel/mark-i-suit.json', // placeholder - reuses Mark I model with tint
+    health: 130, maxHealth: 130,
+    speed: 28, accel: 0.5, drag: 0.93,
+    colorTint: 0xC41E3A, // classic red tint
+    palette: { primary: '#C41E3A', accent: '#FFD700', secondary: '#8A2A2A' },
+  },
+  'mark-v': {
+    id: 'mark-v', name: 'Mark V',
+    modelFile: '/art/voxel/mark-i-suit.json', // placeholder - reuses Mark I model with tint
+    health: 140, maxHealth: 140,
+    speed: 25, accel: 0.45, drag: 0.94,
+    colorTint: 0x8B4513, // bronze/saddle tint
+    palette: { primary: '#8B4513', accent: '#FFD700', secondary: '#5A2A0A' },
+  },
+};
+
+const SUIT_KEYS = ['mark-i', 'mark-ii', 'mark-iii', 'mark-v'];
+
+// ---------- JARVIS Voice Scaffold ----------
+/**
+ * Play a JARVIS voice line by id.
+ * The game never depends on audio — if the file is missing, silent no-op.
+ * Audio files live in /home/team/shared/audio/<lineId>.mp3 (or .wav/.ogg).
+ */
+function playJarvis(lineId) {
+  try {
+    const audioPath = `/audio/${lineId}.mp3`;
+    const audio = new Audio(audioPath);
+    audio.volume = 0.7;
+    audio.play().catch(() => {}); // silent if file missing or autoplay blocked
+  } catch(e) {
+    // completely silent fail — audio is optional
+  }
+}
+
+// ---------- Scene Setup ----------
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a1a);
 scene.fog = new THREE.Fog(0x0a0a1a, 120, 250);
@@ -123,18 +413,21 @@ const fill = new THREE.DirectionalLight(0x4488ff, 0.3);
 fill.position.set(-30, 20, -40);
 scene.add(fill);
 
-// Geometry
-const geo = new THREE.BoxGeometry(1, 1, 1);
+// ---------- Voxel Geometry ----------
+const voxelGeo = new THREE.BoxGeometry(1, 1, 1);
+
+// ---------- World ----------
 const worldGroup = new THREE.Group();
 scene.add(worldGroup);
 
-// Build world from voxel assets
+// World materials
 const groundMat = new THREE.MeshLambertMaterial({ color: 0x4e7d34 });
 const groundMat2 = new THREE.MeshLambertMaterial({ color: 0x5a8c3e });
 const waterMat = new THREE.MeshLambertMaterial({ color: 0x1a3a6a, transparent: true, opacity: 0.5 });
 const buildMat = new THREE.MeshLambertMaterial({ color: 0x3a3a5a });
 const buildMat2 = new THREE.MeshLambertMaterial({ color: 0x4a3a4a });
 const towerMat = new THREE.MeshLambertMaterial({ color: 0x5a5a7a });
+const bridgeMat = new THREE.MeshLambertMaterial({ color: 0x4a4a6a });
 
 async function buildWorld() {
   try {
@@ -143,7 +436,7 @@ async function buildWorld() {
     for (let gx = -2; gx <= 2; gx++) {
       for (let gz = -2; gz <= 2; gz++) {
         for (const v of gData.voxels) {
-          const m = new THREE.Mesh(geo, (gx + gz) % 2 === 0 ? groundMat : groundMat2);
+          const m = new THREE.Mesh(voxelGeo, (gx + gz) % 2 === 0 ? groundMat : groundMat2);
           m.position.set(gx * 16 + v.x, v.y - 0.5, gz * 16 + v.z);
           m.receiveShadow = true;
           worldGroup.add(m);
@@ -155,11 +448,11 @@ async function buildWorld() {
   try {
     const bRes = await fetch('/art/voxel/tile-building.json');
     const bData = await bRes.json();
-    const positions = [[-20,-20],[15,-18],[-15,22],[25,10],[-30,-5],[5,-30],[30,-15],[-25,15],[-35,-25],[20,25]];
+    const positions = [[-20,-20],[15,-18],[-15,22],[25,10],[-30,-5],[5,-30],[30,-15],[-25,15],[-35,-25],[20,25],[40,5],[-40,10],[-10,-40],[10,40],[-45,-15],[45,15]];
     for (const [bx,bz] of positions) {
       const mat = Math.random() > 0.5 ? buildMat : buildMat2;
       for (const v of bData.voxels) {
-        const m = new THREE.Mesh(geo, mat);
+        const m = new THREE.Mesh(voxelGeo, mat);
         m.position.set(bx + v.x, v.y, bz + v.z);
         m.castShadow = true; m.receiveShadow = true;
         worldGroup.add(m);
@@ -174,7 +467,7 @@ async function buildWorld() {
       for (let wz = -3; wz <= 3; wz++) {
         if (Math.abs(wx) <= 2 && Math.abs(wz) <= 2) continue;
         for (const v of wData.voxels) {
-          const m = new THREE.Mesh(geo, waterMat);
+          const m = new THREE.Mesh(voxelGeo, waterMat);
           m.position.set(wx * 16 + v.x, -0.3, wz * 16 + v.z);
           worldGroup.add(m);
         }
@@ -185,66 +478,149 @@ async function buildWorld() {
   try {
     const tRes = await fetch('/art/voxel/tile-tower.json');
     const tData = await tRes.json();
-    for (const [tx,tz] of [[-40,-40],[40,40],[-40,40],[40,-40]]) {
+    for (const [tx,tz] of [[-40,-40],[40,40],[-40,40],[40,-40],[55,0],[0,55],[-55,0],[0,-55]]) {
       for (const v of tData.voxels) {
-        const m = new THREE.Mesh(geo, towerMat);
+        const m = new THREE.Mesh(voxelGeo, towerMat);
         m.position.set(tx + v.x, v.y, tz + v.z);
         m.castShadow = true;
         worldGroup.add(m);
       }
     }
   } catch(e) { console.warn('towers', e); }
-}
 
-// Player character
-const playerGroup = new THREE.Group();
-let playerLoaded = false;
-
-async function loadPlayer() {
   try {
-    const res = await fetch('/art/voxel/mark-i-suit.json');
-    const data = await res.json();
-    for (const v of data.voxels) {
-      const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(v.color) });
-      const m = new THREE.Mesh(geo, mat);
-      m.position.set(v.x, v.y, v.z);
-      playerGroup.add(m);
+    const brRes = await fetch('/art/voxel/tile-bridge.json');
+    const brData = await brRes.json();
+    const bPositions = [[0,-8],[0,8]];
+    for (const [bx,bz] of bPositions) {
+      for (const v of brData.voxels) {
+        const m = new THREE.Mesh(voxelGeo, bridgeMat);
+        m.position.set(bx + v.x * 2, v.y + 0.5, bz + v.z * 2);
+        m.castShadow = true;
+        worldGroup.add(m);
+      }
     }
-    const size = data.gridSize || [16, 16, 16];
-    playerGroup.position.set(-size[0]/2, 0, -size[2]/2);
-    playerGroup.scale.set(0.8, 0.8, 0.8);
-    playerLoaded = true;
-  } catch(e) {
-    console.warn('Suit not loaded, using fallback', e);
-    const body = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0xc41e3a }));
-    body.scale.set(1, 1.5, 0.6);
-    body.position.y = 1.5;
-    playerGroup.add(body);
-    const head = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0xffd700 }));
-    head.scale.set(0.6, 0.6, 0.6);
-    head.position.y = 2.5;
-    playerGroup.add(head);
-    playerLoaded = true;
-  }
-  scene.add(playerGroup);
+  } catch(e) { console.warn('bridge', e); }
 }
 
-// Player state
+// ---------- Voxel Model Loader ----------
+/**
+ * Load a voxel JSON file and return a group of meshes.
+ * If tintHex is provided, all voxel colors are multiplied by that tint.
+ */
+async function loadVoxelModel(filePath, tintHex = null, scale = 1) {
+  const group = new THREE.Group();
+  try {
+    const res = await fetch(filePath);
+    const data = await res.json();
+    const gridSize = data.gridSize || [16, 16, 16];
+    for (const v of data.voxels) {
+      let color = new THREE.Color(v.color);
+      if (tintHex !== null) {
+        const tint = new THREE.Color(tintHex);
+        color.multiply(tint);
+      }
+      const mat = new THREE.MeshLambertMaterial({ color });
+      const m = new THREE.Mesh(voxelGeo.clone(), mat);
+      m.position.set(v.x, v.y, v.z);
+      group.add(m);
+    }
+    // Center the model
+    const box = new THREE.Box3().setFromObject(group);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    group.position.set(-center.x, -box.min.y, -center.z);
+    group.scale.set(scale, scale, scale);
+    return group;
+  } catch(e) {
+    console.warn('Failed to load voxel model:', filePath, e);
+    // Fallback: simple block figure
+    const body = new THREE.Mesh(voxelGeo, new THREE.MeshLambertMaterial({ color: tintHex || 0xc41e3a }));
+    body.scale.set(1.2, 1.8, 0.8);
+    body.position.y = 1.5;
+    group.add(body);
+    const head = new THREE.Mesh(voxelGeo, new THREE.MeshLambertMaterial({ color: 0xffd700 }));
+    head.scale.set(0.7, 0.7, 0.7);
+    head.position.y = 2.8;
+    group.add(head);
+    return group;
+  }
+}
+
+// ---------- Player / Suit System ----------
+const playerGroup = new THREE.Group();
+scene.add(playerGroup);
+
+let currentSuitId = 'mark-i';
+let suitGroup = null; // the meshes for current suit
+let suitModels = {}; // cache of loaded suit groups
+
+let playerHealth = 150;
+let playerMaxHealth = 150;
+let suitPower = 100;
+let repulsorCharge = 100; // 0-100, recharges over time
+let isAlive = true;
+
+// Repulsor fire state
+let repulsorFiring = false;
+let repulsorCooldown = 0;
+const REPULSOR_COOLDOWN_MAX = 0.15; // seconds between shots
+const REPULSOR_DRAIN = 4; // power drain per shot
+
+// Projectiles
+const projectiles = [];
+const enemyProjectiles = [];
+const projectileGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+
+async function loadSuit(suitId) {
+  if (suitModels[suitId]) {
+    // Already cached - just swap in
+    if (suitGroup) playerGroup.remove(suitGroup);
+    suitGroup = suitModels[suitId].clone();
+    playerGroup.add(suitGroup);
+    return;
+  }
+
+  const suit = SUITS[suitId];
+  const model = await loadVoxelModel(suit.modelFile, suit.colorTint, 0.7);
+  suitModels[suitId] = model;
+  if (suitGroup) playerGroup.remove(suitGroup);
+  suitGroup = model.clone();
+  playerGroup.add(suitGroup);
+}
+
+// ---------- Player Physics State ----------
 const player = {
   pos: new THREE.Vector3(0, 5, 0),
   vel: new THREE.Vector3(0, 0, 0),
   yaw: 0, pitch: 0,
-  maxSpeed: 30, accel: 0.4, drag: 0.92,
-  power: 100,
 };
 
-// Controls
+function getSuitStats() {
+  return SUITS[currentSuitId];
+}
+
+// ---------- Controls ----------
 const keys = {};
-document.addEventListener('keydown', e => keys[e.code] = true);
+document.addEventListener('keydown', e => {
+  keys[e.code] = true;
+
+  // Suit switching: keys 1-4
+  if (e.code === 'Digit1') switchSuit('mark-i');
+  else if (e.code === 'Digit2') switchSuit('mark-ii');
+  else if (e.code === 'Digit3') switchSuit('mark-iii');
+  else if (e.code === 'Digit4') switchSuit('mark-v');
+
+  // Restart
+  if (e.code === 'KeyR' && !isAlive) restartGame();
+});
 document.addEventListener('keyup', e => keys[e.code] = false);
+
 let locked = false, mx = 0, my = 0;
 renderer.domElement.addEventListener('click', () => {
-  if (!locked) { renderer.domElement.requestPointerLock(); }
+  if (!locked && isAlive) {
+    renderer.domElement.requestPointerLock();
+  }
 });
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === renderer.domElement;
@@ -253,93 +629,696 @@ document.addEventListener('mousemove', e => {
   if (locked) { mx += e.movementX; my += e.movementY; }
 });
 
-// Start
-document.getElementById('start-btn').addEventListener('click', () => {
-  document.getElementById('start-screen').classList.add('hidden');
-  renderer.domElement.requestPointerLock();
+// Mouse down/up for repulsor fire
+renderer.domElement.addEventListener('mousedown', e => {
+  if (e.button === 0 && locked && isAlive) repulsorFiring = true;
 });
+renderer.domElement.addEventListener('mouseup', e => {
+  if (e.button === 0) repulsorFiring = false;
+});
+// Prevent context menu on right-click
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
 
-// HUD refs
-const powerBar = document.getElementById('power-bar');
-const speedBar = document.getElementById('speed-bar');
-const powerVal = document.getElementById('hud-power-val');
-const speedVal = document.getElementById('hud-speed-val');
+// ---------- Suit Switching ----------
+async function switchSuit(suitId) {
+  if (suitId === currentSuitId || !isAlive) return;
+  currentSuitId = suitId;
+  const stats = SUITS[suitId];
+  playerHealth = stats.maxHealth;
+  playerMaxHealth = stats.maxHealth;
+  playerHealth = Math.min(playerHealth, playerMaxHealth);
 
-// Game loop
-const clock = new THREE.Clock();
+  await loadSuit(suitId);
+  updateHUD();
 
-async function init() {
-  await buildWorld();
-  await loadPlayer();
+  // Update HUD suit name
+  document.getElementById('hud-suit-name').textContent = `IRON MAN — ${stats.name}`;
 
-  function loop() {
-    requestAnimationFrame(loop);
-    const dt = Math.min(clock.getDelta(), 0.05);
-
-    if (locked) {
-      player.yaw -= mx * 0.002;
-      player.pitch -= my * 0.002;
-      player.pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, player.pitch));
-      mx = 0; my = 0;
-    }
-
-    const fwd = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
-    const rgt = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
-    const dir = new THREE.Vector3(0, 0, 0);
-    if (keys['KeyW']) dir.add(fwd);
-    if (keys['KeyS']) dir.sub(fwd);
-    if (keys['KeyA']) dir.sub(rgt);
-    if (keys['KeyD']) dir.add(rgt);
-    if (keys['Space']) dir.y += 1;
-    if (keys['ShiftLeft'] || keys['ShiftRight']) dir.y -= 1;
-
-    if (dir.length() > 0) {
-      dir.normalize();
-      const a = player.accel * 60 * dt;
-      player.vel.x += dir.x * a;
-      player.vel.z += dir.z * a;
-      player.vel.y += dir.y * a;
-    }
-    player.vel.multiplyScalar(Math.pow(player.drag, 60 * dt));
-    const spd = player.vel.length();
-    if (spd > player.maxSpeed) player.vel.multiplyScalar(player.maxSpeed / spd);
-
-    player.pos.x += player.vel.x * dt;
-    player.pos.y += player.vel.y * dt;
-    player.pos.z += player.vel.z * dt;
-    if (player.pos.y < 0.5) { player.pos.y = 0.5; player.vel.y = 0; }
-
-    playerGroup.position.copy(player.pos);
-    playerGroup.rotation.y = player.yaw;
-
-    const cd = 8;
-    const cam = new THREE.Vector3(
-      player.pos.x + Math.sin(player.yaw) * cd * Math.cos(player.pitch),
-      player.pos.y + 2 + Math.sin(player.pitch) * cd,
-      player.pos.z + Math.cos(player.yaw) * cd * Math.cos(player.pitch)
-    );
-    camera.position.lerp(cam, 0.1);
-    camera.lookAt(player.pos.x, player.pos.y + 1, player.pos.z);
-
-    player.power = Math.min(100, player.power + 0.05);
-    const sp = Math.min(spd / player.maxSpeed * 100, 100);
-    if (powerBar) powerBar.style.width = player.power + '%';
-    if (speedBar) speedBar.style.width = sp + '%';
-    if (powerVal) powerVal.textContent = Math.round(player.power);
-    if (speedVal) speedVal.textContent = Math.round(spd * 3.6);
-
-    renderer.render(scene, camera);
-  }
-  loop();
+  // Try JARVIS line on swap
+  playJarvis('suit-swap');
 }
 
+// ---------- Enemy Drones ----------
+const enemies = [];
+const enemyGroup = new THREE.Group();
+scene.add(enemyGroup);
+
+async function spawnDrone(pos) {
+  try {
+    const res = await fetch('/art/voxel/enemy-drone.json');
+    const data = await res.json();
+    const group = new THREE.Group();
+    for (const v of data.voxels) {
+      const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(v.color) });
+      const m = new THREE.Mesh(voxelGeo.clone(), mat);
+      m.position.set(v.x, v.y, v.z);
+      group.add(m);
+    }
+    // Center
+    const box = new THREE.Box3().setFromObject(group);
+    const center = box.getCenter(new THREE.Vector3());
+    group.position.set(-center.x, -box.min.y, -center.z);
+    group.scale.set(0.6, 0.6, 0.6);
+
+    const drone = {
+      group,
+      pos: pos.clone(),
+      targetHeight: 15 + Math.random() * 10,
+      hoverAngle: Math.random() * Math.PI * 2,
+      health: 10,
+      maxHealth: 10,
+      fireCooldown: 0,
+      fireInterval: 1.2 + Math.random() * 0.8,
+      isDead: false,
+    };
+    group.position.copy(pos);
+    enemyGroup.add(group);
+    enemies.push(drone);
+    return drone;
+  } catch(e) {
+    console.warn('Failed to spawn drone:', e);
+    // Fallback: simple drone
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(voxelGeo, new THREE.MeshLambertMaterial({ color: 0x5a5a6a }));
+    body.scale.set(1.2, 0.6, 1.2);
+    body.position.y = 1;
+    group.add(body);
+    const core = new THREE.Mesh(voxelGeo, new THREE.MeshLambertMaterial({ color: 0xff4444 }));
+    core.scale.set(0.4, 0.4, 0.4);
+    core.position.y = 1;
+    group.add(core);
+
+    const drone = {
+      group,
+      pos: pos.clone(),
+      targetHeight: 15 + Math.random() * 10,
+      hoverAngle: Math.random() * Math.PI * 2,
+      health: 10,
+      maxHealth: 10,
+      fireCooldown: 0,
+      fireInterval: 1.2 + Math.random() * 0.8,
+      isDead: false,
+    };
+    group.position.copy(pos);
+    enemyGroup.add(group);
+    enemies.push(drone);
+    return drone;
+  }
+}
+
+function removeDeadEnemies() {
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    if (enemies[i].isDead) {
+      enemyGroup.remove(enemies[i].group);
+      enemies.splice(i, 1);
+    }
+  }
+}
+
+// ---------- Projectiles ----------
+function fireRepulsor() {
+  if (repulsorCooldown > 0 || !isAlive) return;
+  const stats = getSuitStats();
+  const dir = new THREE.Vector3(0, 0, -1);
+  dir.applyQuaternion(playerGroup.quaternion);
+
+  const proj = new THREE.Mesh(projectileGeo, new THREE.MeshLambertMaterial({
+    color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 2,
+  }));
+  proj.position.copy(player.pos);
+  proj.position.y += 1.5;
+  proj.position.add(dir.clone().multiplyScalar(2));
+
+  projectiles.push({
+    mesh: proj,
+    vel: dir.clone().multiplyScalar(60),
+    life: 2.0,
+    isPlayer: true,
+  });
+  scene.add(proj);
+
+  repulsorCooldown = REPULSOR_COOLDOWN_MAX;
+  suitPower = Math.max(0, suitPower - REPULSOR_DRAIN);
+  repulsorCharge = Math.max(0, repulsorCharge - 3);
+
+  // Crosshair flash
+  document.getElementById('crosshair-ring').classList.add('firing');
+  setTimeout(() => document.getElementById('crosshair-ring').classList.remove('firing'), 80);
+}
+
+function fireEnemyBolt(drone) {
+  const dir = new THREE.Vector3().subVectors(player.pos, drone.pos).normalize();
+  const proj = new THREE.Mesh(projectileGeo, new THREE.MeshLambertMaterial({
+    color: 0xff4444, emissive: 0xff4444, emissiveIntensity: 1.5,
+  }));
+  proj.position.copy(drone.pos);
+  proj.position.y += 1.5;
+
+  enemyProjectiles.push({
+    mesh: proj,
+    vel: dir.clone().multiplyScalar(25),
+    life: 3.0,
+  });
+  scene.add(proj);
+}
+
+// ---------- Wave System ----------
+let gameMode = 'freefly'; // 'freefly' or 'wave'
+let waveNum = 0;
+let score = 0;
+let kills = 0;
+let waveActive = false;
+let enemiesInWave = 0;
+let enemiesDefeatedInWave = 0;
+
+function startWaveMode() {
+  gameMode = 'wave';
+  waveNum = 0;
+  score = 0;
+  kills = 0;
+  nextWave();
+  document.getElementById('mode-tag').textContent = 'WAVE MODE';
+  updateHUD();
+}
+
+function nextWave() {
+  waveNum++;
+  enemiesInWave = 2 + waveNum; // wave 1: 3 enemies, wave 2: 4, etc.
+  enemiesDefeatedInWave = 0;
+  waveActive = true;
+
+  document.getElementById('hud-wave-info').textContent = `WAVE ${waveNum} — ${enemiesInWave} targets`;
+
+  for (let i = 0; i < enemiesInWave; i++) {
+    const angle = (i / enemiesInWave) * Math.PI * 2 + Math.random() * 0.5;
+    const dist = 20 + Math.random() * 15;
+    const pos = new THREE.Vector3(
+      player.pos.x + Math.cos(angle) * dist,
+      15 + Math.random() * 8,
+      player.pos.z + Math.sin(angle) * dist
+    );
+    spawnDrone(pos);
+  }
+}
+
+function checkWaveComplete() {
+  if (!waveActive) return;
+  if (enemies.length === 0 && enemiesDefeatedInWave >= enemiesInWave) {
+    waveActive = false;
+    document.getElementById('hud-wave-info').textContent = `WAVE ${waveNum} CLEAR!`;
+    setTimeout(() => {
+      if (gameMode === 'wave' && isAlive) nextWave();
+    }, 2000);
+  }
+}
+
+// ---------- Damage System ----------
+function takeDamage(amount) {
+  if (!isAlive) return;
+  playerHealth -= amount;
+
+  // Damage flash
+  const flash = document.getElementById('damage-flash');
+  flash.classList.add('hit');
+  setTimeout(() => flash.classList.remove('hit'), 100);
+
+  if (playerHealth <= 0) {
+    playerHealth = 0;
+    gameOver();
+  }
+
+  // Low health warning
+  if (playerHealth / playerMaxHealth < 0.25) {
+    document.getElementById('low-health-overlay').classList.add('active');
+    document.getElementById('reactor-indicator').classList.add('low');
+    document.getElementById('health-bar-fill').classList.add('low');
+    playJarvis('low-health');
+  } else {
+    document.getElementById('low-health-overlay').classList.remove('active');
+    document.getElementById('reactor-indicator').classList.remove('low');
+    document.getElementById('health-bar-fill').classList.remove('low');
+  }
+
+  updateHUD();
+}
+
+function gameOver() {
+  isAlive = false;
+  document.getElementById('game-over').classList.add('active');
+  document.getElementById('final-score').textContent = `Score: ${score}`;
+  document.exitPointerLock();
+  playJarvis('suit-down');
+}
+
+function restartGame() {
+  isAlive = true;
+  playerHealth = 150;
+  playerMaxHealth = 150;
+  suitPower = 100;
+  repulsorCharge = 100;
+  score = 0;
+  kills = 0;
+  waveNum = 0;
+  enemiesInWave = 0;
+  enemiesDefeatedInWave = 0;
+  waveActive = false;
+
+  // Clear enemies
+  for (const e of enemies) {
+    enemyGroup.remove(e.group);
+  }
+  enemies.length = 0;
+
+  // Clear projectiles
+  for (const p of projectiles) { scene.remove(p.mesh); }
+  projectiles.length = 0;
+  for (const p of enemyProjectiles) { scene.remove(p.mesh); }
+  enemyProjectiles.length = 0;
+
+  document.getElementById('game-over').classList.remove('active');
+  document.getElementById('low-health-overlay').classList.remove('active');
+  document.getElementById('reactor-indicator').classList.remove('low');
+  document.getElementById('health-bar-fill').classList.remove('low');
+  document.getElementById('hud-wave-info').textContent = '';
+  document.getElementById('mode-tag').textContent = gameMode === 'wave' ? 'WAVE MODE' : 'FREE FLY';
+
+  player.pos.set(0, 5, 0);
+  player.vel.set(0, 0, 0);
+  currentSuitId = 'mark-i';
+  loadSuit('mark-i');
+  document.getElementById('hud-suit-name').textContent = 'IRON MAN — MARK I';
+  updateHUD();
+}
+
+// ---------- HUD Update ----------
+function updateHUD() {
+  const healthPct = (playerHealth / playerMaxHealth) * 100;
+  document.getElementById('health-bar-fill').style.width = healthPct + '%';
+  document.getElementById('hud-health-val').textContent = Math.round(healthPct);
+
+  document.getElementById('power-bar-fill').style.width = suitPower + '%';
+  document.getElementById('hud-power-val').textContent = Math.round(suitPower);
+
+  const repulsorPct = repulsorCharge;
+  document.getElementById('repulsor-bar-fill').style.width = repulsorPct + '%';
+  document.getElementById('hud-repulsor-val').textContent = repulsorPct >= 20 ? 'Ready' : 'Charging';
+
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('kc-num').textContent = kills;
+
+  // Arc reactor core color based on health
+  const coreFill = document.querySelector('.core-fill');
+  if (coreFill) {
+    const ratio = playerHealth / playerMaxHealth;
+    if (ratio > 0.5) {
+      coreFill.style.fill = '#00ffff';
+    } else if (ratio > 0.25) {
+      coreFill.style.fill = '#ffaa00';
+    } else {
+      coreFill.style.fill = '#ff4444';
+    }
+  }
+}
+
+function updateSpeedHUD(spd, alt) {
+  const stats = getSuitStats();
+  const spdPct = Math.min(spd / stats.speed * 100, 100);
+  document.getElementById('speed-bar-fill').style.width = spdPct + '%';
+  document.getElementById('hud-speed-val').textContent = Math.round(spd * 3.6);
+
+  const altPct = Math.min(alt / 60 * 100, 100);
+  document.getElementById('alt-bar-fill').style.width = altPct + '%';
+  document.getElementById('hud-alt-val').textContent = Math.round(alt);
+}
+
+// ---------- Boot Sequence ----------
+async function runBootSequence() {
+  const bootScreen = document.getElementById('boot-screen');
+  const bootContainer = document.getElementById('boot-suit-container');
+  const bootStatus = document.getElementById('boot-status-text');
+  const bootBar = document.getElementById('boot-progress-bar');
+  const startScreen = document.getElementById('start-screen');
+
+  // Hide start screen
+  startScreen.classList.add('hidden');
+
+  // Show boot screen
+  bootScreen.classList.add('active');
+
+  // Stage 1: "Initializing systems..."
+  bootStatus.textContent = 'Initializing systems...';
+  bootBar.style.width = '15%';
+  await delay(600);
+
+  // Stage 2: Load suit model preview
+  bootStatus.textContent = 'Loading armor schematic...';
+  bootBar.style.width = '35%';
+  await delay(500);
+
+  // Show a small floating Mark I in the boot container
+  const previewGroup = new THREE.Group();
+  const previewScene = new THREE.Scene();
+  const previewCam = new THREE.PerspectiveCamera(50, 1, 0.1, 50);
+  previewCam.position.set(4, 3, 6);
+  previewCam.lookAt(0, 2, 0);
+  const previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  previewRenderer.setSize(120, 200);
+  previewRenderer.setPixelRatio(1);
+  bootContainer.appendChild(previewRenderer.domElement);
+
+  // Load the suit model for preview
+  try {
+    const res = await fetch('/art/voxel/mark-i-suit.json');
+    const data = await res.json();
+    const pLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    pLight.position.set(3, 5, 4);
+    previewScene.add(pLight);
+    const pAmbient = new THREE.AmbientLight(0x444466, 0.5);
+    previewScene.add(pAmbient);
+
+    // Build the preview model - small, starting from tiny
+    const pGroup = new THREE.Group();
+    pGroup.scale.set(0.01, 0.01, 0.01);
+    for (const v of data.voxels) {
+      const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(v.color) });
+      const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat);
+      m.position.set(v.x - 7, v.y, v.z - 7);
+      pGroup.add(m);
+    }
+    previewScene.add(pGroup);
+
+    // Animate suit scaling up
+    bootStatus.textContent = 'Assembling suit components...';
+    bootBar.style.width = '55%';
+    await delay(400);
+
+    // Scale animation
+    const startScale = 0.01;
+    const endScale = 1.0;
+    const duration = 1500;
+    const startTime = performance.now();
+
+    await new Promise(resolve => {
+      function animateScale() {
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        // Ease out cubic
+        const ease = 1 - Math.pow(1 - t, 3);
+        const s = startScale + (endScale - startScale) * ease;
+        pGroup.scale.set(s, s, s);
+
+        // Rotate preview
+        pGroup.rotation.y += 0.005;
+
+        previewRenderer.render(previewScene, previewCam);
+
+        if (t < 1) {
+          requestAnimationFrame(animateScale);
+        } else {
+          pGroup.scale.set(1, 1, 1);
+          pGroup.rotation.y = 0;
+          previewRenderer.render(previewScene, previewCam);
+
+          // Keep rotating slowly
+          function idleRotate() {
+            if (!bootScreen.classList.contains('active')) return;
+            pGroup.rotation.y += 0.003;
+            previewRenderer.render(previewScene, previewCam);
+            requestAnimationFrame(idleRotate);
+          }
+          idleRotate();
+          resolve();
+        }
+      }
+      animateScale();
+    });
+
+    bootStatus.textContent = 'Calibrating repulsors...';
+    bootBar.style.width = '75%';
+    await delay(500);
+
+    bootStatus.textContent = 'JARVIS: Suit online.';
+    bootBar.style.width = '100%';
+    await delay(300);
+
+    playJarvis('suit-online');
+
+  } catch(e) {
+    // If model load fails, just skip animation
+    bootStatus.textContent = 'JARVIS: Suit online.';
+    bootBar.style.width = '100%';
+  }
+
+  await delay(800);
+
+  // Fade out boot screen
+  bootScreen.style.opacity = '0';
+  await delay(500);
+  bootScreen.classList.remove('active');
+  bootScreen.style.opacity = '1';
+
+  // Clean up preview renderer
+  const canvas = bootContainer.querySelector('canvas');
+  if (canvas) canvas.remove();
+  previewRenderer.dispose();
+
+  // Fade out suit switch hint after 5 seconds
+  setTimeout(() => {
+    document.getElementById('suit-switch-hint').classList.add('fade');
+  }, 5000);
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ---------- Hit Detection ----------
+function checkProjectileHits() {
+  const playerRadius = 1.2;
+
+  // Player projectiles hitting enemies
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    if (!p.isPlayer) continue;
+    p.life -= 1/60;
+    if (p.life <= 0) {
+      scene.remove(p.mesh);
+      projectiles.splice(i, 1);
+      continue;
+    }
+    // Check against enemies
+    for (const e of enemies) {
+      if (e.isDead) continue;
+      const dist = p.mesh.position.distanceTo(e.group.position);
+      if (dist < 2.0) {
+        // Hit!
+        scene.remove(p.mesh);
+        projectiles.splice(i, 1);
+        e.health -= 5;
+        if (e.health <= 0) {
+          e.isDead = true;
+          enemyGroup.remove(e.group);
+          kills++;
+          if (gameMode === 'wave') {
+            score += 100 * waveNum;
+            enemiesDefeatedInWave++;
+          } else {
+            score += 50;
+          }
+          updateHUD();
+          checkWaveComplete();
+        }
+        break;
+      }
+    }
+  }
+
+  // Enemy projectiles hitting player
+  for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
+    const p = enemyProjectiles[i];
+    p.life -= 1/60;
+    if (p.life <= 0) {
+      scene.remove(p.mesh);
+      enemyProjectiles.splice(i, 1);
+      continue;
+    }
+    const dist = p.mesh.position.distanceTo(player.pos);
+    if (dist < playerRadius) {
+      scene.remove(p.mesh);
+      enemyProjectiles.splice(i, 1);
+      takeDamage(15);
+    }
+  }
+}
+
+// ---------- Init ----------
+async function init() {
+  // Build world
+  await buildWorld();
+
+  // Load initial suit
+  await loadSuit('mark-i');
+  scene.add(playerGroup);
+
+  // HUD
+  updateHUD();
+
+  // Button handlers
+  document.getElementById('btn-freefly').addEventListener('click', async () => {
+    gameMode = 'freefly';
+    document.getElementById('mode-tag').textContent = 'FREE FLY';
+    await runBootSequence();
+    startGame();
+  });
+  document.getElementById('btn-wavemode').addEventListener('click', async () => {
+    gameMode = 'wave';
+    document.getElementById('mode-tag').textContent = 'WAVE MODE';
+    await runBootSequence();
+    startGame();
+    startWaveMode();
+  });
+  document.getElementById('restart-btn').addEventListener('click', restartGame);
+}
+
+let gameRunning = false;
+
+function startGame() {
+  gameRunning = true;
+  // Request pointer lock
+  renderer.domElement.requestPointerLock();
+}
+
+// ---------- Game Loop ----------
+const clock = new THREE.Clock();
+
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  if (!gameRunning || !isAlive) {
+    // Still render but don't update physics
+    renderer.render(scene, camera);
+    return;
+  }
+
+  // --- Mouse Look ---
+  if (locked) {
+    player.yaw -= mx * 0.002;
+    player.pitch -= my * 0.002;
+    player.pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, player.pitch));
+    mx = 0; my = 0;
+  }
+
+  // --- Flight Controls ---
+  const stats = getSuitStats();
+  const fwd = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  const rgt = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+  const dir = new THREE.Vector3(0, 0, 0);
+  if (keys['KeyW']) dir.add(fwd);
+  if (keys['KeyS']) dir.sub(fwd);
+  if (keys['KeyA']) dir.sub(rgt);
+  if (keys['KeyD']) dir.add(rgt);
+  if (keys['Space']) dir.y += 1;
+  if (keys['ShiftLeft'] || keys['ShiftRight']) dir.y -= 1;
+
+  if (dir.length() > 0) {
+    dir.normalize();
+    const a = stats.accel * 60 * dt;
+    player.vel.x += dir.x * a;
+    player.vel.z += dir.z * a;
+    player.vel.y += dir.y * a;
+  }
+  player.vel.multiplyScalar(Math.pow(stats.drag, 60 * dt));
+  const spd = player.vel.length();
+  if (spd > stats.speed) player.vel.multiplyScalar(stats.speed / spd);
+
+  player.pos.x += player.vel.x * dt;
+  player.pos.y += player.vel.y * dt;
+  player.pos.z += player.vel.z * dt;
+  if (player.pos.y < 0.5) { player.pos.y = 0.5; player.vel.y = 0; }
+
+  // Update player group
+  playerGroup.position.copy(player.pos);
+  // Smooth rotation to match yaw
+  playerGroup.rotation.y = player.yaw;
+
+  // --- Camera ---
+  const cd = 8;
+  const camTarget = new THREE.Vector3(
+    player.pos.x + Math.sin(player.yaw) * cd * Math.cos(player.pitch),
+    player.pos.y + 2 + Math.sin(player.pitch) * cd,
+    player.pos.z + Math.cos(player.yaw) * cd * Math.cos(player.pitch)
+  );
+  camera.position.lerp(camTarget, 0.1);
+  camera.lookAt(player.pos.x, player.pos.y + 1, player.pos.z);
+
+  // --- Repulsor Fire ---
+  repulsorCooldown -= dt;
+  if (repulsorFiring && repulsorCooldown <= 0 && suitPower > 0 && repulsorCharge > 0) {
+    fireRepulsor();
+  }
+
+  // --- Regen power and charge ---
+  suitPower = Math.min(100, suitPower + 2 * dt);
+  repulsorCharge = Math.min(100, repulsorCharge + 8 * dt);
+
+  // --- Update Projectiles ---
+  for (const p of projectiles) {
+    p.mesh.position.add(p.vel.clone().multiplyScalar(dt));
+  }
+  for (const p of enemyProjectiles) {
+    p.mesh.position.add(p.vel.clone().multiplyScalar(dt));
+  }
+
+  // --- Enemy AI ---
+  for (const e of enemies) {
+    if (e.isDead) continue;
+
+    // Hovering behavior
+    e.hoverAngle += dt * 0.5;
+    const targetX = player.pos.x + Math.cos(e.hoverAngle) * 20;
+    const targetZ = player.pos.z + Math.sin(e.hoverAngle) * 20;
+    const targetY = e.targetHeight + Math.sin(e.hoverAngle * 2) * 3;
+
+    e.pos.lerp(new THREE.Vector3(targetX, targetY, targetZ), 0.02);
+    e.group.position.copy(e.pos);
+
+    // Face the player
+    const lookDir = new THREE.Vector3().subVectors(player.pos, e.pos);
+    e.group.rotation.y = Math.atan2(lookDir.x, lookDir.z);
+
+    // Fire at player
+    e.fireCooldown -= dt;
+    if (e.fireCooldown <= 0) {
+      fireEnemyBolt(e);
+      e.fireCooldown = e.fireInterval;
+    }
+  }
+
+  // --- Hit Detection ---
+  checkProjectileHits();
+  removeDeadEnemies();
+
+  // --- HUD ---
+  const alt = player.pos.y;
+  updateSpeedHUD(spd, alt);
+  updateHUD();
+
+  // --- Render ---
+  renderer.render(scene, camera);
+}
+
+// --- Window Resize ---
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-init();
+// --- Go! ---
+init().then(() => {
+  loop();
+});
 </script>
 </body>
 </html>
