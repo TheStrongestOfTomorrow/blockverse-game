@@ -313,7 +313,7 @@ export class ThreeScene {
     const mesh = this.customMeshes.get(key);
     if (mesh) {
       this.customGroup.remove(mesh);
-      if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose());
+      if (Array.isArray(mesh.material)) mesh.material.forEach((material: THREE.Material) => material.dispose());
       else mesh.material.dispose();
       this.customMeshes.delete(key);
     }
@@ -324,7 +324,7 @@ export class ThreeScene {
     const existing = this.customMeshes.get(key);
     if (existing) {
       this.customGroup.remove(existing);
-      if (Array.isArray(existing.material)) existing.material.forEach((material) => material.dispose());
+      if (Array.isArray(existing.material)) existing.material.forEach((material: THREE.Material) => material.dispose());
       else existing.material.dispose();
     }
     const mesh = new THREE.Mesh(this.geo, material);
@@ -706,7 +706,7 @@ export class ThreeScene {
     }
     for (const [, mesh] of this.customMeshes) {
       this.customGroup.remove(mesh);
-      if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose());
+      if (Array.isArray(mesh.material)) mesh.material.forEach((material: THREE.Material) => material.dispose());
       else mesh.material.dispose();
     }
     this.customMeshes.clear();

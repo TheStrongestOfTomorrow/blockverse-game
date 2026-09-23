@@ -212,7 +212,7 @@ export class ToolsEngine {
     if (this.grabbedBlock.mesh.parent) {
       this.grabbedBlock.mesh.parent.remove(this.grabbedBlock.mesh);
     }
-    if (Array.isArray(this.grabbedBlock.mesh.material)) this.grabbedBlock.mesh.material.forEach((material) => material.dispose());
+    if (Array.isArray(this.grabbedBlock.mesh.material)) this.grabbedBlock.mesh.material.forEach((material: THREE.Material) => material.dispose());
     else this.grabbedBlock.mesh.material.dispose();
 
     this.scene.addBlock(placeX, placeY, placeZ, this.grabbedBlock.type, true);
@@ -232,7 +232,7 @@ export class ToolsEngine {
     if (this.grabbedBlock.mesh.parent) {
       this.grabbedBlock.mesh.parent.remove(this.grabbedBlock.mesh);
     }
-    if (Array.isArray(this.grabbedBlock.mesh.material)) this.grabbedBlock.mesh.material.forEach((material) => material.dispose());
+    if (Array.isArray(this.grabbedBlock.mesh.material)) this.grabbedBlock.mesh.material.forEach((material: THREE.Material) => material.dispose());
     else this.grabbedBlock.mesh.material.dispose();
 
     this.scene.addBlock(this.grabbedBlock.x, this.grabbedBlock.y, this.grabbedBlock.z, this.grabbedBlock.type, false);
