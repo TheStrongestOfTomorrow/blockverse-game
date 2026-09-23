@@ -320,7 +320,17 @@ Then customize it:
 
 ## 📋 Update Log
 
-### V3.1 — "Cyber Void Glass UI Overhaul" (April 2026) ⭐ NEW!
+### V3.1.1 — "3D Rendering & HUD Menu Patch" (September 2026) ⭐ NEW!
+
+**🐛 Bug Fixes & Studio Improvements**
+- ✅ **Fixed 3D Canvas Matrix Update** — Resolved the black viewport bug in Creator Studio and Main Game by enforcing matrix world updates during camera frustum culling.
+- ✅ **Fixed Menu Toggle Overlay** — Restored in-game `MENU` button overlay and game menu pause dialog in `index.html`.
+- ✅ **Resolved Web Worker Sandbox Initialization** — Fixed script worker initialization in Creator Studio.
+- ✅ **Updated Documentation Dates** — Corrected release dates and update history to September 2026.
+
+---
+
+### V3.1 — "Cyber Void Glass UI Overhaul" (September 2026) ⭐ NEW!
 
 **🎨 Next-Gen UI Overhaul (Powered by Stitch AI Designs)**
 - ✅ **Cyber Void Glass Aesthetic** — Complete UI redesign across all pages (`index.html`, `creator.html`, `community.html`) with deep void backgrounds, translucent frosted glass cards, and bioluminescent neon violet (`#8b5cf6`) and cyan (`#06b6d4`) accents.
@@ -331,7 +341,7 @@ Then customize it:
 
 ---
 
-### V3.0 — "Creator Studio Revamp" (April 2026)
+### V3.0 — "Creator Studio Revamp" (September 2026)
 
 **🎨 Simplified Creator Studio Experience**
 - ✅ **Game Templates System** — One-click base games! Click "Obby", "Arena", or "Parkour" and the entire game world generates automatically
@@ -381,7 +391,7 @@ Then customize it:
 
 ---
 
-### V2.0 — "The Everything Update" (April 2026)
+### V2.0 — "The Everything Update" (September 2026)
 
 **🧱 Core Optimizations**
 - ✅ Numeric block keys — `((x+64)<<16)|(y<<8)|(z+64)` for 3x faster Map lookups
@@ -445,7 +455,7 @@ Then customize it:
 - ✅ ~14,000 lines of new code
 - ✅ Modular design with clean separation of concerns
 
-### V1.1 — "The Big Revamp" (April 2026)
+### V1.1 — "The Big Revamp" (September 2026)
 
 - ✅ InstancedMesh rendering (16 draw calls instead of 10,000+)
 - ✅ DDA voxel raycasting (O(distance) cursor-based block detection)

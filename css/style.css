@@ -830,3 +830,94 @@ img {
 .toast.show {
   transform: translateX(0);
 }
+
+
+/* Game Menu Overlay Fix */
+.game-menu {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 26, 0.85);
+  backdrop-filter: var(--glass-blur);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.game-menu.active {
+  display: flex !important;
+}
+
+.game-menu-content {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border-active);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 780px;
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  backdrop-filter: var(--glass-blur);
+  overflow: hidden;
+}
+
+.game-menu-title {
+  text-align: center;
+  padding: 1rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  font-family: var(--font-headline);
+  border-bottom: 1px solid var(--border-color);
+  color: #fff;
+}
+
+.game-menu-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 180px;
+  min-height: 360px;
+}
+
+.gm-players-panel {
+  border-right: 1px solid var(--border-color);
+  padding: 1rem;
+}
+
+.gm-center {
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.gm-actions-panel {
+  border-left: 1px solid var(--border-color);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gm-btn {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-headline);
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.gm-btn:hover {
+  border-color: var(--tertiary);
+  color: var(--tertiary);
+}
+
+.gm-btn-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.gm-btn-danger:hover {
+  background: var(--danger);
+  color: #fff;
+}

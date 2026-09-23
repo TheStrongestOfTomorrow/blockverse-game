@@ -239,7 +239,7 @@ const Tools = {
         // Tool Restrictions: Disable building/deleting in competitive modes
         const competitiveTemplates = ['arena', 'obby', 'racing', 'parkour'];
         const isCompetitiveTemplate = competitiveTemplates.includes(World.template);
-        const amIHost = (typeof Multiplayer !== 'undefined') ? Multiplayer.getAmIHost() : true;
+        const amIHost = (typeof Multiplayer !== 'undefined') ? (typeof Multiplayer.getAmIHost === "function" ? Multiplayer.getAmIHost() : Multiplayer.amIHost) : true;
 
         if (isCompetitiveTemplate && !amIHost) {
             Utils.showToast('Building is disabled in this game mode.', 'info');
@@ -522,7 +522,7 @@ const Tools = {
 
     _checkGears() {
         const isSandbox = (typeof Multiplayer !== 'undefined' && Multiplayer.gameSettings?.category === 'sandbox');
-        const isHost = (typeof Multiplayer !== 'undefined' && Multiplayer.getAmIHost());
+        const isHost = (typeof Multiplayer !== 'undefined' && (typeof Multiplayer.getAmIHost === "function" ? Multiplayer.getAmIHost() : Multiplayer.amIHost));
         
         this._hasGears = (isSandbox && isHost);
         this._gearSlots = [
@@ -545,6 +545,43 @@ const Tools = {
         };
 
         return toolDefinitions[category] || ['interact'];
+    },
+
+
+    buildToolbarUI() {
+        const container = document.getElementById('toolbar');
+        if (!container) return;
+
+        container.innerHTML = '';
+        this._slotElements = [];
+
+        for (let i = 0; i < BV.TOOLBAR_SIZE; i++) {
+            const blockType = this._toolbarSlots[i];
+            const config = BV.BLOCK_TYPES[blockType];
+
+            const slot = document.createElement('div');
+            slot.className = 'toolbar-slot' + (i === this._activeSlot ? ' active' : '');
+            slot.dataset.slot = i;
+
+            const content = document.createElement('div');
+            content.className = 'toolbar-slot-content';
+            if (config) {
+                content.style.backgroundColor = config.color;
+                if (config.transparent) content.style.opacity = config.opacity || 0.5;
+            }
+
+            const key = document.createElement('span');
+            key.className = 'toolbar-slot-key';
+            key.textContent = (i + 1).toString();
+
+            slot.appendChild(content);
+            slot.appendChild(key);
+
+            slot.addEventListener('click', () => this.setToolbarSlot(i));
+
+            container.appendChild(slot);
+            this._slotElements.push(slot);
+        }
     },
 
     buildToolButtons() {

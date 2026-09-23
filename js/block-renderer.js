@@ -337,6 +337,7 @@ const BlockRenderer = (() => {
         _lastCullingPos.copy(camera.position);
         _lastCullingQuat.copy(camera.quaternion);
 
+        camera.updateMatrixWorld(true);
         _projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
         _frustum.setFromProjectionMatrix(_projScreenMatrix);
 
