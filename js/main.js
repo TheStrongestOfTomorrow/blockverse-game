@@ -143,11 +143,14 @@ const App = (() => {
 
         // World MUST be initialized first (creates scene, camera, renderer)
         if (!_worldInitialised && typeof World !== 'undefined') {
-            if (!World.scene) {
-                const canvas = document.getElementById('game-canvas');
-                World.init(canvas);
-            }
-            _worldInitialised = true;
+                if (!World.scene) {
+                    const canvas = document.getElementById('game-canvas');
+                    World.init(canvas);
+                }
+                if (World.blockCount === 0) {
+                    World.generateTerrain('flat');
+                }
+                _worldInitialised = true;
 
             if (typeof RemotePlayers !== 'undefined') {
                 RemotePlayers.init(World.scene);
