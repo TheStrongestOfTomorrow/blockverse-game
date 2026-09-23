@@ -28,7 +28,7 @@ A Roblox-like browser 3D multiplayer game — zero cost, no databases, powered b
 - **100% Client-Side** — No servers, no databases. GitHub Pages + localStorage only
 - **Zero Cost** — Hosted free on GitHub Pages
 
-### 🔧 Creator Studio (MASSIVELY IMPROVED in V3.0!)
+### 🔧 Creator Studio (MASSIVELY IMPROVED in V3.1!)
 - **Professional Hierarchy Panel** — See all objects in a tree view like Roblox Studio. Search, organize, and manage blocks instantly
 - **Smart Properties Inspector** — Change Position, Size, Color, Physics, and custom attributes with live 3D preview
 - **Game Templates** — Click one button and build complete games automatically (Obby, Arena, Parkour, City)
@@ -320,7 +320,18 @@ Then customize it:
 
 ## 📋 Update Log
 
-### V3.0 — "Creator Studio Revamp" (April 2026) ⭐ NEW!
+### V3.1 — "Cyber Void Glass UI Overhaul" (April 2026) ⭐ NEW!
+
+**🎨 Next-Gen UI Overhaul (Powered by Stitch AI Designs)**
+- ✅ **Cyber Void Glass Aesthetic** — Complete UI redesign across all pages (`index.html`, `creator.html`, `community.html`) with deep void backgrounds, translucent frosted glass cards, and bioluminescent neon violet (`#8b5cf6`) and cyan (`#06b6d4`) accents.
+- ✅ **Modernized Navigation & Discovery** — Sleek left sidebar navigation, top bar search with status telemetry, and responsive category filter pills.
+- ✅ **In-Game HUD & ESC Menu** — Updated 9-slot voxel quickbar with hotkey badges, live vitality/stamina gauges, and translucent pause menu.
+- ✅ **Refactored Typography & Styling Tokens** — Upgraded typography using Space Grotesk for geometric gaming headers, Outfit for clean body copy, and JetBrains Mono for telemetry/code.
+- ✅ **Full Responsive Touch Support** — Enhanced layouts for desktop, tablet, and mobile devices.
+
+---
+
+### V3.0 — "Creator Studio Revamp" (April 2026)
 
 **🎨 Simplified Creator Studio Experience**
 - ✅ **Game Templates System** — One-click base games! Click "Obby", "Arena", or "Parkour" and the entire game world generates automatically
