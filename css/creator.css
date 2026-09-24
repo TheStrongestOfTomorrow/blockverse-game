@@ -1,6 +1,5 @@
 /* ============================================================
-   BlockVerse Creator Studio - Cyber Void Glass CSS Framework
-   Pro Studio Visual Engine | Roblox Studio-like Layout
+   BlockVerse Creator Studio - Clean Roblox Studio-like Theme
    ============================================================ */
 
 .creator-root {
@@ -13,49 +12,37 @@
   font-family: var(--font-main);
 }
 
-/* Header */
 .creator-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.25rem;
-  height: 52px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
+  padding: 0 1rem;
+  height: 48px;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
   z-index: 100;
   gap: 1rem;
 }
 
 .creator-logo {
-  font-family: var(--font-headline);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 800;
   color: #fff;
-  letter-spacing: -0.02em;
 }
 
 .creator-logo .logo-accent {
   color: var(--primary);
-  text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
 }
 
 .creator-game-name-input {
-  background: rgba(10, 10, 26, 0.6);
+  background: #141516;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: #fff;
   font-size: 0.85rem;
-  font-family: var(--font-main);
-  padding: 0.4rem 0.8rem;
-  width: 220px;
+  padding: 0.35rem 0.65rem;
+  width: 200px;
   outline: none;
-  transition: all var(--transition-fast);
-}
-
-.creator-game-name-input:focus {
-  border-color: var(--tertiary);
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
 }
 
 .creator-btn {
@@ -63,49 +50,28 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.45rem 1rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  font-family: var(--font-headline);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
   border: 1px solid transparent;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-  transition: all var(--transition-fast);
-  text-decoration: none;
 }
 
 .creator-btn-primary {
-  background: linear-gradient(135deg, var(--secondary), var(--tertiary));
+  background: var(--secondary);
   color: #000;
-  box-shadow: var(--shadow-cyan-glow);
-}
-
-.creator-btn-primary:hover {
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
-  transform: translateY(-1px);
+  font-weight: 700;
 }
 
 .creator-btn-accent {
   background: var(--primary);
   color: #fff;
-  box-shadow: var(--shadow-glow);
-}
-
-.creator-btn-accent:hover {
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
-  transform: translateY(-1px);
 }
 
 .creator-btn-ghost {
   background: transparent;
   color: var(--text-secondary);
-}
-
-.creator-btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
 }
 
 .creator-btn-outline {
@@ -114,52 +80,43 @@
   border-color: var(--border-color);
 }
 
-.creator-btn-outline:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-/* Body / 3-Column Studio Layout */
 .creator-body {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-/* Left Tools & Hierarchy Panel */
 .creator-left-panel {
-  width: 320px;
+  width: 300px;
   background: var(--bg-card);
   border-right: 1px solid var(--border-color);
   display: flex;
   z-index: 60;
-  backdrop-filter: var(--glass-blur);
 }
 
 .creator-tools-panel {
-  width: 58px;
-  background: rgba(10, 10, 26, 0.4);
+  width: 52px;
+  background: #181a1b;
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0.6rem 0;
-  gap: 0.4rem;
+  padding: 0.5rem 0;
+  gap: 0.3rem;
 }
 
 .creator-tool-btn {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: all var(--transition-fast);
 }
 
 .creator-tool-btn:hover {
@@ -168,10 +125,9 @@
 }
 
 .creator-tool-btn.active {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(14, 99, 156, 0.25);
   border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+  color: #38bdf8;
 }
 
 .creator-hierarchy-container {
@@ -181,94 +137,79 @@
   overflow: hidden;
 }
 
-/* Viewport 3D Canvas */
 .creator-viewport {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background: #090a15;
+  background: #181a1b;
 }
 
 #creator-canvas {
   display: block;
   width: 100%;
   height: 100%;
-  cursor: crosshair;
 }
 
-/* Right Panel (Properties & Scripts) */
 .creator-right-panel {
-  width: 360px;
+  width: 320px;
   background: var(--bg-card);
   border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 50;
-  backdrop-filter: var(--glass-blur);
 }
 
 .creator-panel-tabs {
   display: flex;
   border-bottom: 1px solid var(--border-color);
-  background: rgba(10, 10, 26, 0.4);
+  background: #181a1b;
 }
 
 .creator-panel-tab {
   flex: 1;
-  padding: 0.75rem 0.5rem;
+  padding: 0.6rem 0.5rem;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-secondary);
-  font-size: 0.82rem;
-  font-weight: 700;
-  font-family: var(--font-headline);
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-fast);
   text-align: center;
 }
 
-.creator-panel-tab:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.03);
-}
-
 .creator-panel-tab.active {
-  color: var(--tertiary);
-  border-bottom-color: var(--tertiary);
+  color: #38bdf8;
+  border-bottom-color: var(--primary);
 }
 
-/* Bottom Asset Shelf */
 .creator-bottom-panel {
-  height: 140px;
+  height: 130px;
   background: var(--bg-card);
   border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 50;
-  backdrop-filter: var(--glass-blur);
 }
 
 .creator-bottom-tabs {
   display: flex;
   border-bottom: 1px solid var(--border-color);
   padding: 0 0.5rem;
-  background: rgba(10, 10, 26, 0.4);
+  background: #181a1b;
 }
 
 .creator-bottom-tab {
-  padding: 0.5rem 0.85rem;
+  padding: 0.45rem 0.75rem;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-secondary);
   font-size: 0.78rem;
-  font-weight: 700;
-  font-family: var(--font-headline);
+  font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-fast);
 }
 
 .creator-bottom-tab.active {
@@ -279,7 +220,7 @@
 .creator-bottom-content {
   flex: 1;
   overflow-x: auto;
-  padding: 0.6rem;
+  padding: 0.5rem;
   display: flex;
   gap: 0.5rem;
   align-items: center;

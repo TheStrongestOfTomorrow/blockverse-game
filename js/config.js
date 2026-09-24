@@ -32,20 +32,32 @@ const BV = {
     // Initialize network settings based on environment
     // Call this once on app startup — it fetches TURN credentials and sets up WebSocket
     initNetworkSettings: async function() {
-        if (this.isLocalhost()) {
+        const savedWs = localStorage.getItem('bv_custom_ws_url');
+        if (savedWs) {
+            this.USE_WEBSOCKET_RELAY = true;
+            this.WEBSOCKET_RELAY_URL = savedWs;
+        } else if (this.isLocalhost()) {
             this.USE_WEBSOCKET_RELAY = true;
             this.WEBSOCKET_RELAY_URL = 'ws://localhost:3000';
         }
+
+        const savedIce = localStorage.getItem('bv_custom_ice_server');
+        if (savedIce) {
+            try {
+                const parsed = JSON.parse(savedIce);
+                const customIce = Array.isArray(parsed) ? parsed : [parsed];
+                this._iceServers = [...customIce, ...this.DEFAULT_ICE_SERVERS];
+                this._iceServersReady = true;
+                console.log('[BV] BYOS Custom ICE servers loaded:', customIce);
+                return this._iceServers;
+            } catch (e) {
+                console.warn('[BV] Invalid custom ICE server JSON in localStorage');
+            }
+        }
         
-        // Fetch TURN server credentials from the server API.
-        // This is CRITICAL for multiplayer — without TURN servers,
-        // most users behind NATs/firewalls cannot connect to peers.
         await this.fetchIceServers();
     },
-    
-    // Default ICE Servers (STUN only — fallback if API fetch fails)
-    // TURN servers are fetched at runtime from /api/ice-servers to keep
-    // credentials out of the source code. STUN is included as a bare minimum.
+
     DEFAULT_ICE_SERVERS: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
