@@ -320,6 +320,16 @@ Then customize it:
 
 ## 📋 Update Log
 
+### V3.1.1 — "Full 3D Engine & Character Customization Update" (September 23, 2026) ⭐ NEW!
+
+**🎨 Expanded Avatar Customization & 3D Engine Fixes**
+- ✅ **Face Expression Customization** — Choose between Smile, Smirk, Cool Shades, Ninja Mask, and Surprised expressions in the 2D/3D Avatar Customizer.
+- ✅ **3D Viewport Rendering Stability** — Completely resolved black canvas issue across Creator Studio (`creator.html`) and Main Game (`index.html`) by safely optimizing instanced mesh rendering.
+- ✅ **Web Worker Scripting Sandbox Fix** — Fixed Sandbox method invocation so scripts and custom nodes compile cleanly.
+- ✅ **In-Game HUD & Pause Menu Overlay** — Restored HUD `MENU` button toggle and pause modal z-index layer.
+
+---
+
 ### V3.1.1 — "3D Rendering & HUD Menu Patch" (September 2026) ⭐ NEW!
 
 **🐛 Bug Fixes & Studio Improvements**

@@ -11,6 +11,9 @@ const Avatar = (() => {
     // ---- Current avatar configuration ----
     let _config = {
         bodyColor: '#3F51B5',
+        faceStyle: 'smile',
+        faceStyle: 'smile',
+        shirtColor: '#E74C3C',
         headShape: 'default',
         bodyShape: 'default',
         armShape: 'default',
@@ -289,35 +292,46 @@ const Avatar = (() => {
         _roundRect(ctx, cx - headW / 2, headTop, headW, headH, headR, headGrad);
         ctx.restore();
 
-        // ---- Eyes ----
-        const eyeY = headTop + headH * 0.42;
-        const eyeSpacing = headW * 0.2;
-        const eyeR = 6;
-        // Whites
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.arc(cx - eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(cx + eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
-        ctx.fill();
-        // Pupils
-        ctx.fillStyle = '#222';
-        ctx.beginPath();
-        ctx.arc(cx - eyeSpacing + 1, eyeY + 1, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(cx + eyeSpacing + 1, eyeY + 1, 3, 0, Math.PI * 2);
-        ctx.fill();
 
-        // ---- Smile ----
-        const smileY = headTop + headH * 0.72;
-        ctx.strokeStyle = '#222';
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.arc(cx, smileY - 4, 8, 0.15 * Math.PI, 0.85 * Math.PI);
-        ctx.stroke();
+        // ---- Face Styles ----
+        const faceStyle = _config.faceStyle || 'smile';
+        if (faceStyle === 'shades') {
+            ctx.fillStyle = '#111';
+            _roundRect(ctx, cx - eyeSpacing - 8, eyeY - 6, eyeSpacing * 2 + 16, 12, 2, '#111');
+            ctx.fillStyle = '#00E5FF';
+            ctx.fillRect(cx - eyeSpacing - 4, eyeY - 3, 10, 2);
+        } else if (faceStyle === 'ninja') {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(cx - headW/2, eyeY + 4, headW, headH*0.4);
+        } else {
+            // Standard eyes
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(cx - eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
+            ctx.arc(cx + eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(cx - eyeSpacing + 1, eyeY + 1, 3, 0, Math.PI * 2);
+            ctx.arc(cx + eyeSpacing + 1, eyeY + 1, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            if (faceStyle === 'smirk') {
+                ctx.arc(cx + 2, smileY - 2, 6, 0.1 * Math.PI, 0.6 * Math.PI);
+            } else if (faceStyle === 'surprised') {
+                ctx.arc(cx, smileY, 4, 0, Math.PI * 2);
+            } else {
+                ctx.arc(cx, smileY - 4, 8, 0.15 * Math.PI, 0.85 * Math.PI);
+            }
+            ctx.stroke();
+        }
+
 
         // ---- Accessories drawn ON TOP of head ----
         if (_config.accessory === 'hat') {
@@ -552,6 +566,7 @@ const Avatar = (() => {
     /** Populate head, body, and accessory selectors from BV.AVATAR_PARTS. */
     function _populateSelectors() {
         _populateOptionRow('avatar-head-options', BV.AVATAR_PARTS.head, 'headShape');
+        _populateOptionRow('avatar-face-options', ['smile', 'smirk', 'shades', 'ninja', 'surprised'], 'faceStyle');
         _populateOptionRow('avatar-body-options', BV.AVATAR_PARTS.body, 'bodyShape');
         _populateOptionRow('avatar-arms-options', BV.AVATAR_PARTS.arms, 'armShape');
         _populateOptionRow('avatar-legs-options', BV.AVATAR_PARTS.legs, 'legShape');
