@@ -1,3 +1,10 @@
+
+Project:Discontinued Dont play it will hackyou.
+
+
+
+
+
 # 🧱 BlockVerse
 
 **Build. Play. Connect. Script. Share.**
