@@ -14,7 +14,7 @@ const BV = {
     
     // WebSocket Relay (Auto-enabled only for localhost development)
     // For production, WebRTC is used exclusively unless explicitly overridden
-    USE_WEBSOCKET_RELAY: false, // Disabled by default, only enabled if explicitly set or localhost dev server detected
+    USE_WEBSOCKET_RELAY: true, // Disabled by default, only enabled if explicitly set or localhost dev server detected
     WEBSOCKET_RELAY_URL: null,
     
     // Check if running on localhost (for dev tools)
