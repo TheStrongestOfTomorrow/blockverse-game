@@ -516,6 +516,25 @@
                             </button>
                         </div>
                         
+
+                        <!-- Bring Your Own Server (BYOS) Section -->
+                        <div class="form-group" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                            <h3 style="color: #fff; margin-bottom: 10px;">🌐 Bring Your Own Server (BYOS)</h3>
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">
+                                GitHub Pages is a static host and doesn't run WebSockets directly. You can configure your own custom WebSocket Relay or TURN server below.
+                            </p>
+                            <div class="form-group">
+                                <label>Custom WebSocket Relay URL</label>
+                                <input type="text" id="setting-ws-url" placeholder="wss://my-custom-relay.herokuapp.com" value="">
+                                <small class="form-hint">Enable real-time WebSocket relay for multiplayer without PeerJS P2P</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Custom ICE / TURN Server (JSON)</label>
+                                <input type="text" id="setting-turn-url" placeholder='{"urls":"turn:numb.viagenie.ca","username":"...","credential":"..."}' value="">
+                                <small class="form-hint">Paste custom TURN/STUN server JSON config for restricted NAT networks</small>
+                            </div>
+                        </div>
+
                         <button id="btn-save-settings" class="btn btn-primary" style="margin-top: 20px;">Save Settings</button>
                     </div>
                 </section>

@@ -320,6 +320,16 @@ Then customize it:
 
 ## 📋 Update Log
 
+### V3.2.0 — "Bring Your Own Server (BYOS) & Clean Roblox UI Restoration" (September 23, 2026) ⭐ NEW!
+
+**🌐 Bring Your Own Server (BYOS) & Static GitHub Pages Support**
+- ✅ **Bring Your Own Server (BYOS)** — Configure custom WebSocket Relay URLs and custom TURN/ICE server credentials directly in Settings for robust multiplayer when hosting on static GitHub Pages.
+- ✅ **Classic Clean Roblox Dark Theme** — Restored clean, high-performance Roblox Studio dark theme (`#1B1D1E` / `#0f1011` canvas, `#0e639c` highlights, clean card borders) replacing heavy ambient glow filters.
+- ✅ **Character Face Customization** — Expanded Avatar Editor with custom face styles (Smile, Smirk, Cool Shades, Ninja Mask, Surprised).
+- ✅ **3D Engine Stability** — Verified clean 3D viewport rendering in Creator Studio (`creator.html`) and Main Game (`index.html`).
+
+---
+
 ### V3.1.1 — "Full 3D Engine & Character Customization Update" (September 23, 2026) ⭐ NEW!
 
 **🎨 Expanded Avatar Customization & 3D Engine Fixes**
