@@ -1221,6 +1221,7 @@ const Multiplayer = (() => {
         set gamePeer(v) { gamePeer = v; },
         get connections() { return connections; },
         get amIHost() { return amIHost; },
+        getAmIHost() { return amIHost; },
         set amIHost(v) { amIHost = v; },
         get hostPeerId() { return hostPeerId; },
         get serverId() { return serverId; },
